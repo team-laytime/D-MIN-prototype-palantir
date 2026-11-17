@@ -18,11 +18,13 @@ export const CHANNELS = [
  */
 export function deriveAlerts({ ws, roleId, scenarioId, scen, result, focusId, current, version, checks }) {
   const out = []
+  // 이용자에게는 확정 사유(판단근거)를 보여 주지 않는다. 금액이 적혀 있을 수 있어서다(HN-095). 일정 범위만 알린다.
+  const userDetail = (p) => `선박 ${p.placements.length}척 · ${fmt(Math.min(...p.placements.map((x) => x.etb)))} ~ ${fmt(Math.max(...p.placements.map((x) => x.etu)))} 접안 일정`
   for (const p of ws.plans) {
-    out.push({ id: `plan:${p.no}`, channel: 'plan', tone: 'info', title: `접안 계획 v${p.no} 확정 · ${p.label}`, detail: p.reason || '확정 사유 없음', at: p.at, by: p.who, action: { tab: roleId === 'user' ? 'ops' : 'risk' } })
+    out.push({ id: `plan:${p.no}`, channel: 'plan', tone: 'info', title: `접안 계획 v${p.no} 확정 · ${p.label}`, detail: roleId === 'user' ? userDetail(p) : p.reason || '확정 사유 없음', at: p.at, by: p.who, action: { tab: roleId === 'user' ? 'ops' : 'risk' } })
     if (p.cancelled) {
       const log = ws.log.find((l) => l.action === '확정 취소' && l.target.startsWith(`접안 계획 v${p.no} `))
-      out.push({ id: `plan-cancel:${p.no}`, channel: 'plan', tone: 'warn', title: `접안 계획 v${p.no} 확정 취소`, detail: log?.detail || '취소 사유 없음', at: log?.at ?? '-', by: log?.who ?? '-', action: { tab: roleId === 'user' ? 'ops' : 'risk' } })
+      out.push({ id: `plan-cancel:${p.no}`, channel: 'plan', tone: 'warn', title: `접안 계획 v${p.no} 확정 취소`, detail: roleId === 'user' ? '이 일정은 더 이상 적용되지 않습니다.' : log?.detail || '취소 사유 없음', at: log?.at ?? '-', by: log?.who ?? '-', action: { tab: roleId === 'user' ? 'ops' : 'risk' } })
     }
   }
   if (roleId !== 'scheduler') return out.reverse()
