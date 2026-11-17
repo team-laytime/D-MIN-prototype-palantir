@@ -104,3 +104,22 @@ export function candidateReportMarkdown(m) {
   L.push('', '## 계산 기준', '- 체선료 = 초과 시간 ÷ 24시간 × 하루 체선료, 선박별 센트 단위 한 번 반올림(HALF_UP)', '- 정박시간 개시·기상 공제는 선박별 계약 조항을 따름', '- 기준안은 비교용 도착순 배치이며 현행 실적이 아님')
   return L.join('\n')
 }
+
+/** 메일 초안(제목·본문). 보고서와 같은 모델에서 만든다. */
+export function candidateMailDraft(m) {
+  const subject = `[울산 CLX] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
+  const body = [
+    '안녕하세요.',
+    `${m.period} 울산 터미널 접안 계획으로 ${m.sel.label}을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,
+    '',
+    `- 총 예상 체선료: ${money(m.sel.total)} (도착순 기준안 ${money(m.base.total)} 대비 ${money(m.sel.saving)}, ${m.sel.savingPct}% 감소)`,
+    `- 비교한 후보: ${m.items.map((it) => `${it.label} ${money(it.total)}`).join(', ')}`,
+    `- 공통 리스크: ${m.common.map((c) => c.label).join(', ') || '없음'}`,
+    `- 판단근거: ${m.judgment || '(작성 전)'}`,
+    '',
+    '후보별 분석과 차트는 첨부 보고서를 참고해 주십시오.',
+    '',
+    '※ 가상 데이터 기반 의사결정 보조 자료이며, 담당자 검토용 초안입니다.',
+  ].join('\n')
+  return { subject, body }
+}

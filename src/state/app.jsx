@@ -7,6 +7,7 @@ import { TOUR } from '../tour.js'
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
+const EMPTY_DRAFT = { selId: null, judgment: null, mail: {} }
 
 export function AppProvider({ children }) {
   const wsRev = useWorkspace()
@@ -63,6 +64,11 @@ export function AppProvider({ children }) {
     ? { candId: plan.candId, label: plan.label, total: plan.total, reason: plan.reason, version: plan.version, planNo: plan.no, status: `확정 v${plan.no}` }
     : null), [plan, wsRev]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 보고서·메일 작성 화면이 같이 쓰는 초안. null = 아직 손대지 않음(화면이 기본값·자동 초안을 쓴다).
+  // mail: { to, cc, subject, body } 중 사용자가 고친 칸만 들어간다.
+  const [reportDraft, setReportDraftRaw] = useState(EMPTY_DRAFT)
+  const setReportDraft = useCallback((patch) => setReportDraftRaw((d) => ({ ...d, ...patch })), [])
+
   // 사용법 투어. 스케줄러 업무 흐름을 따라가므로 스케줄러 계정에만 있다.
   const [tourIdx, setTourIdx] = useState(null)
   const showTourStep = useCallback((i) => {
@@ -89,6 +95,7 @@ export function AppProvider({ children }) {
   const resetDemo = useCallback(() => {
     resetWorkspace()
     setChecks({})
+    setReportDraftRaw(EMPTY_DRAFT)
     setScenState((s) => ({ scen: SCENARIOS[scenarioId](), version: s.version + 1 }))
     setDrawer(null)
     setTourIdx(null)
@@ -102,7 +109,7 @@ export function AppProvider({ children }) {
     scenarioId, setScenarioId, scen, editScen, version, result, all,
     tab, go, focusId, setFocusId,
     drawer, drawerSim, openVessel, closeDrawer,
-    checks, setCheck, current, tour,
+    checks, setCheck, current, tour, reportDraft, setReportDraft,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

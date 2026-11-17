@@ -18,7 +18,10 @@ export const NAV = [
     { id: 'compare', label: '후보 비교', icon: 'comparison' },
     { id: 'risk', label: '리스크·확정', icon: 'shield' },
   ] },
-  { key: 'REPORT', code: 'RPT', gnb: '보고서', roles: ['scheduler'], items: [{ id: 'report', label: '접안계획 보고서', icon: 'document' }] },
+  { key: 'REPORT', code: 'RPT', gnb: '보고서', roles: ['scheduler'], items: [
+    { id: 'report', label: '접안계획 보고서', icon: 'document' },
+    { id: 'mail', label: '메일 작성', icon: 'envelope' },
+  ] },
   { key: 'QUALITY', code: 'QA', gnb: '검증', roles: ['scheduler'], items: [{ id: 'verify', label: '계산 검증', icon: 'endorsed' }] },
   { key: 'SCHEDULE', code: 'SCHED', gnb: '확정 일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
 ]

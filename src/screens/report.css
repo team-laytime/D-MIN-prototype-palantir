@@ -2,7 +2,8 @@
 .rpt-page > * { flex-shrink: 0; }
 .rpt-prose { font-family: var(--sans); font-size: 16px; }
 .rpt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.rpt-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 10px; align-items: start; }
+/* 위: 선택 · 판단근거 · 확정을 한 줄로. 아래: 미리보기를 화면 폭 전체로. */
+.rpt-controls { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 1.35fr) minmax(280px, 0.9fr); gap: 10px; align-items: stretch; }
 
 /* 후보안 선택 */
 .rpt-picks { display: grid; gap: 6px; padding: 10px; }
@@ -27,13 +28,18 @@
 /* 문서 패널 + 탭 */
 .rpt-doc-panel > .panel-body { overflow: visible; }
 .rpt-tools { display: flex; align-items: center; gap: 6px; }
-.rpt-tabs > .bp6-tab-list { padding: 0 14px; border-bottom: 1px solid var(--line); gap: 18px; }
-.rpt-tabs .bp6-tab { font-size: 12.5px; line-height: 36px; }
-.rpt-tabs .bp6-tab[aria-selected='true'] { color: var(--accent); }
-.rpt-tabs .bp6-tab-indicator-wrapper .bp6-tab-indicator { background-color: var(--accent); }
-.rpt-tabs .bp6-tab-panel { margin-top: 0; }
-.rpt-raw { margin: 0; padding: 16px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; font-family: var(--sans); font-size: 12px; line-height: 1.85; color: var(--fg); background: var(--bg-2); }
-.rpt-mail-foot { padding: 9px 16px; border-top: 1px solid var(--line); }
+
+/* 메일 작성 */
+.mail-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 10px; align-items: start; }
+.mail-kv { grid-template-columns: 80px minmax(0, 1fr); margin: 0; }
+.mail-judgment { padding: 8px 10px; border: 1px solid var(--line-2); background: var(--bg-3); line-height: 1.65; white-space: pre-wrap; }
+.mail-base-actions { margin-top: 8px; }
+.mail-attach { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; margin-bottom: 6px; border: 1px solid var(--line-2); }
+.mail-fields .bp6-form-group.bp6-inline { margin-bottom: 8px; }
+.mail-fields .bp6-form-group.bp6-inline label.bp6-label { width: 72px; flex: none; color: var(--fg-2); font-size: 12.5px; }
+.mail-fields .bp6-form-content { flex: 1; }
+.mail-body { min-height: 380px; margin-top: 4px; font-size: 13px; line-height: 1.8; resize: vertical; }
+.mail-foot { margin-top: 8px; }
 
 /* 보고서 문서 */
 .rpt-doc { padding: 18px 20px 22px; font-size: 12.5px; line-height: 1.75; word-break: keep-all; }

@@ -8,12 +8,13 @@ import Compare from './screens/Compare.jsx'
 import Risk from './screens/Risk.jsx'
 import Report from './screens/Report.jsx'
 import Verify from './screens/Verify.jsx'
+import Mail from './screens/Mail.jsx'
 import Schedule from './screens/Schedule.jsx'
 import VesselDrawer from './screens/VesselDrawer.jsx'
 import Tour from './screens/Tour.jsx'
 
 // 후보 계산이 필요한 화면만 막는다. 확정 일정은 확정 당시 스냅숏이라 계산 실패와 상관없이 열린다.
-const NEEDS_RESULT = ['home', 'compare', 'risk', 'report']
+const NEEDS_RESULT = ['home', 'compare', 'risk', 'report', 'mail']
 
 export default function App() {
   const { role, tab, result, resetKey, drawer, drawerSim, tour } = useApp()
@@ -29,6 +30,7 @@ export default function App() {
       risk: <Risk />,
       report: <Report />,
       verify: <Verify />,
+      mail: <Mail />,
       ops: <Schedule />,
     }[tab]
   }

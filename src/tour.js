@@ -54,8 +54,12 @@ export const TOUR = [
     body: '사유를 적고 확정합니다. 확인하지 않은 리스크가 있으면 한 번 더 묻습니다. 확정과 취소는 스케줄러만 할 수 있고, 확정한 일정은 이용자 계정의 「확정 일정」에 그대로 전달됩니다. Agent는 계획을 확정하지 않습니다.',
   },
   {
-    section: '보고서', tab: 'report', target: '[data-tour="report-mail"]', title: '보고서 생성',
-    body: '후보안을 고르고 숙련자 판단근거를 적으면 후보 3개 비교·차트·후보별 분석·공통 리스크가 담긴 보고서가 만들어집니다. 메일 초안은 옆 탭에 있고, 금액은 계산 결과와 자동 대조합니다.',
+    section: '보고서', tab: 'report', target: '[data-tour="report-doc"]', title: '보고서 생성',
+    body: '위에서 후보안을 고르고 숙련자 판단근거를 적으면, 아래 미리보기에 후보 3개 비교·차트·후보별 분석·공통 리스크가 담긴 보고서가 만들어집니다. 금액은 계산 결과와 자동 대조합니다.',
+  },
+  {
+    section: '보고서', tab: 'mail', target: '[data-tour="mail-compose"]', title: '메일 작성',
+    body: '보고서와 같은 후보·판단근거로 메일 초안을 만듭니다. 받는 사람과 본문을 고쳐 쓴 뒤 복사하거나 메일 앱으로 넘깁니다. 이 화면에서 발송하지는 않습니다.',
   },
   {
     section: '검증', tab: 'verify', target: '[data-tour="answer-set"]', title: '계산 검증',
