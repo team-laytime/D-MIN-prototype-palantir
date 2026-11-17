@@ -1,0 +1,100 @@
+/* 원본 Risk / Report / Verify / Ops의 정보와 업무 흐름을 공유 콘솔 토큰으로 표현한다. */
+.risk-page, .report-page, .verify-page, .schedule-page { display: flex; flex-direction: column; gap: 10px; }
+.risk-page > *, .report-page > *, .verify-page > *, .schedule-page > * { flex-shrink: 0; }
+.risk-intro, .report-intro, .verify-intro, .schedule-intro { line-height: 1.6; }
+.risk-prose, .report-prose, .schedule-prose { font-family: var(--sans); font-size: 16px; }
+.risk-stat-unit, .verify-stat-unit, .schedule-stat-unit { margin-left: 5px; font: 12px var(--sans); }
+
+/* 리스크 검토와 확정은 한 작업면에 놓되 확정 동작은 오른쪽에 고정한다. */
+.risk-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; align-items: start; gap: 10px; }
+.risk-sidebar { position: sticky; top: 0; }
+.risk-item { display: grid; grid-template-columns: 90px minmax(0, 1fr) 51px; gap: 10px; padding: 11px 12px; align-items: start; border-bottom: 1px solid var(--line); }
+.risk-item:last-child { border-bottom: 0; }
+.risk-name { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.risk-name h3 { font-size: 12.5px; }
+.risk-evidence { font-size: 12px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
+.risk-guidance { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 3px 6px; margin: 6px 0 0; font-size: 11.5px; }
+.risk-guidance dt { color: var(--fg-2); }
+.risk-guidance dd { margin: 0; color: var(--fg-2); }
+.risk-checkbox.bp6-control { margin: 1px 0 0; font-size: 11px; white-space: nowrap; }
+.risk-sensitivity td { font-size: 11.5px; }
+.risk-sensitivity td:nth-child(2) { white-space: nowrap; }
+.risk-sensitivity td.risk-increase { color: var(--amber); }
+.risk-sensitivity td.risk-decrease { color: var(--green); }
+.risk-rank { white-space: nowrap; }
+.risk-amount { display: flex; flex-direction: column; gap: 3px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.risk-total { font-size: 26px; font-weight: 500; line-height: 1.5; }
+.risk-check-count { font-weight: 500; }
+.risk-applied { display: flex; flex-direction: column; gap: 5px; }
+.risk-buttons { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.risk-buttons > .bp6-button { flex: 1; }
+.risk-reason-field { display: flex; flex-direction: column; gap: 6px; }
+.risk-reason-field label { color: var(--fg-2); font-size: 11.5px; }
+.risk-reason-field textarea { resize: vertical; min-height: 86px; font-size: 12px; line-height: 1.6; }
+.risk-confirmation.bp6-callout { padding: 9px 9px 9px 35px; border: 1px solid var(--amber); background: var(--amber-wash); }
+.risk-confirmation .risk-buttons { margin-top: 9px; }
+.risk-policy { padding-top: 10px; border-top: 1px solid var(--line); line-height: 1.7; }
+.risk-log { list-style: none; margin: 0; padding: 0; }
+.risk-log li { display: flex; flex-direction: column; gap: 5px; padding: 10px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.risk-log li:first-child { padding-top: 0; }
+.risk-log li:last-child { padding-bottom: 0; border-bottom: 0; }
+.risk-log-title { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; }
+
+/* 보고서는 밝은 종이 대신 같은 운영 콘솔 안의 읽기 표면으로 제공한다. */
+.report-callout.bp6-callout { padding-top: 8px; padding-bottom: 8px; font-size: 12px; border: 1px solid var(--line-2); border-radius: 0; }
+.report-callout .bp6-heading { margin-bottom: 3px; font-family: var(--sans); font-size: 12px; }
+.report-callout > .bp6-button { margin-left: 8px; }
+.report-columns { display: grid; grid-template-columns: minmax(330px, .82fr) minmax(0, 1.5fr); gap: 10px; align-items: start; }
+.report-draft > .panel-head { flex-wrap: wrap; min-height: 40px; padding-top: 6px; padding-bottom: 6px; row-gap: 6px; }
+.report-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.report-document { margin: 0; padding: 14px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; font-family: var(--sans); font-size: 12px; line-height: 1.85; color: var(--fg); background: var(--bg-2); tab-size: 2; }
+.report-mail-text { max-height: calc(100vh - 345px); overflow: auto; }
+.report-raw { max-height: calc(100vh - 330px); overflow: auto; }
+.report-foot { padding: 9px 12px; border-top: 1px solid var(--line); }
+.report-copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.report-markdown { padding: 16px; max-height: calc(100vh - 330px); overflow: auto; font-size: 12px; line-height: 1.8; word-break: keep-all; overflow-wrap: anywhere; }
+.report-markdown h1 { margin: 0 0 7px; font-size: 18px; line-height: 1.55; color: var(--fg); }
+.report-markdown h2 { margin: 24px 0 9px; padding-bottom: 7px; border-bottom: 1px solid var(--line-2); font-size: 13px; }
+.report-markdown h3 { margin: 16px 0 7px; font-size: 12.5px; }
+.report-markdown p { margin: 7px 0; }
+.report-markdown > h1 + p { color: var(--fg-2); font-size: 11px; }
+.report-markdown ul, .report-markdown ol { margin: 8px 0; padding-left: 20px; }
+.report-markdown li { margin: 5px 0; }
+.report-markdown table { width: 100%; margin: 10px 0; border-collapse: collapse; font-size: 11px; line-height: 1.6; }
+.report-markdown th { padding: 7px 8px; background: var(--bg-3); color: var(--fg-2); font-weight: 500; border: 1px solid var(--line-2); white-space: nowrap; }
+.report-markdown td { padding: 7px 8px; border: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.report-markdown table:first-of-type td:nth-child(2), .report-markdown table:first-of-type td:nth-child(3), .report-markdown table:nth-of-type(2) td:nth-child(n+3) { font-family: var(--mono); }
+.report-markdown code { padding: 1px 3px; background: var(--bg-3); font-family: var(--mono); }
+.report-markdown pre { overflow: auto; padding: 10px; background: var(--bg-1); }
+.report-markdown blockquote { margin: 10px 0; padding-left: 12px; border-left: 1px solid var(--line-3); color: var(--fg-2); }
+.report-markdown a { color: var(--blue); }
+
+/* 검증 표는 손계산과 자동 계산을 같은 행에서 바로 대조한다. */
+.verify-answers { min-width: 1110px; }
+.verify-answers th, .verify-answers td { padding-left: 8px; padding-right: 8px; }
+.verify-answers td { height: 41px; font-size: 11.5px; }
+.verify-case { min-width: 150px; max-width: 180px; word-break: keep-all; line-height: 1.45; }
+.verify-time { white-space: nowrap; }
+.verify-time .faint { display: block; font-size: 10px; }
+.verify-clause, .verify-duration, .verify-scale, .verify-search { white-space: nowrap; }
+.verify-duration { font-variant-numeric: tabular-nums; }
+.verify-scenarios td { height: 39px; font-size: 12px; }
+.verify-notes { padding: 10px 12px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.75; }
+
+/* 이용자는 확정 스냅숏의 접안 일정만 본다. 금액·요율 요소는 두지 않는다. */
+.schedule-empty.bp6-callout { margin-top: 4px; padding: 18px 18px 18px 44px; border: 1px solid var(--line-2); border-radius: 0; background: var(--bg-2); }
+.schedule-empty .bp6-heading { font-family: var(--sans); font-size: 14px; }
+.schedule-table td { height: 49px; white-space: nowrap; }
+.schedule-cargo { font-size: 12px; }
+.schedule-flags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.schedule-flag.chip { font-family: var(--sans); font-size: 10.5px; }
+.schedule-snapshot { padding: 0 1px; }
+
+@media (max-width: 1340px) {
+  .risk-layout { grid-template-columns: minmax(0, 1fr) 305px; }
+  .risk-item { grid-template-columns: 76px minmax(0, 1fr) 48px; gap: 8px; padding: 10px; }
+  .risk-total { font-size: 24px; }
+  .report-columns { grid-template-columns: 330px minmax(0, 1fr); }
+  .report-draft > .panel-head > .panel-actions { flex-basis: 100%; margin-left: 0; }
+  .schedule-table th, .schedule-table td { padding-left: 8px; padding-right: 8px; }
+}

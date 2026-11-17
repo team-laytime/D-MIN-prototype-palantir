@@ -1,0 +1,32 @@
+.app { height: 100vh; display: grid; grid-template-columns: 212px 1fr; grid-template-rows: 44px 1fr 24px; grid-template-areas: 'top top' 'rail work' 'status status'; }
+
+.topbar { grid-area: top; display: flex; align-items: center; gap: 18px; padding: 0 12px 0 14px; background: var(--bg-0); border-bottom: 1px solid var(--line-2); }
+.topbar-brand { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 0; color: var(--fg); cursor: pointer; }
+.brand { display: inline-flex; align-items: center; gap: 7px; color: var(--fg-2); }
+.brand b { color: var(--fg); font-family: var(--mono); font-weight: 600; letter-spacing: 0.14em; }
+.topbar-sub { font-size: 12px; color: var(--fg-2); padding-left: 10px; border-left: 1px solid var(--line-2); }
+.topbar-op { font-size: 10.5px; letter-spacing: 0.1em; color: var(--fg-3); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.scen-select { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding-left: 10px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.scen-select .bp6-html-select select { background: transparent !important; box-shadow: none !important; font-size: 12px; height: 26px; }
+.clock { font-size: 12px; color: var(--fg); }
+.clock b { font-weight: 500; }
+.who { font-size: 12px; }
+.who-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 7px; }
+
+.rail { grid-area: rail; display: flex; flex-direction: column; gap: 14px; padding: 14px 0; background: var(--bg-0); border-right: 1px solid var(--line-2); overflow: auto; }
+.rail-head { display: flex; gap: 8px; padding: 0 14px 6px; font-size: 10px; letter-spacing: 0.1em; color: var(--fg-2); }
+.rail-group.on .rail-head span:first-child { color: var(--accent); }
+.rail-item { width: 100%; display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 14px; border: 0; background: none; color: var(--fg-2); font-size: 13px; text-align: left; cursor: pointer; }
+.rail-item:hover { background: var(--bg-3); color: var(--fg); }
+.rail-item.on { background: var(--accent-wash); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
+.rail-item.on .bp6-icon { color: var(--accent); }
+.rail-status { margin-top: auto; padding: 12px 0 0; border-top: 1px solid var(--line); }
+.rail-status p { padding: 0 14px; font-size: 12.5px; }
+.rail-status .block { display: block; margin-top: 2px; }
+
+.work { grid-area: work; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg-1); }
+
+.statusbar { grid-area: status; display: flex; align-items: center; gap: 18px; padding: 0 14px; background: var(--bg-0); border-top: 1px solid var(--line-2); font-size: 10.5px; letter-spacing: 0.05em; color: var(--fg-3); white-space: nowrap; overflow: hidden; }
+.statusbar .st { color: var(--accent); }
+.statusbar-right { margin-left: auto; font-family: var(--sans); letter-spacing: 0; }

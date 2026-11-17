@@ -1,0 +1,100 @@
+.vessel-drawer-portal { position: relative; z-index: 2000; }
+.vessel-drawer.bp6-drawer { max-width: calc(100vw - 32px); background: var(--bg-1); border-left: 1px solid var(--line-3); box-shadow: none; }
+.vessel-drawer-root { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--fg); font-family: var(--sans); }
+.vessel-drawer-head { display: flex; align-items: center; gap: 10px; flex: none; min-height: 67px; padding: 11px 12px 11px 16px; border-bottom: 1px solid var(--line-2); background: var(--bg-3); }
+.vessel-drawer-head > div { flex: 1; min-width: 0; }
+.vessel-drawer-head h2 { font-size: 15px; overflow-wrap: anywhere; line-height: 1.4; }
+.vessel-drawer-head h2 > span { display: block; color: var(--fg-2); font-size: 12px; font-weight: 400; }
+.vessel-drawer-ident { display: flex; align-items: center; gap: 12px; margin-top: 3px; font-size: 10.5px; }
+.vessel-drawer-ident > .mono { color: var(--accent); }
+.vessel-drawer-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 12px 14px 16px; }
+.vessel-drawer-scroll > .panel { flex: none; margin-bottom: 12px; }
+.vessel-drawer-scroll .panel-body { flex: none; overflow: visible; }
+.vessel-drawer-scroll .panel-head { gap: 7px; flex-wrap: wrap; padding: 7px 10px; min-height: 34px; }
+.vessel-drawer-scroll .panel-code { font-size: 9.5px; }
+.vessel-drawer-scroll .panel-desc { white-space: normal; font-size: 10.5px; color: var(--fg-2); }
+.vessel-drawer-position { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-2); background: var(--bg-2); }
+.vessel-drawer-position > div { padding: 10px; min-width: 0; }
+.vessel-drawer-position > div + div { border-left: 1px solid var(--line-2); }
+.vessel-drawer-position span, .vessel-drawer-position small { font-size: 11px; color: var(--fg-2); }
+.vessel-drawer-position b { display: block; margin: 3px 0 4px; color: var(--accent); font-size: 12px; }
+.vessel-drawer-time { margin: 7px 0; text-align: right; font-size: 10.5px; color: var(--fg-2); }
+.vessel-drawer-profile { position: relative; height: 132px; border: 1px solid var(--line-2); background: var(--bg-0); overflow: hidden; }
+.vessel-drawer-dimensions { display: grid; grid-template-columns: 1fr 1fr; row-gap: 7px; padding: 10px 13px; font-size: 11px; color: var(--fg-2); }
+.vessel-drawer-dimensions span:nth-child(even) { text-align: right; }
+.vessel-drawer-dimensions b { margin-left: 4px; color: var(--fg); font-size: 12px; font-weight: 400; }
+.vessel-drawer-profile svg { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; }
+.vessel-drawer-water { stroke: var(--line-2); fill: none; }
+.vessel-drawer-hull { fill: var(--line-3); stroke: var(--fg-2); stroke-width: 0.8; }
+.vessel-drawer-ship-line { fill: none; stroke: var(--fg-2); stroke-width: 1; }
+.vessel-drawer-cabin { fill: var(--line-2); stroke: var(--fg-2); stroke-width: 0.8; }
+.vessel-drawer-alert { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0 12px; font-size: 11px; line-height: 1.5; }
+.vessel-drawer-alert > span { min-width: 0; }
+.vessel-drawer-alert > button { flex: none; }
+.vessel-drawer-kv { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11.5px; line-height: 1.6; }
+.vessel-drawer-kv th { width: 96px; padding: 7px 10px; vertical-align: top; border-right: 1px solid var(--line); background: var(--bg-3); color: var(--fg-2); font-weight: 400; text-align: left; }
+.vessel-drawer-kv td { padding: 7px 10px; overflow-wrap: anywhere; vertical-align: top; }
+.vessel-drawer-kv tr + tr > * { border-top: 1px solid var(--line); }
+.vessel-drawer-kv .num, .vessel-drawer-kv .mono { font-size: 10.5px; }
+.vessel-drawer-route { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line-2); padding: 10px 12px; background: var(--bg-2); }
+.vessel-drawer-route > div:last-child { text-align: right; }
+.vessel-drawer-route span { color: var(--fg-2); font-size: 11px; }
+.vessel-drawer-route b { display: block; margin-top: 3px; font-size: 12px; }
+.vessel-drawer-navigation { display: grid; grid-template-columns: 1.4fr 1fr 1fr; margin: -1px 0 16px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.vessel-drawer-navigation > div { padding: 8px 5px; text-align: center; }
+.vessel-drawer-navigation > div + div { border-left: 1px solid var(--line); }
+.vessel-drawer-navigation > div > span { color: var(--fg-2); font-size: 10px; }
+.vessel-drawer-navigation b { display: block; margin-top: 4px; font-size: 11.5px; font-weight: 400; }
+.vessel-drawer-note { margin: 0 0 13px; color: var(--fg-2); font-size: 10.5px; line-height: 1.7; }
+.vessel-drawer-footer { flex: none; padding: 9px 14px; border-top: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-size: 10px; line-height: 1.6; }
+.vessel-drawer-back { margin: -2px 0 8px; }
+.vessel-drawer-flow { position: relative; height: 79px; margin: 0 5px; }
+.vessel-drawer-axis { position: absolute; left: 2%; right: 2%; top: 34px; height: 1px; background: var(--line-3); }
+.vessel-drawer-segment { position: absolute; top: 29px; height: 10px; }
+.vessel-drawer-segment.wait { top: 34px; height: 0; border-top: 1px dashed var(--fg-2); }
+.vessel-drawer-segment.work { background: var(--blue); }
+.vessel-drawer-segment.lay { top: 44px; height: 5px; background: var(--green); }
+.vessel-drawer-segment.dem { top: 44px; height: 5px; background: var(--red); }
+.vessel-drawer-tick { position: absolute; top: 6px; color: var(--fg-2); font-size: 10px; white-space: nowrap; }
+.vessel-drawer-tick.end { top: 16px; transform: translateX(-100%); }
+.vessel-drawer-tick.bottom { top: 56px; }
+.vessel-drawer-legend { color: var(--fg-2); font-size: 10px; line-height: 1.5; }
+.vessel-drawer-calc { margin: 0; padding: 0; list-style: none; }
+.vessel-drawer-calc > li { padding: 9px 10px; }
+.vessel-drawer-calc > li + li { border-top: 1px solid var(--line); }
+.vessel-drawer-step-head { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.vessel-drawer-step-no { width: 14px; flex: none; color: var(--fg-2); font-size: 10px; }
+.vessel-drawer-step-head b { flex: none; font-weight: 500; }
+.vessel-drawer-step-head .chip { font-size: 9px; height: 17px; padding: 0 4px; color: var(--fg-2); }
+.vessel-drawer-step-head > strong { margin-left: auto; text-align: right; font-size: 11px; font-weight: 500; }
+.vessel-drawer-calc li > p { margin: 5px 0 0 20px; color: var(--fg-2); font-size: 11px; line-height: 1.6; }
+.vessel-drawer-calc li.total { background: var(--bg-3); }
+.vessel-drawer-formula { border-top: 1px solid var(--line-2); padding: 10px 12px; font-size: 11.5px; line-height: 1.8; }
+.vessel-drawer-formula > b { display: block; margin: 2px 0; font-size: 21px; font-weight: 500; }
+.vessel-drawer-formula .small { font-size: 10.5px; }
+.vessel-drawer-why { margin: 0; padding-left: 16px; font-size: 11.5px; line-height: 1.75; }
+.vessel-drawer-why li + li { margin-top: 8px; }
+.vessel-drawer-why b { font-weight: 500; }
+.vessel-drawer-why .chip { margin: 3px 0 0 3px; font-size: 9px; }
+
+.tour-root.bp6-dark { position: fixed; inset: 0; z-index: 3000; pointer-events: none; background: transparent; font-family: var(--sans); }
+.tour-shade { position: fixed; background: rgba(0, 0, 0, 0.56); pointer-events: none; }
+.tour-dim { inset: 0; }
+.tour-spot { position: fixed; outline: 1px solid var(--accent); outline-offset: -1px; pointer-events: none; }
+.tour-card { position: fixed; width: 360px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; padding: 14px 16px 10px; background: var(--bg-2); border: 1px solid var(--line-3); pointer-events: auto; color: var(--fg); }
+.tour-card:focus { outline: none; }
+.tour-hidden { visibility: hidden; }
+.tour-progress { height: 2px; background: var(--line-2); overflow: hidden; margin-bottom: 12px; }
+.tour-progress > span { display: block; height: 100%; background: var(--accent); transition: width 180ms ease-out; }
+.tour-heading { display: flex; align-items: baseline; gap: 12px; justify-content: space-between; }
+.tour-heading h3 { font-size: 16px; font-weight: 600; }
+.tour-heading > span { color: var(--accent); font-size: 11px; flex: none; }
+.tour-section { margin-top: 3px; color: var(--fg-2); font-size: 11px; }
+.tour-body { margin-top: 12px; font-size: 12.5px; line-height: 1.75; word-break: keep-all; overflow-wrap: anywhere; }
+.tour-try { margin-top: 12px; padding: 8px 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); color: var(--amber); font-size: 11.5px; line-height: 1.65; }
+.tour-try b { font-weight: 600; margin-right: 4px; }
+.tour-actions { display: flex; align-items: center; gap: 6px; margin-top: 16px; }
+.tour-actions > span { flex: 1; }
+.tour-keys { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 9px; color: var(--fg-2); font-size: 10px; }
+.tour-keys kbd { font-family: var(--mono); font-size: 10px; }
+@media (prefers-reduced-motion: reduce) { .tour-progress > span { transition: none; } }

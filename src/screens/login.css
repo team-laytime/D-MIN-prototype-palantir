@@ -1,0 +1,17 @@
+.login-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) 440px; align-items: center; gap: 64px; padding: 0 max(64px, 8vw); background: var(--bg-0); }
+.login-intro { max-width: 560px; }
+.login-intro h1 { margin: 28px 0 14px; font-size: 32px; font-weight: 600; line-height: 1.25; letter-spacing: -0.03em; }
+.login-intro > p { max-width: 46ch; font-size: 14px; line-height: 1.65; }
+.login-facts { margin: 36px 0 0; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line-2); }
+.login-facts div { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.login-facts dt { font-size: 10px; letter-spacing: 0.1em; color: var(--fg-3); }
+.login-facts dd { margin: 2px 0 0; font-size: 12.5px; color: var(--fg); }
+.login-card .panel-body { overflow: visible; }
+.acct-list { display: grid; gap: 6px; margin-bottom: 16px; }
+.acct { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 9px 12px; text-align: left; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg); cursor: pointer; }
+.acct:hover { border-color: var(--line-3); }
+.acct.on { border-color: var(--accent); background: var(--accent-wash); }
+.acct-name { font-weight: 600; }
+.acct-desc { grid-column: 1; }
+.acct-id { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-size: 12px; color: var(--accent); }
+.login-err { margin-bottom: 12px; }
