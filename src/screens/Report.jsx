@@ -1,4 +1,4 @@
-// 보고서 생성: 후보안 선택 → 숙련자 판단근거 작성 → 확정. 위에서 고르고 쓰면 아래 넓은 미리보기에 보고서가 만들어진다.
+// 보고서 생성: 후보안 선택 → 숙련자 판단근거 작성 → 확정. 왼쪽에서 고르고 쓰면 오른쪽 미리보기에 보고서가 만들어진다.
 // 메일은 왼쪽 메뉴의 「메일 작성」 화면이 같은 초안으로 따로 다룬다.
 import { useEffect, useRef, useState } from 'react'
 import { Button, Callout, SegmentedControl, TextArea } from '@blueprintjs/core'
@@ -58,7 +58,8 @@ export default function Report() {
       {copyError && <Callout intent="danger" icon="error" role="alert">{copyError}</Callout>}
       <span className="rpt-sr" role="status">{copied ? '보고서 복사됨' : ''}</span>
 
-      <div className="rpt-controls">
+      <div className="rpt-grid">
+        <div className="stack">
         <Panel code="RPT-PICK" title="후보안 선택" desc="보고서의 기준이 될 안">
           <div className="rpt-picks" role="radiogroup" aria-label="후보안">
             {model.items.map((it) => (
@@ -82,7 +83,7 @@ export default function Report() {
 
         <Panel code="EXPERT-NOTE" title="숙련자 판단근거" desc="후보 중 이 안을 고른 이유" pad>
           <TextArea
-            className="rpt-judgment" fill rows={6} value={judgment} disabled={!isScheduler}
+            className="rpt-judgment" fill rows={7} value={judgment} disabled={!isScheduler}
             onChange={(e) => setReportDraft({ judgment: e.target.value })}
             placeholder="예: 후보 A는 B·C보다 체선료가 가장 적고 남은 리스크 수는 같아 비용 차이로 결정했습니다. 야간 접안은 도선·계류 인력을 미리 배치합니다."
             aria-label="숙련자 판단근거"
@@ -115,7 +116,7 @@ export default function Report() {
             </>
           )}
         </Panel>
-      </div>
+        </div>
 
       <Panel code="RPT-DOC" title="보고서 미리보기" desc={`${sel.label} 기준 · ${model.status}`} className="rpt-doc-panel" data-tour="report-doc" actions={
         <div className="rpt-tools">
@@ -126,7 +127,8 @@ export default function Report() {
         </div>
       }>
         {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} />}
-      </Panel>
+        </Panel>
+      </div>
     </Screen>
   )
 }
