@@ -1,0 +1,84 @@
+.rpt-page { display: flex; flex-direction: column; gap: 10px; }
+.rpt-page > * { flex-shrink: 0; }
+.rpt-prose { font-family: var(--sans); font-size: 16px; }
+.rpt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.rpt-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 10px; align-items: start; }
+
+/* 후보안 선택 */
+.rpt-picks { display: grid; gap: 6px; padding: 10px; }
+.rpt-pick { display: grid; gap: 4px; padding: 9px 10px; text-align: left; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg); cursor: pointer; }
+.rpt-pick:hover { border-color: var(--line-3); }
+.rpt-pick.on { border-color: var(--accent); background: var(--accent-wash); }
+.rpt-pick-head { display: flex; align-items: center; gap: 8px; }
+.rpt-pick-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line-3); flex: none; }
+.rpt-pick.on .rpt-pick-dot { border: 4px solid var(--accent); }
+.rpt-pick-total { margin-left: auto; font-size: 13px; }
+.rpt-pick-meta { display: flex; gap: 12px; padding-left: 20px; color: var(--fg-2); }
+.rpt-pick-meta b { font-weight: 500; color: var(--fg); }
+
+/* 판단근거 · 확정 */
+.rpt-judgment { font-size: 12.5px; line-height: 1.65; resize: vertical; }
+.rpt-guide { margin: 8px 0 0; padding-left: 16px; line-height: 1.7; }
+.rpt-note { margin-bottom: 8px; font-size: 12px; }
+.rpt-note > .bp6-button { margin-left: 4px; }
+.rpt-hint { margin-top: 6px; }
+.rpt-fixed { display: grid; gap: 8px; justify-items: start; }
+
+/* 문서 패널 + 탭 */
+.rpt-doc-panel > .panel-body { overflow: visible; }
+.rpt-tools { display: flex; align-items: center; gap: 6px; }
+.rpt-tabs > .bp6-tab-list { padding: 0 14px; border-bottom: 1px solid var(--line); gap: 18px; }
+.rpt-tabs .bp6-tab { font-size: 12.5px; line-height: 36px; }
+.rpt-tabs .bp6-tab[aria-selected='true'] { color: var(--accent); }
+.rpt-tabs .bp6-tab-indicator-wrapper .bp6-tab-indicator { background-color: var(--accent); }
+.rpt-tabs .bp6-tab-panel { margin-top: 0; }
+.rpt-raw { margin: 0; padding: 16px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; font-family: var(--sans); font-size: 12px; line-height: 1.85; color: var(--fg); background: var(--bg-2); }
+.rpt-mail-foot { padding: 9px 16px; border-top: 1px solid var(--line); }
+
+/* 보고서 문서 */
+.rpt-doc { padding: 18px 20px 22px; font-size: 12.5px; line-height: 1.75; word-break: keep-all; }
+.rpt-doc-head h1 { font-size: 18px; line-height: 1.45; letter-spacing: -0.02em; }
+.rpt-doc section { margin-top: 22px; }
+.rpt-doc h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--line-2); font-size: 13.5px; }
+.rpt-doc h2 .num { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid var(--line-3); font-size: 11px; color: var(--accent); }
+.rpt-judgment-quote { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line-2); background: var(--bg-3); }
+.rpt-judgment-quote p { margin-top: 2px; white-space: pre-wrap; }
+.rpt-judgment-quote.empty p { color: var(--fg-3); }
+.rpt-quote-label { color: var(--accent); letter-spacing: 0.04em; }
+.rpt-table { margin-top: 4px; border: 1px solid var(--line); }
+.rpt-sel { margin-left: 6px; font-family: var(--sans); }
+.rpt-charts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+.rpt-charts .rpt-chart { max-width: 760px; }
+.rpt-figure { margin: 0; }
+.rpt-fig-title { margin-bottom: 6px; color: var(--fg-2); }
+.rpt-chart { display: block; width: 100%; height: auto; color: var(--fg); overflow: visible; }
+.rpt-chart-label { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+.rpt-chart-label.small { font-size: 11px; fill: var(--fg-2); }
+.rpt-chart-value { font-family: var(--mono); font-size: 11.5px; }
+.rpt-chart-tick { font-family: var(--mono); font-size: 10px; }
+.rpt-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 11px; color: var(--fg-2); }
+.rpt-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+
+.rpt-cands { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.rpt-cand { padding: 10px 12px 12px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.rpt-cand.on { border-color: var(--accent); box-shadow: inset 0 2px 0 var(--accent); }
+.rpt-cand-head { display: flex; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.rpt-cand-head .chip { font-family: var(--sans); }
+.rpt-cand-total { margin-left: auto; font-size: 14px; font-weight: 500; }
+.rpt-kv { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 3px 8px; margin: 8px 0 0; }
+.rpt-kv dt { color: var(--fg-3); }
+.rpt-kv dd { margin: 0; }
+.rpt-sub { margin: 12px 0 4px; color: var(--fg-3); letter-spacing: 0.04em; }
+.rpt-list { margin: 0; padding: 0; list-style: none; }
+.rpt-list li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.rpt-list li:last-child { border-bottom: 0; }
+.rpt-risks li { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: start; }
+.rpt-risks .muted { font-size: 11.5px; line-height: 1.55; }
+
+.rpt-common { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rpt-common li { padding: 10px 12px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.rpt-common-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.rpt-common-head .chip { font-family: var(--sans); }
+.rpt-common p { line-height: 1.6; }
+.rpt-common .muted { margin-right: 6px; }
+.rpt-basis h2 { font-size: 12px; color: var(--fg-2); }
