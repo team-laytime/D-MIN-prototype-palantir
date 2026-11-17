@@ -4,6 +4,17 @@ import { Button, HTMLSelect, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip
 import { useApp } from '../state/app.jsx'
 import { NAV, canUse, groupOf } from '../lib/workspace.js'
 import { money } from '../lib/time.js'
+import { toggleTheme, useTheme } from '../state/theme.js'
+
+export function ThemeToggle() {
+  const theme = useTheme()
+  const next = theme === 'dark' ? '라이트' : '다크'
+  return (
+    <Tooltip content={`${next} 모드로 전환`} placement="bottom">
+      <Button variant="minimal" size="small" icon={theme === 'dark' ? 'flash' : 'moon'} aria-label={`${next} 모드로 전환`} onClick={toggleTheme} />
+    </Tooltip>
+  )
+}
 
 export function Brand({ size = 15 }) {
   // 두 부두 사이에 배 한 척이 들어간 모양의 기하 표식(직접 그린 SVG).
@@ -61,6 +72,7 @@ export function Shell({ children }) {
             </label>
           )}
           <Clock />
+          <ThemeToggle />
           {isScheduler && (
             <Tooltip content="화면을 하나씩 짚는 안내" placement="bottom">
               <Button className="help-btn" data-tour="help-btn" variant="minimal" size="small" icon="help" text="사용법" onClick={tour.start} />

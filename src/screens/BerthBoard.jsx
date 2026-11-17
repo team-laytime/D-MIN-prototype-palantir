@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { tankerSVG } from '../lib/tanker.js'
 import { fmt, money } from '../lib/time.js'
+import { useTheme } from '../state/theme.js'
 
 const DARK_PALETTE = {
   '#3a8edb': '#0c1a25', '#2f80cc': '#0c1a25', '#7cc0f2': '#283e50',
@@ -10,10 +11,14 @@ const DARK_PALETTE = {
   '#d6202f': '#536477', '#222': '#263646', '#e5ad00': '#7f95a6', '#dcecff': '#627385',
 }
 const darkTanker = (empty, hull) => tankerSVG({ empty, hull }).replace(/#[\da-f]{3,6}\b/gi, (hex) => DARK_PALETTE[hex] ?? hex)
+// 라이트에서는 원본 그림 색을 그대로 쓰고, 선체 색만 상태 색으로 칠한다(SVG 속성이라 CSS 변수 대신 값).
+const HULL = { dark: { bad: '#f2555d', on: '#35c2d9', idle: '#627385' }, light: { bad: '#c42b36', on: '#0b7489', idle: '#687788' } }
+const tanker = (dark, empty, tone) => (dark ? darkTanker(empty, HULL.dark[tone]) : tankerSVG({ empty, hull: HULL.light[tone] }))
 const full = (minute) => `2026/${fmt(minute)}`
 
 /** 지도와 같은 선택안·시각을 쓰는 선석별 작업 현황판입니다. */
 export function BerthBoard({ plan, scen, t, onOpen }) {
+  const dark = useTheme() === 'dark'
   const columns = useMemo(() => {
     const byId = Object.fromEntries(scen.vessels.map((v) => [v.id, v]))
     return [...scen.berths].sort((a, b) => a.name.localeCompare(b.name)).map((berth) => {
@@ -29,12 +34,12 @@ export function BerthBoard({ plan, scen, t, onOpen }) {
         berth, current, legacy, show, vessel,
         progress: current ? Math.round(Math.max(0, Math.min(1, (t - current.etb) / (current.etu - current.etb))) * 100) : null,
         status: current ? (demurrage ? 'bad' : 'ok') : legacy ? 'busy' : 'idle',
-        picture: darkTanker(!current && !legacy, demurrage ? '#f2555d' : current ? '#35c2d9' : '#627385'),
+        picture: tanker(dark, !current && !legacy, demurrage ? 'bad' : current ? 'on' : 'idle'),
         code: current ? `${vessel.callSign}-${vessel.voyage.slice(5)}` : legacy ? '기존 접안선' : show ? `다음 ${fmt(show.etb)}` : '배정 없음',
         next: next ? { at: fmt(next.etb).slice(0, 5), name: byId[next.vid].name } : null,
       }
     })
-  }, [plan, scen, t])
+  }, [plan, scen, t, dark])
 
   return (
     <div className="home-berth-board" style={{ gridTemplateColumns: `62px repeat(${columns.length}, minmax(0, 1fr))` }}>

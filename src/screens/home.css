@@ -33,7 +33,8 @@
 .home-occupancy { white-space: nowrap; color: var(--fg-2); }
 .home-occupancy b { margin-left: 3px; color: var(--accent); }
 .home-map-panel { isolation: isolate; }
-.home-base-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.35); }
+:root:not([data-theme='light']) .home-base-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.35); }
+:root[data-theme='light'] .home-base-tiles { filter: saturate(0.25) contrast(0.95) brightness(1.02); }
 .home-map-body { display: flex; flex-direction: column; overflow: hidden; }
 .home-map-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .home-map { position: absolute; inset: 0; }

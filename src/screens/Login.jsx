@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button, Callout, FormGroup, InputGroup } from '@blueprintjs/core'
 import { PASSWORD, ROLES } from '../lib/workspace.js'
 import { useApp } from '../state/app.jsx'
-import { Brand } from '../ui/Shell.jsx'
+import { Brand, ThemeToggle } from '../ui/Shell.jsx'
 import './login.css'
 
 export default function Login() {
@@ -25,6 +25,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <div className="login-theme"><ThemeToggle /></div>
       <div className="login-intro">
         <Brand size={22} />
         <h1>울산 CLX 액체부두<br />접안 순서 · 체선료 최적화</h1>

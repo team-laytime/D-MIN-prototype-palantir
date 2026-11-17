@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Drawer, Icon } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
+import { useDarkClass } from '../state/theme.js'
 import { RULES, compatibleBerths, stateAt } from '../lib/engine.js'
 import { NAV, anchorageFor, positionOf } from '../lib/vesselState.js'
 import { fmt, fmtDur, money } from '../lib/time.js'
@@ -22,6 +23,7 @@ function Details({ rows }) {
 /** 원본의 도식·계약·AIS 정보는 그대로 두고 금액 조회 권한만 useApp()에서 읽는다. */
 export default function VesselDrawer() {
   const { drawer, drawerSim: sim, result, scen, closeDrawer, isScheduler, tour } = useApp()
+  const dark = useDarkClass()
   const [view, setView] = useState(drawer?.mode ?? 'card')
   const scrollRef = useRef(null)
   useEffect(() => { setView(drawer?.mode ?? 'card') }, [drawer?.simId, drawer?.vid, drawer?.mode])
@@ -80,7 +82,7 @@ export default function VesselDrawer() {
   return (
     <Drawer
       isOpen position="right" size="460px" onClose={closeDrawer}
-      className="bp6-dark vessel-drawer" portalClassName="vessel-drawer-portal"
+      className={`${dark} vessel-drawer`} portalClassName="vessel-drawer-portal"
       hasBackdrop={!tourActive} autoFocus={!tourActive} enforceFocus={!tourActive}
       canEscapeKeyClose={!tourActive} canOutsideClickClose={!tourActive}
     >

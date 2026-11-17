@@ -9,6 +9,7 @@ import '@blueprintjs/icons/lib/css/blueprint-icons.css'
 import 'leaflet/dist/leaflet.css'
 import './theme.css'
 import './ui/shell.css'
+import './state/theme.js'
 import App from './App.jsx'
 import { AppProvider } from './state/app.jsx'
 

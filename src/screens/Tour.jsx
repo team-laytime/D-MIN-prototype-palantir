@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button, Icon } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
+import { useDarkClass } from '../state/theme.js'
 import './drawer.css'
 
 const PAD = 6
@@ -31,6 +32,7 @@ function cardPosition(spot, viewport, size) {
 /** DOM 앵커는 지연 렌더링될 수 있다. 없는 동안 중앙에 두고 삽입·크기·스크롤 변화를 관찰한다. */
 export default function Tour() {
   const { tour } = useApp()
+  const dark = useDarkClass()
   const step = tour.steps[tour.index]
   const cardRef = useRef(null)
   const returnFocus = useRef(document.activeElement)
@@ -144,7 +146,7 @@ export default function Tour() {
   const spot = layout.index === tour.index ? layout.spot : null
   const ready = layout.index === tour.index
   return createPortal(
-    <div className="tour-root bp6-dark">
+    <div className={`tour-root ${dark}`}>
       {spot ? <>
         <div className="tour-shade" style={{ left: 0, top: 0, width: '100%', height: spot.top }} />
         <div className="tour-shade" style={{ left: 0, top: spot.top, width: spot.left, height: spot.height }} />

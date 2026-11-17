@@ -77,8 +77,9 @@
 .vessel-drawer-why b { font-weight: 500; }
 .vessel-drawer-why .chip { margin: 3px 0 0 3px; font-size: 9px; }
 
-.tour-root.bp6-dark { position: fixed; inset: 0; z-index: 3000; pointer-events: none; background: transparent; font-family: var(--sans); }
+.tour-root { position: fixed; inset: 0; z-index: 3000; pointer-events: none; background: transparent; font-family: var(--sans); }
 .tour-shade { position: fixed; background: rgba(0, 0, 0, 0.56); pointer-events: none; }
+:root[data-theme='light'] .tour-shade { background: rgba(27, 33, 41, 0.38); }
 .tour-dim { inset: 0; }
 .tour-spot { position: fixed; outline: 1px solid var(--accent); outline-offset: -1px; pointer-events: none; }
 .tour-card { position: fixed; width: 360px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; padding: 14px 16px 10px; background: var(--bg-2); border: 1px solid var(--line-3); pointer-events: auto; color: var(--fg); }

@@ -108,8 +108,8 @@
 .plan-timeline-bar:focus-visible { outline: 1px solid var(--accent); outline-offset: -2px; z-index: 3; }
 .plan-timeline-bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .plan-timeline-bar-dem { margin-left: auto; font-size: 9px; }
-.plan-timeline-bar.plan-timeline-dem { background: #392128; border-color: var(--red); color: #ffadb2; }
-.plan-timeline-bar.plan-timeline-dem:hover { background: #4b2830; }
+.plan-timeline-bar.plan-timeline-dem { background: var(--dem-bg); border-color: var(--red); color: var(--dem-fg); }
+.plan-timeline-bar.plan-timeline-dem:hover { background: var(--dem-bg-hover); }
 .plan-timeline-bar.plan-timeline-changed { border-color: var(--blue); border-top-width: 2px; }
 .plan-timeline-bar.plan-timeline-dem.plan-timeline-changed { border-bottom-color: var(--red); }
 .plan-timeline-bar.plan-timeline-active { outline: 1px solid var(--accent); outline-offset: 1px; }
