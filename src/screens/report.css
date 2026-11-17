@@ -28,6 +28,7 @@
 /* 문서 패널 + 탭 */
 .rpt-doc-panel > .panel-body { overflow: visible; }
 .rpt-tools { display: flex; align-items: center; gap: 6px; }
+.rpt-raw { margin: 0; padding: 16px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; font-family: var(--sans); font-size: 12px; line-height: 1.85; color: var(--fg); background: var(--bg-2); }
 
 /* 메일 작성 */
 .mail-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 10px; align-items: start; }

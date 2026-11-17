@@ -8,7 +8,9 @@ export function useReport() {
   const { result, scen, focusId, current, version, reportDraft } = useApp()
   const cands = result.candidates
   const plan = current?.version === version ? current : null
-  const selId = reportDraft.selId ?? plan?.candId ?? (cands.some((c) => c.id === focusId) ? focusId : cands[0].id)
+  // 입력이 바뀌어 후보 수가 줄면 예전에 고른 id가 없을 수 있어 후보 목록 안에서만 받아들인다.
+  const valid = (id) => (id && cands.some((c) => c.id === id) ? id : null)
+  const selId = valid(reportDraft.selId) ?? valid(plan?.candId) ?? valid(focusId) ?? cands[0].id
   const shownPlan = plan && plan.candId === selId ? plan : null
   // 아직 손대지 않았으면(null) 확정 때 남긴 판단근거를 보여 준다.
   const judgment = reportDraft.judgment ?? shownPlan?.reason ?? ''

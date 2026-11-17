@@ -55,7 +55,7 @@ export const TOUR = [
   },
   {
     section: '보고서', tab: 'report', target: '[data-tour="report-doc"]', title: '보고서 생성',
-    body: '위에서 후보안을 고르고 숙련자 판단근거를 적으면, 아래 미리보기에 후보 3개 비교·차트·후보별 분석·공통 리스크가 담긴 보고서가 만들어집니다. 금액은 계산 결과와 자동 대조합니다.',
+    body: '왼쪽에서 후보안을 고르고 숙련자 판단근거를 적으면, 오른쪽 미리보기에 후보 3개 비교·차트·후보별 분석·공통 리스크가 담긴 보고서가 만들어집니다. 금액은 계산 결과와 자동 대조합니다.',
   },
   {
     section: '보고서', tab: 'mail', target: '[data-tour="mail-compose"]', title: '메일 작성',
