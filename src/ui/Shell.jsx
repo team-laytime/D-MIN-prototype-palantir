@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Button, HTMLSelect, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
+import { useInbox } from '../state/useInbox.js'
 import { NAV, canUse, groupOf } from '../lib/workspace.js'
 import { money } from '../lib/time.js'
 import { toggleTheme, useTheme } from '../state/theme.js'
@@ -54,6 +55,7 @@ export function Shell({ children }) {
   const group = groupOf(tab)
   const stale = isScheduler && current && current.version !== version
   const best = result.error ? null : result.candidates[0]
+  const { unread } = useInbox()
 
   return (
     <div className="app">
@@ -101,6 +103,7 @@ export function Shell({ children }) {
               <button key={it.id} className={`rail-item ${tab === it.id ? 'on' : ''}`} aria-current={tab === it.id ? 'page' : undefined} onClick={() => go(it.id)}>
                 <Icon icon={it.icon} size={14} />
                 <span>{it.label}</span>
+                {it.id === 'inbox' && unread > 0 && <span className="rail-badge num" aria-label={`새 알림 ${unread}건`}>{unread}</span>}
               </button>
             ))}
           </div>

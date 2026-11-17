@@ -2,6 +2,20 @@
 .vessel-drawer.bp6-drawer { max-width: calc(100vw - 32px); background: var(--bg-1); border-left: 1px solid var(--line-3); box-shadow: none; }
 .vessel-drawer-root { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--fg); font-family: var(--sans); }
 .vessel-drawer-head { display: flex; align-items: center; gap: 10px; flex: none; min-height: 67px; padding: 11px 12px 11px 16px; border-bottom: 1px solid var(--line-2); background: var(--bg-3); }
+.vessel-drawer-tabs { display: flex; flex: none; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line-2); background: var(--bg-2); }
+.vessel-drawer-tabs button { height: 34px; padding: 0 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--fg-2); font-size: 12.5px; cursor: pointer; }
+.vessel-drawer-tabs button:hover { color: var(--fg); }
+.vessel-drawer-tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.vessel-notes-form { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.vessel-notes-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.vessel-notes, .vessel-history { margin: 0; padding: 0; list-style: none; }
+.vessel-notes li, .vessel-history li { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.vessel-notes li:last-child, .vessel-history li:last-child { border-bottom: 0; }
+.vessel-notes li p, .vessel-history li p { margin-top: 3px; line-height: 1.6; white-space: pre-wrap; }
+.vessel-notes-meta { display: flex; align-items: center; gap: 8px; }
+.vessel-notes-meta .bp6-button { margin-left: auto; }
+.vessel-notes-meta .faint { margin-left: auto; }
+.vessel-notes-empty { padding: 14px 12px; line-height: 1.6; }
 .vessel-drawer-head > div { flex: 1; min-width: 0; }
 .vessel-drawer-head h2 { font-size: 15px; overflow-wrap: anywhere; line-height: 1.4; }
 .vessel-drawer-head h2 > span { display: block; color: var(--fg-2); font-size: 12px; font-weight: 400; }
@@ -47,7 +61,6 @@
 .vessel-drawer-navigation b { display: block; margin-top: 4px; font-size: 11.5px; font-weight: 400; }
 .vessel-drawer-note { margin: 0 0 13px; color: var(--fg-2); font-size: 10.5px; line-height: 1.7; }
 .vessel-drawer-footer { flex: none; padding: 9px 14px; border-top: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-size: 10px; line-height: 1.6; }
-.vessel-drawer-back { margin: -2px 0 8px; }
 .vessel-drawer-flow { position: relative; height: 79px; margin: 0 5px; }
 .vessel-drawer-axis { position: absolute; left: 2%; right: 2%; top: 34px; height: 1px; background: var(--line-3); }
 .vessel-drawer-segment { position: absolute; top: 29px; height: 10px; }

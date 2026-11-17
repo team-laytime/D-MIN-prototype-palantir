@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Drawer, Icon } from '@blueprintjs/core'
+import { Button, Drawer, Icon, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { useDarkClass } from '../state/theme.js'
 import { RULES, compatibleBerths, stateAt } from '../lib/engine.js'
 import { NAV, anchorageFor, positionOf } from '../lib/vesselState.js'
 import { fmt, fmtDur, money } from '../lib/time.js'
+import { addNote, historyOf, notesOf, removeNote, role } from '../lib/workspace.js'
 import { Panel, St } from '../ui/kit.jsx'
 import './drawer.css'
 
@@ -22,7 +23,7 @@ function Details({ rows }) {
 
 /** 원본의 도식·계약·AIS 정보는 그대로 두고 금액 조회 권한만 useApp()에서 읽는다. */
 export default function VesselDrawer() {
-  const { drawer, drawerSim: sim, result, scen, closeDrawer, isScheduler, tour } = useApp()
+  const { drawer, drawerSim: sim, result, scen, closeDrawer, isScheduler, tour, scenarioId, wsRev } = useApp()
   const dark = useDarkClass()
   const [view, setView] = useState(drawer?.mode ?? 'card')
   const scrollRef = useRef(null)
@@ -95,6 +96,11 @@ export default function VesselDrawer() {
           </div>
           <Button icon="cross" variant="minimal" aria-label="닫기" onClick={closeDrawer} />
         </header>
+        <nav className="vessel-drawer-tabs" aria-label="선박 카드 보기">
+          {[['card', '선박 정보'], ['evidence', '산출 근거'], ['notes', `메모 ${notesOf(scenarioId, v.id).length}`], ['history', `변경 이력 ${historyOf(scenarioId, v.id).length}`]].map(([id, label]) => (
+            <button key={id} type="button" className={view === id ? 'on' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>{label}</button>
+          ))}
+        </nav>
 
         <div className="vessel-drawer-scroll" ref={scrollRef}>
           {view === 'card' ? <>
@@ -177,8 +183,7 @@ export default function VesselDrawer() {
             </Panel>
             <p className="vessel-drawer-note">선명 · MMSI · IMO · 소유사는 모두 가상입니다. 실제 솔루션에서는 AIS(위치·ETA·길이·폭), 울산항만공사 공공 API(항차·입출항), 대리점 자료(톤수·탱크·소유)에서 채웁니다.</p>
             <Button fill intent="primary" endIcon="arrow-right" text="체선료 산출 근거 보기" onClick={() => setView('evidence')} />
-          </> : <>
-            <Button className="vessel-drawer-back" size="small" variant="minimal" icon="arrow-left" text="선박 정보" onClick={() => setView('card')} />
+          </> : view === 'evidence' ? <>
             <Panel code="LAYTIME" title="체선료 산출 근거">
               <Details rows={[
                 ['계획', sim.label],
@@ -238,10 +243,72 @@ export default function VesselDrawer() {
                 ['계산 기준', '규칙 엔진 · LLM 사용 안 함'],
               ]} />
             </Panel>
-          </>}
+          </> : view === 'notes'
+            ? <VesselNotes scenarioId={scenarioId} vessel={v} canWrite={isScheduler} />
+            : <VesselHistory scenarioId={scenarioId} vessel={v} />}
         </div>
         <footer className="vessel-drawer-footer">출처: 시나리오 입력 · 계약 정보 · 규칙 엔진 계산 — 선박명·제원·계약값은 가상입니다.</footer>
       </section>
     </Drawer>
+  )
+}
+
+/** 선박 메모: 현장 연락·특이사항을 남긴다. 스케줄러만 쓰고, 자기가 쓴 메모만 지운다. */
+function VesselNotes({ scenarioId, vessel, canWrite }) {
+  const [text, setText] = useState('')
+  const me = role()?.name
+  const notes = [...notesOf(scenarioId, vessel.id)].reverse()
+  const submit = () => {
+    const t = text.trim()
+    if (!t) return
+    addNote(scenarioId, vessel.id, vessel.name, t)
+    setText('')
+  }
+  return (
+    <Panel code="NOTES" title="메모" desc="현장 연락·특이사항 · 활동 기록에 함께 남습니다">
+      {canWrite && (
+        <div className="vessel-notes-form">
+          <TextArea fill rows={3} value={text} placeholder="예: 대리점 확인 결과 NOR 제출 예정 시각 변동 없음" aria-label="메모 내용"
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }} />
+          <div className="vessel-notes-actions">
+            <span className="tiny faint">Ctrl/⌘ + Enter로 추가</span>
+            <Button size="small" intent="primary" icon="add" disabled={!text.trim()} onClick={submit}>메모 추가</Button>
+          </div>
+        </div>
+      )}
+      {notes.length ? (
+        <ul className="vessel-notes">
+          {notes.map((n) => (
+            <li key={n.id}>
+              <div className="vessel-notes-meta tiny"><b>{n.who}</b><span className="num faint">{n.at}</span>
+                {canWrite && n.who === me && <Button size="small" variant="minimal" icon="trash" aria-label="메모 삭제" onClick={() => removeNote(scenarioId, vessel.id, vessel.name, n.id)} />}
+              </div>
+              <p className="small">{n.text}</p>
+            </li>
+          ))}
+        </ul>
+      ) : <p className="small muted vessel-notes-empty">아직 메모가 없습니다.</p>}
+    </Panel>
+  )
+}
+
+/** 변경 이력: 이 선박의 입력(ETA·계약 조건)이 언제 누구에 의해 어떻게 바뀌었는지. */
+function VesselHistory({ scenarioId, vessel }) {
+  const list = [...historyOf(scenarioId, vessel.id)].reverse()
+  const etaCount = list.filter((h) => h.field === 'eta').length
+  return (
+    <Panel code="HISTORY" title="변경 이력" desc={`도착 예정 변경 ${etaCount}회 · 전체 ${list.length}건`}>
+      {list.length ? (
+        <ol className="vessel-history">
+          {list.map((h) => (
+            <li key={h.id}>
+              <div className="vessel-notes-meta tiny"><b>{h.label}</b><span className="faint">{h.who} · <span className="num">{h.at}</span></span></div>
+              <p className="small"><span className="muted">{h.from}</span> <Icon icon="arrow-right" size={11} className="faint" /> <span className="c-blue strong">{h.to}</span></p>
+            </li>
+          ))}
+        </ol>
+      ) : <p className="small muted vessel-notes-empty">이 시나리오에서 바뀐 입력이 없습니다. 시나리오 입력에서 도착 예정·계약 조건을 고치면 여기에 남습니다.</p>}
+    </Panel>
   )
 }

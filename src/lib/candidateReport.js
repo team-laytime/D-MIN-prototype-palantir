@@ -32,7 +32,7 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
       risks: rs,
       active: rs.filter(ACTIVE),
       schedule: [...sim.placements].sort((a, b) => a.etb - b.etb).map((p) => ({
-        name: vessels[p.vid].name, berth: berth(p.bid).name, eta: vessels[p.vid].eta, etb: p.etb, etu: p.etu, cents: p.dem.cents,
+        vid: p.vid, name: vessels[p.vid].name, berth: berth(p.bid).name, eta: vessels[p.vid].eta, etb: p.etb, etu: p.etu, cents: p.dem.cents,
       })),
     }
   }

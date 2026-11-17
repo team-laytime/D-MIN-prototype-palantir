@@ -1,0 +1,30 @@
+.inbox-page { display: flex; flex-direction: column; gap: 10px; }
+.inbox-grid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; align-items: start; }
+.inbox-channels { margin: 0; padding: 6px 0; list-style: none; }
+.inbox-channel { width: 100%; display: flex; align-items: center; gap: 9px; height: 32px; padding: 0 12px; border: 0; background: none; color: var(--fg-2); font-size: 13px; text-align: left; cursor: pointer; }
+.inbox-channel:hover { background: var(--bg-3); color: var(--fg); }
+.inbox-channel.on { background: var(--accent-wash); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
+.inbox-channel.on .bp6-icon { color: var(--accent); }
+.inbox-count { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--line-2); font-size: 10.5px; text-align: center; color: var(--fg); }
+
+.inbox-list { margin: 0; padding: 0; list-style: none; }
+.inbox-item { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.inbox-item:last-child { border-bottom: 0; }
+.inbox-item:hover { background: var(--bg-3); }
+.inbox-dot { margin-top: 5px; }
+.inbox-head { display: flex; align-items: center; gap: 8px; }
+.inbox-head .chip { font-family: var(--sans); }
+.inbox-main p { margin-top: 3px; line-height: 1.55; }
+.inbox-actions { display: flex; align-items: center; gap: 4px; }
+.inbox-empty { padding: 48px 0; }
+
+/* 활동 기록 */
+.act-prose { font-family: var(--sans); font-size: 14px; }
+.act-search { width: 220px; }
+.act-kinds { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.act-kind { height: 24px; padding: 0 10px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-size: 12px; cursor: pointer; }
+.act-kind:hover { border-color: var(--line-3); color: var(--fg); }
+.act-kind.on { border-color: var(--accent); background: var(--accent-wash); color: var(--fg); }
+.act-table .chip { font-family: var(--sans); }
+.act-time { white-space: nowrap; }
+.act-detail { max-width: 520px; line-height: 1.5; }

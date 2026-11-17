@@ -66,6 +66,14 @@ export const TOUR = [
     body: '손계산 정답과의 일치 건수, 시나리오별 절감액, 제약 위반 수입니다.',
   },
   {
+    section: '알림함', tab: 'inbox', target: '[data-tour="inbox-list"]', title: '알림함',
+    body: '기상 예보·도착 예정 변경, 체선 예상, 미확인 리스크, 확정·취소가 한곳에 모입니다. 「열기」로 해당 화면이나 선박 카드로 가고, 처리 완료·보관으로 정리합니다.',
+  },
+  {
+    section: '검증', tab: 'activity', target: '[data-tour="activity-log"]', title: '활동 기록',
+    body: '입력 수정, 후보 선택, 판단근거, 리스크 확인, 확정·취소, 보고서·메일 작업을 누가 언제 했는지 남깁니다. 기록은 추가만 되고 CSV로 내보낼 수 있습니다.',
+  },
+  {
     section: '끝', tab: 'home', target: '[data-tour="help-btn"]', title: '다시 보기',
     body: '오른쪽 위 「사용법」에서 이 안내를 다시 열 수 있습니다.',
   },

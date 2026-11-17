@@ -181,6 +181,7 @@ input, textarea, select, button { font-family: inherit; }
 .chip.red { border-color: rgba(242, 85, 93, 0.55); color: var(--red); }
 .chip.green { border-color: rgba(60, 207, 145, 0.5); color: var(--green); }
 .chip.violet { border-color: rgba(165, 148, 255, 0.5); color: var(--violet); }
+.chip.blue { border-color: rgba(106, 162, 255, 0.5); color: var(--blue); }
 
 /* 화면 머리: 경로 + 제목 + 단계 + 동작 */
 .screen { height: 100%; display: flex; flex-direction: column; min-height: 0; }

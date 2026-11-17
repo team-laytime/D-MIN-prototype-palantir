@@ -1,8 +1,9 @@
 // 화면 전체가 공유하는 상태 한 곳. 화면 컴포넌트는 props 대신 useApp()으로 읽는다.
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { SCENARIOS } from '../lib/scenarios.js'
 import { runSearch } from '../lib/engine.js'
-import { ROLES, activePlan, canUse, groupOf, resetWorkspace, setRole, useWorkspace, ws } from '../lib/workspace.js'
+import { diffScen } from '../lib/scenDiff.js'
+import { ROLES, activePlan, canUse, groupOf, logActivity, recordChange, resetWorkspace, setRole, useWorkspace, ws } from '../lib/workspace.js'
 import { TOUR } from '../tour.js'
 
 const Ctx = createContext(null)
@@ -13,20 +14,27 @@ export function AppProvider({ children }) {
   const wsRev = useWorkspace()
 
   // 시나리오: 편집은 editScen(draft => { ... })로 복사본을 고쳐 통째로 바꾼다. 바뀔 때마다 version이 오른다.
+  // 바뀐 칸은 diffScen으로 뽑아 변경 이력·활동 기록에 남긴다(같은 렌더 안의 연속 편집도 놓치지 않게 ref로 최신 값을 든다).
   const [scenarioId, setScenarioIdRaw] = useState('S1')
   const [scenState, setScenState] = useState(() => ({ scen: SCENARIOS.S1(), version: 1 }))
+  const scenRef = useRef(scenState)
+  const scenarioIdRef = useRef(scenarioId)
   const { scen, version } = scenState
+  const replaceScen = useCallback((next) => { scenRef.current = next; setScenState(next) }, [])
   const setScenarioId = useCallback((id) => {
+    if (id === scenarioIdRef.current) return
+    logActivity('시나리오', '시나리오 전환', id, `${scenarioIdRef.current} → ${id}`)
+    scenarioIdRef.current = id
     setScenarioIdRaw(id)
-    setScenState((s) => ({ scen: SCENARIOS[id](), version: s.version + 1 }))
-  }, [])
+    replaceScen({ scen: SCENARIOS[id](), version: scenRef.current.version + 1 })
+  }, [replaceScen])
   const editScen = useCallback((fn) => {
-    setScenState((s) => {
-      const draft = structuredClone(s.scen)
-      fn(draft)
-      return { scen: draft, version: s.version + 1 }
-    })
-  }, [])
+    const prev = scenRef.current
+    const draft = structuredClone(prev.scen)
+    fn(draft)
+    replaceScen({ scen: draft, version: prev.version + 1 })
+    for (const change of diffScen(prev.scen, draft)) recordChange(scenarioIdRef.current, change)
+  }, [replaceScen])
 
   // 6척 × 720 순서 × 8 배정 = 5,760안 전수 탐색. 시나리오가 바뀔 때만 다시 돈다.
   const result = useMemo(() => runSearch(scen), [scen])
@@ -96,13 +104,13 @@ export function AppProvider({ children }) {
     resetWorkspace()
     setChecks({})
     setReportDraftRaw(EMPTY_DRAFT)
-    setScenState((s) => ({ scen: SCENARIOS[scenarioId](), version: s.version + 1 }))
+    replaceScen({ scen: SCENARIOS[scenarioIdRef.current](), version: scenRef.current.version + 1 })
     setDrawer(null)
     setTourIdx(null)
     setFocusId('A')
     setResetKey((k) => k + 1)
     setTab('home')
-  }, [scenarioId])
+  }, [replaceScen])
 
   const value = {
     wsRev, role, isScheduler, login, logout, resetDemo, resetKey,

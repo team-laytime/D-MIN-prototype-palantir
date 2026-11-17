@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnchorButton, Button, Callout, FormGroup, InputGroup, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { downloadMarkdown, reportFileName, useReport } from '../state/useReport.js'
+import { logActivity } from '../lib/workspace.js'
 import { money } from '../lib/time.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import './report.css'
@@ -19,7 +20,10 @@ export default function Mail() {
   const edited = edits.subject !== undefined || edits.body !== undefined
   const stale = edited && (subject !== mail.subject || body !== mail.body)
   const setField = (k, v) => setReportDraft({ mail: { ...edits, [k]: v } })
-  const regenerate = () => setReportDraft({ mail: { to: edits.to, cc: edits.cc } })
+  const regenerate = () => {
+    setReportDraft({ mail: { to: edits.to, cc: edits.cc } })
+    logActivity('메일', '메일 초안 다시 만들기', model.sel.label)
+  }
 
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState('')
@@ -31,6 +35,7 @@ export default function Mail() {
       await navigator.clipboard.writeText(`제목: ${subject}\n\n${body}`)
       window.clearTimeout(timer.current)
       setCopied(true)
+      logActivity('메일', '메일 복사', subject)
       timer.current = window.setTimeout(() => setCopied(false), 1500)
     } catch {
       setCopied(false)
@@ -67,7 +72,7 @@ export default function Mail() {
           <p className="rpt-sub tiny">첨부</p>
           <div className="mail-attach">
             <span className="small">{reportFileName(sel.id)}</span>
-            <Button size="small" variant="minimal" icon="download" aria-label="첨부 보고서 내려받기" onClick={() => downloadMarkdown(md, sel.id)} />
+            <Button size="small" variant="minimal" icon="download" aria-label="첨부 보고서 내려받기" onClick={() => { downloadMarkdown(md, sel.id); logActivity('보고서', '보고서 내려받기', sel.label, '메일 첨부용 .md') }} />
           </div>
           <p className="tiny muted">메일 앱으로 넘길 때 첨부는 따라가지 않습니다. 내려받아 직접 붙여 주십시오.</p>
         </Panel>
@@ -76,7 +81,7 @@ export default function Mail() {
           <div className="rpt-tools">
             <Button size="small" icon="refresh" disabled={!edited} onClick={regenerate}>초안 다시 만들기</Button>
             <Button size="small" icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
-            <AnchorButton size="small" intent="primary" icon="send-message" href={mailto}>메일 앱에서 열기</AnchorButton>
+            <AnchorButton size="small" intent="primary" icon="send-message" href={mailto} onClick={() => logActivity('메일', '메일 앱에서 열기', subject, to ? `받는 사람: ${to}` : '받는 사람 미입력')}>메일 앱에서 열기</AnchorButton>
           </div>
         } pad>
           {stale && (

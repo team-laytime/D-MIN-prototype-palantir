@@ -89,3 +89,25 @@
 .rpt-common p { line-height: 1.6; }
 .rpt-common .muted { margin-right: 6px; }
 .rpt-basis h2 { font-size: 12px; color: var(--fg-2); }
+
+/* 문서 속 선박 이름 → 선박 카드 */
+.rpt-obj { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 3px; cursor: pointer; }
+.rpt-obj:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+/* PDF(인쇄): 화면 대신 body 바로 아래의 인쇄용 사본(#print-root)만 흰 종이에 찍는다. 테마와 상관없이 라이트 값. */
+.rpt-print-root { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  :root, :root[data-theme='light'] {
+    --bg-1: #fff; --bg-2: #fff; --bg-3: #f3f5f7; --line: #dfe4e9; --line-2: #c9d1d9; --line-3: #8f9cab;
+    --fg: #111; --fg-2: #3d4a59; --fg-3: #5d6b7b; --accent: #0b7489; --accent-wash: rgba(11, 116, 137, 0.08);
+    --green: #0f7f50; --red: #c42b36; --amber: #a85f00; --violet: #5b45c7; --blue: #1f5fc4;
+  }
+  html, body, .bp6-dark { height: auto; background: #fff !important; min-width: 0; color: var(--fg); }
+  body > :not(#print-root) { display: none !important; }
+  .rpt-print-root { display: block; }
+  .rpt-print-root .rpt-doc { padding: 0; font-size: 11.5px; }
+  .rpt-print-root .rpt-doc section { break-inside: avoid-page; }
+  .rpt-print-root .rpt-cand { break-inside: avoid; }
+  .rpt-print-root .rpt-obj { text-decoration: none; cursor: default; }
+}

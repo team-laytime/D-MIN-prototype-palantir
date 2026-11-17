@@ -3,7 +3,7 @@ import { Button, Callout, Checkbox, SegmentedControl, TextArea } from '@blueprin
 import { useApp } from '../state/app.jsx'
 import { risks, sensitivity } from '../lib/engine.js'
 import { money } from '../lib/time.js'
-import { activePlan, cancelPlan, fixPlan, useWorkspace, ws } from '../lib/workspace.js'
+import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
 import { Panel, Screen, Stats, St, riskTone } from '../ui/kit.jsx'
 import './decide.css'
 
@@ -79,7 +79,11 @@ export default function Risk() {
                     <Checkbox
                       className="risk-checkbox" label="확인" aria-label={`${r.label} 확인`}
                       checked={Boolean(checks[checkKey(r.key)])} disabled={!isScheduler}
-                      onChange={(event) => setCheck(checkKey(r.key), event.currentTarget.checked)}
+                      onChange={(event) => {
+                        const on = event.currentTarget.checked
+                        setCheck(checkKey(r.key), on)
+                        logActivity('리스크', on ? '리스크 확인' : '확인 해제', `${cand.label} · ${r.label}`, r.state)
+                      }}
                     />
                   ) : <span />}
                 </article>

@@ -1,17 +1,18 @@
 // 보고서 생성: 후보안 선택 → 숙련자 판단근거 작성 → 확정. 왼쪽에서 고르고 쓰면 오른쪽 미리보기에 보고서가 만들어진다.
 // 메일은 왼쪽 메뉴의 「메일 작성」 화면이 같은 초안으로 따로 다룬다.
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button, Callout, SegmentedControl, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { downloadMarkdown, useReport } from '../state/useReport.js'
-import { fixPlan } from '../lib/workspace.js'
+import { fixPlan, logActivity } from '../lib/workspace.js'
 import { fmt, fmtDur, money } from '../lib/time.js'
 import { Panel, Screen, St, Stats, riskTone } from '../ui/kit.jsx'
 import { TotalChart, VesselChart } from './ReportCharts.jsx'
 import './report.css'
 
 export default function Report() {
-  const { result, scen, setFocusId, version, isScheduler, checks, go, setReportDraft } = useApp()
+  const { result, scen, setFocusId, version, isScheduler, checks, go, setReportDraft, openVessel } = useApp()
   const { model, md, check, plan, shownPlan, selId, judgment } = useReport()
   const [view, setView] = useState('doc')
   const [copied, setCopied] = useState(false)
@@ -20,7 +21,19 @@ export default function Report() {
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
   const sel = model.sel
-  const choose = (id) => { setReportDraft({ selId: id }); setFocusId(id) }
+  const choose = (id) => {
+    if (id === selId) return
+    setReportDraft({ selId: id })
+    setFocusId(id)
+    logActivity('보고서', '후보 선택', model.items.find((it) => it.id === id)?.label ?? id)
+  }
+  // 판단근거는 입력이 끝났을 때(포커스가 빠질 때) 바뀐 경우만 한 번 기록한다.
+  const loggedJudgment = useRef(judgment)
+  const logJudgment = () => {
+    if (judgment === loggedJudgment.current) return
+    loggedJudgment.current = judgment
+    logActivity('보고서', '판단근거 수정', sel.label, judgment.length > 60 ? `${judgment.slice(0, 60)}…` : judgment)
+  }
   const unchecked = sel.active.filter((r) => !checks[`${version}:${sel.id}:${r.key}`])
   const canFix = isScheduler && model.judgment.length > 0 && !shownPlan
 
@@ -30,6 +43,7 @@ export default function Report() {
       await navigator.clipboard.writeText(md)
       window.clearTimeout(timer.current)
       setCopied(true)
+      logActivity('보고서', '보고서 복사', sel.label)
       timer.current = window.setTimeout(() => setCopied(false), 1500)
     } catch {
       setCopied(false)
@@ -40,6 +54,15 @@ export default function Report() {
     const cand = result.candidates.find((c) => c.id === selId)
     fixPlan({ cand, scen, version, reason: model.judgment, uncheckedRisks: unchecked.map((r) => r.label) })
     setFocusId(selId)
+  }
+  function exportPdf() {
+    logActivity('보고서', 'PDF 내보내기', sel.label)
+    // 인쇄용 사본(#print-root)만 남기고 찍는다. 브라우저의 'PDF로 저장'을 고르면 PDF가 된다.
+    window.print()
+  }
+  function download() {
+    downloadMarkdown(md, sel.id)
+    logActivity('보고서', '보고서 내려받기', sel.label, '.md')
   }
 
   return (
@@ -85,6 +108,7 @@ export default function Report() {
           <TextArea
             className="rpt-judgment" fill rows={7} value={judgment} disabled={!isScheduler}
             onChange={(e) => setReportDraft({ judgment: e.target.value })}
+            onBlur={logJudgment}
             placeholder="예: 후보 A는 B·C보다 체선료가 가장 적고 남은 리스크 수는 같아 비용 차이로 결정했습니다. 야간 접안은 도선·계류 인력을 미리 배치합니다."
             aria-label="숙련자 판단근거"
           />
@@ -123,17 +147,24 @@ export default function Report() {
           <SegmentedControl size="small" aria-label="보기 방식" value={view} onValueChange={setView}
             options={[{ value: 'doc', label: '문서' }, { value: 'raw', label: '마크다운' }]} />
           <Button size="small" icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
-          <Button size="small" icon="download" onClick={() => downloadMarkdown(md, sel.id)}>내려받기 (.md)</Button>
+          <Button size="small" icon="download" onClick={download}>내려받기 (.md)</Button>
+          <Button size="small" icon="print" onClick={exportPdf}>PDF</Button>
         </div>
       }>
-        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} />}
+        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} onVessel={(simId, vid) => openVessel(simId, vid)} />}
         </Panel>
       </div>
+      {createPortal(<div id="print-root" className="rpt-print-root"><ReportDoc m={model} onVessel={() => {}} /></div>, document.body)}
     </Screen>
   )
 }
 
-function ReportDoc({ m }) {
+// 문서 속 선박 이름은 원본(선박 카드)으로 이어진다.
+function VesselLink({ simId, vid, name, onVessel }) {
+  return <button type="button" className="rpt-obj" title="선박 카드 열기" onClick={() => onVessel(simId, vid)}>{name}</button>
+}
+
+function ReportDoc({ m, onVessel }) {
   const series = [{ id: 'FCFS', label: '기준안' }, ...m.items.map((it) => ({ id: it.id, label: it.label }))]
   return (
     <article className="rpt-doc">
@@ -200,7 +231,7 @@ function ReportDoc({ m }) {
               {it.demVessels.length ? (
                 <ul className="rpt-list small">
                   {it.demVessels.map((d) => (
-                    <li key={d.vid}><span>{d.name} <span className="muted">· {d.berth} · 초과 {fmtDur(d.excessMin)}</span></span><span className="num c-red">{money(d.cents)}</span></li>
+                    <li key={d.vid}><span><VesselLink simId={it.id} vid={d.vid} name={d.name} onVessel={onVessel} /> <span className="muted">· {d.berth} · 초과 {fmtDur(d.excessMin)}</span></span><span className="num c-red">{money(d.cents)}</span></li>
                   ))}
                 </ul>
               ) : <p className="small muted">없음</p>}
@@ -253,7 +284,7 @@ function ReportDoc({ m }) {
           <thead><tr><th>선박</th><th>부두</th><th>도착</th><th>접안</th><th>작업 종료</th><th className="r">예상 체선료</th></tr></thead>
           <tbody>
             {m.sel.schedule.map((s) => (
-              <tr key={s.name}><td className="strong">{s.name}</td><td>{s.berth}</td><td className="num">{fmt(s.eta)}</td><td className="num">{fmt(s.etb)}</td><td className="num">{fmt(s.etu)}</td><td className={`r num ${s.cents ? 'c-red' : ''}`}>{money(s.cents)}</td></tr>
+              <tr key={s.vid}><td className="strong"><VesselLink simId={m.sel.id} vid={s.vid} name={s.name} onVessel={onVessel} /></td><td>{s.berth}</td><td className="num">{fmt(s.eta)}</td><td className="num">{fmt(s.etb)}</td><td className="num">{fmt(s.etu)}</td><td className={`r num ${s.cents ? 'c-red' : ''}`}>{money(s.cents)}</td></tr>
             ))}
           </tbody>
         </table>
