@@ -5,9 +5,10 @@ import 'leaflet/dist/leaflet.css'
 import { useApp } from '../state/app.jsx'
 import { Panel, St } from '../ui/kit.jsx'
 import { stateAt } from '../lib/engine.js'
-import { BERTH_TEAMS, MAP_CONTEXT } from '../lib/scenarios.js'
+import { MAP_CONTEXT } from '../lib/scenarios.js'
 import { NAV, anchorageFor, positionOf } from '../lib/vesselState.js'
 import { NOW, fmt, fmtDur } from '../lib/time.js'
+import SchedulePanel from './SchedulePanel.jsx'
 import './home.css'
 
 // 11-20 피드백: 현재 시각을 시간축 맨 왼쪽에 두고, 72시간 안의 ETA로 세운 계획을 120시간까지 돌려 본다.
@@ -41,9 +42,16 @@ export default function Home() {
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState(null)
   const [berthSel, setBerthSelRaw] = useState(null)
-  // 11-23 3차 피드백: 사이드 픽. 기본은 전체 지도, 오른쪽 손잡이를 누르면 스케줄 현황, 부두를 누르면 그 부두 탭.
-  const [side, setSide] = useState(null) // null | 'schedule' | 'berth'
-  const setBerthSel = (id) => { setBerthSelRaw(id); setSide(id ? 'berth' : null) }
+  // 11-23 사이드 픽(OFFLIGHT 방식): 기본은 전체 지도. 머리의 패널 버튼(또는 ] 키)으로 오른쪽 패널이 지도를 밀어내며 열리고,
+  // 지도에서 부두를 누르면 패널이 그 부두 탭으로 열린다.
+  const [sideOpen, setSideOpen] = useState(false)
+  const [sideTab, setSideTab] = useState('all')
+  const setBerthSel = (id) => { setBerthSelRaw(id); if (id) { setSideTab(id); setSideOpen(true) } }
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === ']' && !e.metaKey && !e.ctrlKey && !/input|textarea|select/i.test(e.target.tagName)) setSideOpen((o) => !o) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   const mapElement = useRef(null)
   const mapRef = useRef(null)
   const markerLayer = useRef(null)
@@ -190,9 +198,15 @@ export default function Home() {
       L.polyline([from, [35.452, 129.418], berth.moor], { color: state.phase === 'waiting' ? '#c98a1f' : '#0b7489', weight: 2, dashArray: '6 5', opacity: selected && selected !== state.v.id ? 0.25 : 0.95, interactive: false }).addTo(routeLayer.current)
       // 같은 정박지에서 출발하는 선박이 많아 이름표는 정박지 옆에 한 줄씩 쌓는다.
       const k = (labelRow[state.phase] = (labelRow[state.phase] ?? -1) + 1)
-      L.marker(state.phase === 'waiting' ? [35.4098, 129.478] : [35.40, 129.49], { interactive: false, keyboard: false, icon: L.divIcon({ className: 'home-map-label-wrap', html: `<span class="home-route-label" style="top:${k * 20}px">${state.phase === 'waiting' ? '대기' : '입항'} ${escapeHtml(state.v.name)} → ${escapeHtml(berth.code)} <b>${fmt(state.p.etb)}</b> 접안</span>`, iconSize: [0, 0] }) }).addTo(routeLayer.current)
+      L.marker(state.phase === 'waiting' ? [35.4185, 129.428] : [35.3985, 129.428], { interactive: false, keyboard: false, icon: L.divIcon({ className: 'home-map-label-wrap', html: `<span class="home-route-label" style="top:${k * 20}px">${state.phase === 'waiting' ? '대기' : '입항'} ${escapeHtml(state.v.name)} → ${escapeHtml(berth.code)} <b>${fmt(state.p.etb)}</b> 접안</span>`, iconSize: [0, 0] }) }).addTo(routeLayer.current)
     }
   }, [plan, scen, states, selected, t, openVessel, berthSel, fixed]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 사이드 패널을 여닫으면 지도 폭이 바뀌므로 다시 맞춘다(경로 이름표가 잘리지 않게).
+  useEffect(() => {
+    const id = window.setTimeout(() => { mapRef.current?.invalidateSize({ pan: false }); mapRef.current?.fitBounds(MAP_BOUNDS, { padding: [24, 24] }) }, 320)
+    return () => window.clearTimeout(id)
+  }, [sideOpen])
 
   const openCard = (vid) => { setSelected(vid); openVessel(plan.id, vid, { at: t }) }
   const step = (minutes) => { setPlaying(false); setT((now) => Math.max(START, Math.min(end, now + minutes))) }
@@ -209,20 +223,14 @@ export default function Home() {
     return `${fmt(state.p.etu)} 작업 종료`
   }
 
-  const bSel = scen.berths.find((b) => b.id === berthSel) ?? null
-  const bSelSt = bSel && berthStatus(bSel)
-  const bTeam = bSel && BERTH_TEAMS[bSel.id]
   const vName = (vid) => scen.vessels.find((v) => v.id === vid).name
 
   return (
     <div className="home-console">
-      <div className={`home-main ${side ? '' : 'map-only'}`}>
-        <Panel code="PORT-COP" title="접안 현황" desc={`울산항 · ${fixed ? `${current.status} 일정` : `확정 전 · ${plan.label} 기준 예상`}`} className="home-map-panel" bodyClass="home-map-body" actions={<Button variant="minimal" size="small" icon="zoom-to-fit" aria-label="지도 전체 보기" title="지도 전체 보기" onClick={() => mapRef.current?.fitBounds(MAP_BOUNDS, { padding: [24, 24] })} />}>
+      <div className={`home-main v4 ${sideOpen ? 'side-open' : ''}`}>
+        <Panel code="PORT-COP" title="접안 현황" desc={`울산항 · ${fixed ? `${current.status} 일정` : `확정 전 · ${plan.label} 기준 예상`}`} className="home-map-panel" bodyClass="home-map-body" actions={<><Button variant="minimal" size="small" icon="zoom-to-fit" aria-label="지도 전체 보기" title="지도 전체 보기" onClick={() => mapRef.current?.fitBounds(MAP_BOUNDS, { padding: [24, 24] })} /><Button className={`home-side-toggle ${sideOpen ? 'on' : ''}`} variant={sideOpen ? 'outlined' : 'minimal'} size="small" icon={sideOpen ? 'drawer-right-filled' : 'drawer-right'} text="스케줄 현황" title="스케줄 현황 패널 ( ] )" aria-expanded={sideOpen} onClick={() => setSideOpen(!sideOpen)} /></>}>
           <div className="home-map-stage">
             <div ref={mapElement} className="home-map" role="region" aria-label="울산항 선박 위치 지도" />
-            <button type="button" className={`home-side-handle ${side ? 'open' : ''}`} onClick={() => setSide(side ? null : 'schedule')} aria-expanded={!!side}>
-              <Icon icon={side ? 'chevron-right' : 'chevron-left'} size={14} /><span>스케줄 현황</span>
-            </button>
             <div className="home-map-context">{weather && <span className={`home-wx-chip ${weatherNow ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />{weather.label} · <span className="num">{fmt(weather.start)}~{fmt(weather.end).slice(6)}</span> 접안 금지{weatherNow ? ' · 발효 중' : ''}</span>}<span className="home-plan-chip">{fixed ? `${current.status} 스케줄대로 이동 중 · 점선 = 예정 경로` : '확정된 스케줄 없음 · 경로는 확정 뒤 표시'}</span>{isNight && <span className="home-night"><Icon icon="moon" size={12} />야간 · 6만 DWT 이상 접안 불가</span>}</div>
             {coming.length > 0 && <div className="home-coming">
               <header>입항 예정 <span>항해 중 · 제원 보기</span></header>
@@ -257,61 +265,8 @@ export default function Home() {
           </div>
         </Panel>
 
-        {side && <aside className="home-sidebar one">
-          <nav className="home-side-tabs" aria-label="사이드 보기">
-            <button type="button" className={side === 'schedule' ? 'on' : ''} onClick={() => setSide('schedule')}>전체 스케줄</button>
-            <button type="button" className={side === 'berth' ? 'on' : ''} disabled={!bSel} onClick={() => setSide('berth')}>{bSel ? `${bSel.name} 상세` : '부두 상세 (지도에서 부두 누름)'}</button>
-          </nav>
-          {side === 'berth' && bSel ? <Panel code="BERTH-DETAIL" title={`${bSel.name}`} className="home-bdetail-panel" actions={<><span className={`home-map-berth st-${bSelSt.key}`}>{bSelSt.text}</span><Button variant="minimal" size="small" icon="cross" aria-label="닫기" onClick={() => setSide(null)} /></>}>
-            <nav className="home-bdetail-tabs" aria-label="부두 선택">{scen.berths.map((b) => <button type="button" key={b.id} className={b.id === bSel.id ? 'on' : ''} onClick={() => setBerthSel(b.id)}><i className={`home-dot st-${berthStatus(b).key}`} />{b.name}</button>)}</nav>
-            <div className="home-bdetail v3">
-              <div className="home-bdetail-now">
-                {bSelSt.occupant ? <>
-                  <span className="tiny muted">지금 작업 중</span>
-                  <button type="button" className="home-bdetail-ship" onClick={() => openCard(bSelSt.occupant.v.id)}>{bSelSt.occupant.v.name}</button>
-                  <span className="small">{bSelSt.occupant.v.product} {bSelSt.occupant.v.dir} · <span className="num">{bSelSt.occupant.v.ton.toLocaleString()}t</span></span>
-                  <div className="home-bdetail-bar"><i style={{ width: `${Math.round(bSelSt.occupant.progress * 100)}%` }} /></div>
-                  <span className="small"><b className="num">{Math.round(bSelSt.occupant.progress * 100)}%</b> · 작업 종료 <span className="num">{fmt(bSelSt.occupant.p.etu)}</span> ({fmtDur(bSelSt.occupant.p.etu - t)} 남음)</span>
-                </> : bSel.occupiedUntil !== null && t < bSel.occupiedUntil ? <>
-                  <span className="tiny muted">기존 접안선</span><b>{bSel.occupiedBy}</b><span className="small">이안 예정 <span className="num">{fmt(bSel.occupiedUntil)}</span></span>
-                </> : <span className="small muted">지금 접안한 선박이 없습니다.</span>}
-              </div>
-              <dl className="home-bdetail-kv small">
-                <dt>담당</dt><dd>{bTeam.team} · {bTeam.lead} · <span className="num">{bTeam.tel}</span></dd>
-                <dt>제원</dt><dd><span className="num">{bSel.maxDwt.toLocaleString()}</span> DWT · 흘수 <span className="num">{bSel.maxDraft}</span>m{bSel.tideLimited ? ' · 조석 제한' : ''} · {bSel.products.join(', ')}</dd>
-                <dt>설비</dt><dd>{bSel.facility.maintenance ? <>{bSel.facility.maintenance.label} <span className="num">{fmt(bSel.facility.maintenance.start)}~{fmt(bSel.facility.maintenance.end).slice(6)}</span></> : bSel.facility.known ? '점검 일정 없음' : <span className="c-violet">점검 일정 미입력</span>}</dd>
-              </dl>
-            </div>
-            <table className="dt home-bdetail-queue v3">
-              <thead><tr><th>이 부두 선박</th><th>상태</th><th>접안</th><th>작업 종료</th></tr></thead>
-              <tbody>{plan.placements.filter((p) => p.bid === bSel.id).sort((a, b) => a.etb - b.etb).map((p) => {
-                const st = states.find((x) => x.v.id === p.vid)
-                return <tr key={p.vid} className={`click ${st.phase === 'left' ? 'faint' : ''}`} onClick={() => openCard(p.vid)}><td className="strong">{vName(p.vid)}</td><td><St tone={PHASE[st.phase].tone}>{PHASE[st.phase].text}</St></td><td className="num">{fmt(p.etb)}</td><td className="num">{fmt(p.etu)}</td></tr>
-              })}</tbody>
-            </table>
-          </Panel> : (
-            <Panel code="SCHEDULE" title="스케줄 현황" desc={fixed ? `${current.status} · ${current.label}` : '확정 전'} className="home-bdetail-panel" actions={<Button variant="minimal" size="small" icon="cross" aria-label="닫기" onClick={() => setSide(null)} />}>
-              {fixed ? <>
-                <div className="home-sched-gantt">
-                  {scen.berths.map((b) => <div key={b.id} className="home-sched-row"><span className="home-sched-name">{b.code}</span><div className="home-sched-track">
-                    {plan.placements.filter((p) => p.bid === b.id && p.etu > NOW && p.etb < NOW + 72 * 60).map((p) => <span key={p.vid} className="home-sched-bar" style={{ left: `${Math.max(0, (p.etb - NOW) / (72 * 60)) * 100}%`, width: `${(Math.min(p.etu, NOW + 72 * 60) - Math.max(p.etb, NOW)) / (72 * 60) * 100}%` }} title={`${vName(p.vid)} ${fmt(p.etb)}~${fmt(p.etu)}`}>{vName(p.vid)}</span>)}
-                    <i className="home-sched-now" style={{ left: `${(t - NOW) / (72 * 60) * 100}%` }} />
-                  </div></div>)}
-                  <div className="home-sched-axis"><span>지금</span><span>+24h</span><span>+48h</span><span>+72h</span></div>
-                </div>
-                <table className="dt home-bdetail-queue v3">
-                  <thead><tr><th>선박</th><th>부두</th><th>상태</th><th>접안</th><th>작업 종료</th></tr></thead>
-                  <tbody>{[...plan.placements].sort((a, b) => a.etb - b.etb).map((p) => { const st = states.find((x) => x.v.id === p.vid); return <tr key={p.vid} className="click" onClick={() => openCard(p.vid)}><td className="strong">{vName(p.vid)}</td><td>{scen.berths.find((b) => b.id === p.bid).code}</td><td><St tone={PHASE[st.phase].tone}>{PHASE[st.phase].text}</St></td><td className="num">{fmt(p.etb)}</td><td className="num">{fmt(p.etu)}</td></tr> })}</tbody>
-                </table>
-                <p className="tiny muted home-side-note">[제안] 우측 전체 스케줄은 팀 토의 중인 안입니다.</p>
-              </> : <div className="home-side-empty">
-                <p className="strong">확정된 스케줄이 없습니다.</p>
-                <p className="small muted">지도는 지금 위치만 보여 줍니다. 「후보 비교·확정」에서 안을 확정하면 선박별 예정 경로와 스케줄이 여기에 나옵니다.</p>
-                <Button intent="primary" icon="comparison" onClick={() => go('compare')}>후보 비교·확정으로</Button>
-              </div>}
-            </Panel>
-          )}
-        </aside>}
+        <SchedulePanel open={sideOpen} tab={sideTab} setTab={setSideTab} onClose={() => setSideOpen(false)} fixed={fixed} current={current} plan={plan} scen={scen} states={states} t={t}
+          berthStatus={berthStatus} onOpenVessel={openCard} onPickBerth={(id) => { setBerthSelRaw(id); setSideTab(id) }} go={go} />
       </div>
 
     </div>
