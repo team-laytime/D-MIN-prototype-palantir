@@ -27,7 +27,7 @@ export function TotalChart({ rows, selId }) {
 }
 
 /** 선박별 예상 체선료 묶음 막대. rows = [{name, values:[{id, cents}]}], series = [{id, label}] */
-export function VesselChart({ rows, series, selId }) {
+export function VesselChart({ rows, series, selId, reasons }) {
   const max = Math.max(...rows.flatMap((r) => r.values.map((v) => v.cents)), 1)
   const W = 640, H = 180, top = 22, bottom = 34, left = 8
   const plotH = H - top - bottom
@@ -56,6 +56,11 @@ export function VesselChart({ rows, series, selId }) {
           )
         })}
       </svg>
+      {reasons && (
+        <div className="rpt-reasons" style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }} aria-label="선박별 차이의 이유">
+          {rows.map((r) => <p key={r.name} className={reasons[r.name] ? '' : 'faint'}>{reasons[r.name] ?? '기준안과 같음'}</p>)}
+        </div>
+      )}
       <figcaption className="rpt-legend">
         {series.map((s) => (
           <span key={s.id}><i style={{ background: tone(s.id, selId) }} />{s.label}</span>

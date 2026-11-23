@@ -84,7 +84,7 @@ export default function VesselDrawer() {
     <Drawer
       isOpen position="right" size="460px" onClose={closeDrawer}
       className={`${dark} vessel-drawer`} portalClassName="vessel-drawer-portal"
-      hasBackdrop={!tourActive} autoFocus={!tourActive} enforceFocus={!tourActive}
+      hasBackdrop={false} autoFocus={!tourActive} enforceFocus={!tourActive}
       canEscapeKeyClose={!tourActive} canOutsideClickClose={!tourActive}
     >
       <section className="vessel-drawer-root" data-tour="drawer" data-mode={view} role="dialog" aria-modal={!tourActive} aria-labelledby="vessel-drawer-title">
@@ -104,32 +104,18 @@ export default function VesselDrawer() {
 
         <div className="vessel-drawer-scroll" ref={scrollRef}>
           {view === 'card' ? <>
-            <div className="vessel-drawer-position">
-              <div><span>{live ? '현재 위치' : '계획 위치'}</span><b>위치 : {where}</b><small>ETA : <span className="num">{yearTime(v.eta)}</span></small></div>
-              <div><span>접안 계획 · {sim.label}</span><b>{berth.name} 접안</b><small>ETB : <span className="num">{yearTime(p.etb)}</span></small></div>
+            {/* 11-20 피드백: 다 읽지 않아도 되게 핵심 네 줄을 맨 위에, 나머지는 접어 둔다. */}
+            <div className="vd-key">
+              <div className="vd-key-row"><span>상태</span><b>{live ? <St tone={phaseTone[liveState.phase]}>{nav.label}</St> : '계획'} <span className="vd-key-sub">{where}</span></b></div>
+              <div className="vd-key-row"><span>접안</span><b>{berth.name} · <span className="num">{fmt(p.etb)}</span>{live && p.etb > t && <span className="vd-key-sub"> ({fmtDur(p.etb - t)} 뒤)</span>}</b></div>
+              <div className="vd-key-row"><span>작업 종료</span><b className="num">{fmt(p.etu)}</b></div>
+              {isScheduler && <div className="vd-key-row"><span>예상 체선</span><b className={d.cents > 0 ? 'c-red' : 'c-green'}>{d.cents > 0 ? <>{fmtDur(d.excessMin)} · <span className="num">{money(d.cents)}</span></> : '없음 (허용 시간 안)'}</b>
+                <Button size="small" variant="minimal" endIcon="arrow-right" text="근거" onClick={() => setView('evidence')} /></div>}
             </div>
-            <p className="vessel-drawer-time">{live ? '기준 시각' : '계획 기준'} : <span className="num">2026-{fmt(t).replace('/', '-')}</span>{!live && ' (접안 시점)'}</p>
-            <div className="vessel-drawer-profile">
-              <div className="vessel-drawer-dimensions">
-                <span>톤수 <b className="num">{v.grt.toLocaleString()}t</b></span><span>흘수 <b className="num">{v.draft}m</b></span>
-                <span>길이 <b className="num">{v.loa}m</b></span><span>폭 <b className="num">{v.beam}m</b></span>
-              </div>
-              <svg viewBox="0 0 400 70" height="70" preserveAspectRatio="none" role="img" aria-label="선박 측면 제원 개략도">
-                <path d="M0 59 H400 M0 65 H400" className="vessel-drawer-water" />
-                <path d="M70 30 H318 Q338 33 346 44 Q338 56 318 58 H86 Q72 52 70 44 Z" className="vessel-drawer-hull" />
-                <path d="M74 44 H344 M130 27 H300" className="vessel-drawer-ship-line" />
-                <rect x="84" y="14" width="36" height="16" className="vessel-drawer-cabin" /><path d="M88 20 H116 M92 14 V6 H102 V14" className="vessel-drawer-ship-line" />
-              </svg>
-            </div>
-            <div className="vessel-drawer-alert">
-              <span className={liveState.ticking ? 'c-red strong' : d.cents > 0 ? 'c-amber' : 'muted'}>
-                {liveState.ticking ? <>체선 발생 중 · 누적 <span className="num">{money(liveState.cents)}</span></>
-                  : d.cents > 0 ? <>예상 체선 {fmtDur(d.excessMin)} · <span className="num">{money(d.cents)}</span></>
-                    : '허용 정박시간 안에 작업 종료 예정'}
-              </span>
-              <Button size="small" variant="outlined" text="체선료 산출 근거" onClick={() => setView('evidence')} />
-            </div>
+            {etaDrift && <p className="vd-warn">AIS ETA가 계획보다 {fmtDur(Math.abs(etaGap))} {etaGap > 0 ? '늦음' : '빠름'} · 접안 계획을 다시 계산해야 합니다</p>}
+            <p className="vessel-drawer-time">{live ? '기준 시각' : '계획 기준'} : <span className="num">2026-{fmt(t).replace('/', '-')}</span> · {sim.label}</p>
 
+            <details className="vd-fold" open><summary>선박 정보</summary>
             <Panel code="VESSEL-ID" title="선박 정보">
               <Details rows={[
                 ['국적', v.flag],
@@ -148,6 +134,8 @@ export default function VesselDrawer() {
               ]} />
             </Panel>
 
+            </details>
+            <details className="vd-fold"><summary>항해 · AIS ETA</summary>
             <div className="vessel-drawer-route">
               <div><span>출발지</span><b>{v.prevPort}</b></div>
               <Icon icon="arrow-right" size={18} className="muted" />
@@ -168,6 +156,8 @@ export default function VesselDrawer() {
               ]} />
             </Panel>
 
+            </details>
+            <details className="vd-fold"><summary>선박 제원 · 소유</summary>
             <Panel code="VESSEL-SPEC" title="선박 제원" desc="AIS 정적 정보 · 선박 원부 · 대리점 자료">
               <Details rows={[
                 ['선종', <>{v.type} <span className="muted">· {v.flag} 선적 · <span className="num">{v.built}</span>년 건조 (선령 <span className="num">{2026 - v.built}</span>년)</span></>],
@@ -181,9 +171,15 @@ export default function VesselDrawer() {
                 ['기상 공제', <>{weatherLabel[v.contract.weather]} <span className="muted">(계약 <span className="mono">{v.contract.id}</span>)</span></>],
               ]} />
             </Panel>
+            </details>
             <p className="vessel-drawer-note">선명 · MMSI · IMO · 소유사는 모두 가상입니다. 실제 솔루션에서는 AIS(위치·ETA·길이·폭), 울산항만공사 공공 API(항차·입출항), 대리점 자료(톤수·탱크·소유)에서 채웁니다.</p>
-            <Button fill intent="primary" endIcon="arrow-right" text="체선료 산출 근거 보기" onClick={() => setView('evidence')} />
           </> : view === 'evidence' ? <>
+            <div className="vd-conclusion">
+              <span className="tiny muted">결론</span>
+              <b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{money(d.cents)}</b>
+              <p className="small">허용 <span className="num">{v.contract.laytimeH}</span>시간 중 산입 {fmtDur(d.countedMin)}{d.wxDeduct ? ` (기상 공제 ${fmtDur(d.wxDeduct)})` : ''} → {d.excessMin > 0 ? <>체선 <b>{fmtDur(d.excessMin)}</b> × 일 {rate(d.rateCents)}</> : '허용 시간 안에 작업 종료'}</p>
+              {p.blockers.length > 0 && <p className="small muted">접안이 늦어진 이유: {[...new Set(p.blockers.map((b) => RULES[b.rule].label))].join(', ')}</p>}
+            </div>
             <Panel code="LAYTIME" title="체선료 산출 근거">
               <Details rows={[
                 ['계획', sim.label],
@@ -218,6 +214,7 @@ export default function VesselDrawer() {
                 <p className="muted small">(선박별 센트 단위 한 번 반올림 · <span className="mono">HALF_UP</span>)</p>
               </div>
             </Panel>
+            <details className="vd-fold"><summary>접안 시각 결정 · 기준안 대비 · 계약</summary>
             <Panel code="ETB-RULES" title="접안 시각 결정" pad>
               <ul className="vessel-drawer-why">
                 <li>도착(NOR) <b className="num">{fmt(v.eta)}</b>{p.ready !== null && <> · {berth.name} 앞 선박 <b>{p.prev}</b> 작업 종료 + 전환 2시간 = <b className="num">{fmt(p.ready)}</b></>} → 둘 중 늦은 <b className="num">{fmt(p.from)}</b>부터 접안 가능 여부 판정</li>
@@ -243,6 +240,7 @@ export default function VesselDrawer() {
                 ['계산 기준', '규칙 엔진 · LLM 사용 안 함'],
               ]} />
             </Panel>
+            </details>
           </> : view === 'notes'
             ? <VesselNotes scenarioId={scenarioId} vessel={v} canWrite={isScheduler} />
             : <VesselHistory scenarioId={scenarioId} vessel={v} />}
@@ -253,7 +251,11 @@ export default function VesselDrawer() {
   )
 }
 
-/** 선박 메모: 현장 연락·특이사항을 남긴다. 스케줄러만 쓰고, 자기가 쓴 메모만 지운다. */
+const PEOPLE = ['스케줄러 A', '이용자 B', '대리점 담당', 'SK 3부두 하역 1팀']
+const mentionsOf = (text) => PEOPLE.filter((p) => text.includes(`@${p}`))
+const withMentions = (text) => text.split(new RegExp(`(@(?:${PEOPLE.join('|')}))`)).map((part, i) => (part.startsWith('@') && PEOPLE.includes(part.slice(1)) ? <b key={i} className="vd-mention">{part}</b> : part))
+
+/** 선박 메모: 현장 연락·특이사항. 11-20 피드백 반영: 공유 범위·작성자(역할)·@태그 알림을 보인다. 스케줄러만 쓰고, 자기 메모만 지운다. */
 function VesselNotes({ scenarioId, vessel, canWrite }) {
   const [text, setText] = useState('')
   const me = role()?.name
@@ -264,13 +266,15 @@ function VesselNotes({ scenarioId, vessel, canWrite }) {
     addNote(scenarioId, vessel.id, vessel.name, t)
     setText('')
   }
+  const tag = (p) => setText((x) => `${x}${x && !x.endsWith(' ') ? ' ' : ''}@${p} `)
   return (
-    <Panel code="NOTES" title="메모" desc="현장 연락·특이사항 · 활동 기록에 함께 남습니다">
+    <Panel code="NOTES" title="메모" desc="공유: 이 선박을 보는 스케줄러 전원 · 이용자에게는 안 보임">
       {canWrite && (
         <div className="vessel-notes-form">
-          <TextArea fill rows={3} value={text} placeholder="예: 대리점 확인 결과 NOR 제출 예정 시각 변동 없음" aria-label="메모 내용"
+          <TextArea fill rows={3} value={text} placeholder="예: @대리점 담당 NOR 제출 예정 시각 변동 없음 확인 부탁" aria-label="메모 내용"
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }} />
+          <div className="vd-tags"><span className="tiny muted">태그하면 알림이 갑니다</span>{PEOPLE.map((p) => <button type="button" key={p} onClick={() => tag(p)}>@{p}</button>)}</div>
           <div className="vessel-notes-actions">
             <span className="tiny faint">Ctrl/⌘ + Enter로 추가</span>
             <Button size="small" intent="primary" icon="add" disabled={!text.trim()} onClick={submit}>메모 추가</Button>
@@ -281,10 +285,11 @@ function VesselNotes({ scenarioId, vessel, canWrite }) {
         <ul className="vessel-notes">
           {notes.map((n) => (
             <li key={n.id}>
-              <div className="vessel-notes-meta tiny"><b>{n.who}</b><span className="num faint">{n.at}</span>
+              <div className="vessel-notes-meta tiny"><b>{n.who}</b><span className="faint">선박 스케줄러</span><span className="num faint">{n.at}</span>
                 {canWrite && n.who === me && <Button size="small" variant="minimal" icon="trash" aria-label="메모 삭제" onClick={() => removeNote(scenarioId, vessel.id, vessel.name, n.id)} />}
               </div>
-              <p className="small">{n.text}</p>
+              <p className="small">{withMentions(n.text)}</p>
+              {mentionsOf(n.text).length > 0 && <p className="tiny c-accent">알림 보냄: {mentionsOf(n.text).join(', ')}</p>}
             </li>
           ))}
         </ul>

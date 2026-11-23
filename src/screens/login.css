@@ -16,3 +16,7 @@
 .acct-desc { grid-column: 1; }
 .acct-id { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-size: 12px; color: var(--accent); }
 .login-err { margin-bottom: 12px; }
+.login-signup { margin: 14px 0 0; text-align: center; color: var(--fg-2); }
+.login-signup button { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.login-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.login-signup-form .bp6-form-group { margin-bottom: 10px; }

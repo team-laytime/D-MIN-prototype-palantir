@@ -1,13 +1,16 @@
-import { Button, Callout, HTMLSelect, InputGroup, NumericInput, Switch } from '@blueprintjs/core'
+import { useState } from 'react'
+import { Button, Callout, HTMLSelect, Icon, InputGroup, NumericInput, Switch } from '@blueprintjs/core'
 import { compatibleBerths } from '../lib/engine.js'
 import { WEATHER_CLAUSE } from '../lib/scenarios.js'
-import { at, fmt, fmtDur, fromInput, money, toInput } from '../lib/time.js'
+import { NOW, at, fmt, fmtDur, fromInput, money, toInput } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
 import { Panel, Screen, Stats, St } from '../ui/kit.jsx'
 import './plan.css'
 
 export default function ScenarioInput() {
-  const { scen, editScen, version, result, go } = useApp()
+  const { scenInput: scen, scen: calc, editScen, version, result, go, scenarioId, setScenarioId } = useApp()
+  const [pick, setPick] = useState(scenarioId)
+  const params = scen.params
   const weather = scen.env.weather
   const berthById = Object.fromEntries(scen.berths.map((berth) => [berth.id, berth]))
   const errors = []
@@ -20,10 +23,15 @@ export default function ScenarioInput() {
   if (weather && weather.end <= weather.start) errors.push('기상 악화 종료 시각이 시작 시각보다 빠릅니다')
 
   const canCompare = errors.length === 0 && !result.error
-  const setContract = (index, field, value) => {
-    if (!Number.isFinite(value) || value === scen.vessels[index].contract[field]) return
-    editScen((draft) => { draft.vessels[index].contract[field] = value })
+  const setParam = (field, value) => {
+    if (!Number.isFinite(value) || value < 0 || value === params[field]) return
+    editScen((draft) => { draft.params[field] = value })
   }
+  const setSwitching = (value) => {
+    if (!Number.isFinite(value) || value < 0 || value === scen.env.switchingMin) return
+    editScen((draft) => { draft.env.switchingMin = value })
+  }
+  const lock = <Icon icon="lock" size={10} className="faint" />
   const setEta = (index, value) => {
     const time = fromInput(value)
     if (time !== null && time !== scen.vessels[index].eta) {
@@ -45,15 +53,24 @@ export default function ScenarioInput() {
   return (
     <Screen
       tab="input"
-      title="시나리오 입력"
+      title="시나리오 불러오기"
       step={1}
       bodyClass="plan-input plan-stack"
       actions={<Button intent="primary" endIcon="arrow-right" disabled={!canCompare} onClick={() => go('compare')}>후보 비교</Button>}
     >
-      <div className="plan-intro">
-        <p>{scen.summary}. 수정 즉시 전체 화면을 재계산합니다.</p>
-        <span className="plan-version mono">INPUT v{version}</span>
-      </div>
+      {/* 11-23 피드백: 시나리오는 입력하는 게 아니라 DB(2025년 합성 데이터)에서 기준 시점을 골라 불러온다. */}
+      <Panel code="LOAD" title="불러오기" pad actions={<span className="plan-version mono">INPUT v{version}</span>}>
+        <div className="pi-load">
+          <label><span>데이터</span><HTMLSelect size="small" value="db2025" options={[{ value: 'db2025', label: '2025년 1년치 운영 합성 데이터 (DB, 가상)' }]} /></label>
+          <label><span>기준 시점</span><HTMLSelect size="small" value={pick} onChange={(e) => setPick(e.target.value)} options={[
+            { value: 'S1', label: `2026-11-14 08:00 · 기상 악화 예보일, 6척 집중` },
+            { value: 'S2', label: `2026-11-14 08:00 · 평시 (기상 이상 없음)` },
+            { value: 'S3', label: `2026-11-14 08:00 · 대형선 지연 + 조석 제약` },
+          ]} /></label>
+          <Button intent="primary" icon="import" disabled={pick === scenarioId} onClick={() => setScenarioId(pick)}>불러오기</Button>
+          <span className="small muted">불러온 시점: <b className="num">2026-{fmt(NOW).replace('/', '-')}</b> · {scen.summary} · 선박 {scen.vessels.length}척, 부두 {scen.berths.length}곳</span>
+        </div>
+      </Panel>
       <Stats items={[
         { label: '대기 선박', value: <><span>{scen.vessels.length}</span><span className="plan-stat-unit">척</span></>, sub: '도착 예정 · 계약 조건 확인' },
         { label: '부두', value: <><span>{scen.berths.length}</span><span className="plan-stat-unit">곳</span></>, sub: '제품·제원별 접안 가능 부두' },
@@ -61,10 +78,18 @@ export default function ScenarioInput() {
         { label: '입력 오류', value: <><span>{errors.length}</span><span className="plan-stat-unit">건</span></>, tone: errors.length ? 'red' : 'green', sub: errors.length ? '조건 수정 후 후보를 비교합니다' : '선박·계약 조건 검증 통과' },
       ]} />
 
+      <Panel code="PARAM-IN" title="스케줄러 조절값" desc="스케줄러가 바꿀 수 있는 값만 · 바꾸면 후보를 바로 다시 계산" pad>
+        <div className="pi-params">
+          <label><span>접안 간격 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={scen.env.switchingMin} min={0} stepSize={10} onValueChange={setSwitching} /><small>분 · 앞 선박 작업 종료 뒤 다음 접안까지</small></label>
+          <label><span>안전재고 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={params.safetyStockPct} min={0} max={50} onValueChange={(v) => setParam('safetyStockPct', v)} /><small>% · 탱크 여유에서 빼 둘 비율 (나프타 여유 {calc.tanks[0].ullageTon.toLocaleString()}t로 계산)</small></label>
+          <label><span>기상 여유 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={params.weatherMarginH} min={0} max={12} onValueChange={(v) => setParam('weatherMarginH', v)} /><small>시간 · 접안 금지 구간 앞뒤로 더 비움{calc.env.weather ? ` (계산 구간 ${fmt(calc.env.weather.start)}~${fmt(calc.env.weather.end).slice(6)})` : ''}</small></label>
+        </div>
+      </Panel>
+
       <Panel
         code="VESSEL-IN"
         title="선박·계약 조건"
-        desc="도착 예정·허용 시간·체선료·기상 조항을 수정합니다"
+        desc="도착 예정만 고칠 수 있음 · 계약 조건은 계약서 값으로 잠금 · * 필수 입력"
         data-tour="inputs"
         actions={<St tone={errors.length ? 'bad' : 'ok'}>{errors.length ? `입력 오류 ${errors.length}건` : '검증 통과'}</St>}
       >
@@ -79,8 +104,8 @@ export default function ScenarioInput() {
           <thead>
             <tr>
               <th>선박</th><th>화물</th><th className="r">DWT</th><th className="r">흘수</th><th className="r">작업 시간</th>
-              <th>도착 예정(NOR)</th><th className="r">허용(h)</th><th className="r">일 체선료($)</th>
-              <th className="r">개시(h)</th><th>기상 조항</th><th>가능 부두</th>
+              <th>도착 예정(NOR) <i className="req">*</i></th><th className="r">{lock} 허용(h)</th><th className="r">{lock} 일 체선료($)</th>
+              <th className="r">{lock} 개시(h)</th><th>{lock} 기상 조항</th><th>가능 부두</th>
             </tr>
           </thead>
           <tbody>
@@ -107,56 +132,10 @@ export default function ScenarioInput() {
                     onChange={(event) => setEta(index, event.target.value)}
                   />
                 </td>
-                <td>
-                  <NumericInput
-                    size="small"
-                    buttonPosition="none"
-                    className="plan-number plan-hours"
-                    aria-label={`${vessel.name} 허용 시간(h)`}
-                    value={vessel.contract.laytimeH}
-                    min={0}
-                    intent={vessel.contract.laytimeH > 0 ? undefined : 'danger'}
-                    onValueChange={(value) => setContract(index, 'laytimeH', value)}
-                  />
-                </td>
-                <td>
-                  <NumericInput
-                    size="small"
-                    buttonPosition="none"
-                    className="plan-number plan-rate"
-                    aria-label={`${vessel.name} 일 체선료($)`}
-                    value={vessel.contract.rateUsd}
-                    min={0}
-                    stepSize={500}
-                    majorStepSize={5000}
-                    intent={vessel.contract.rateUsd > 0 ? undefined : 'danger'}
-                    onValueChange={(value) => setContract(index, 'rateUsd', value)}
-                  />
-                </td>
-                <td>
-                  <NumericInput
-                    size="small"
-                    buttonPosition="none"
-                    className="plan-number plan-hours"
-                    aria-label={`${vessel.name} 개시 시간(h)`}
-                    value={vessel.contract.norTurnH}
-                    min={0}
-                    onValueChange={(value) => setContract(index, 'norTurnH', value)}
-                  />
-                </td>
-                <td>
-                  <HTMLSelect
-                    size="small"
-                    className="plan-clause"
-                    aria-label={`${vessel.name} 기상 조항`}
-                    value={vessel.contract.weather}
-                    options={Object.entries(WEATHER_CLAUSE).map(([value, clause]) => ({ value, label: clause.label }))}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      editScen((draft) => { draft.vessels[index].contract.weather = value })
-                    }}
-                  />
-                </td>
+                <td className="num r pi-locked">{vessel.contract.laytimeH}</td>
+                <td className="num r pi-locked">{vessel.contract.rateUsd.toLocaleString()}</td>
+                <td className="num r pi-locked">{vessel.contract.norTurnH}</td>
+                <td className="pi-locked small">{WEATHER_CLAUSE[vessel.contract.weather].label}</td>
                 <td>
                   <div className="plan-berth-chips">
                     {compatibleBerths(vessel, scen).map((id) => <span className="chip" key={id}>{berthById[id].name.replace(' 부두', '')}</span>)}

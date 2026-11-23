@@ -265,7 +265,7 @@ export function risks(sim, scen) {
   } else {
     const near = P.filter((p) => Math.abs(p.etb - w.start) <= 180 || Math.abs(p.etb - w.end) <= 180)
     out.push(near.length
-      ? { key: 'weather', label: '날씨 급변', state: '해당',
+      ? { key: 'weather', label: '날씨 급변', state: '해당', at: w.start,
           evidence: `${near.map((p) => v[p.vid].name).join(', ')} 접안이 기상 악화 구간 경계 3시간 이내. 예보가 앞당겨지거나 길어지면 접안이 밀립니다.`,
           alternative: '기상 해제 직후 접안 순서를 미리 확정하고 도선사·예선 대기 요청.',
           caution: '단기예보 갱신(05·11·17·23시)마다 같은 조건으로 재계산해 순위 변동 확인.' }
@@ -276,7 +276,7 @@ export function risks(sim, scen) {
   const unknown = [...new Set(P.filter((p) => !b[p.bid].facility.known).map((p) => b[p.bid].name))]
   if (maint.length) {
     const m = b[maint[0].bid].facility.maintenance
-    out.push({ key: 'facility', label: '설비', state: '해당',
+    out.push({ key: 'facility', label: '설비', state: '해당', at: m.start,
       evidence: `${maint.map((p) => v[p.vid].name).join(', ')} 작업이 ${b[maint[0].bid].name} ${m.label}과 겹침.${unknown.length ? ` ${unknown.join(', ')} 설비 일정 미입력.` : ''}`,
       alternative: '점검을 작업 종료 이후로 조정하거나, 점검 중 로딩암 1기 기준으로 작업 시간을 늘려 재계산.',
       caution: '점검 중에도 펌프율이 같다고 가정한 계산입니다.' })
@@ -288,7 +288,7 @@ export function risks(sim, scen) {
 
   const tankHits = scen.tanks.flatMap((t) => P.filter((p) => v[p.vid].dir === '수입' && v[p.vid].product === t.product && p.etb < t.readyAt && v[p.vid].ton > t.ullageTon).map((p) => ({ p, t })))
   out.push(tankHits.length
-    ? { key: 'tank', label: '탱크', state: '해당',
+    ? { key: 'tank', label: '탱크', state: '해당', at: tankHits[0].p.etb,
         evidence: `${v[tankHits[0].p.vid].name} 하역량 ${v[tankHits[0].p.vid].ton.toLocaleString()}톤 > ${tankHits[0].t.product} 탱크 여유 ${tankHits[0].t.ullageTon.toLocaleString()}톤. ${tankHits[0].t.note}.`,
         alternative: '하역 속도를 낮춰 여유 확보 시각에 맞추거나, 여유 확보 이후 하역을 시작하는 후보와 비교.',
         caution: '하역 속도를 바꾸면 작업 종료 시각과 체선료가 달라지므로 재계산 필요.' }
@@ -298,14 +298,14 @@ export function risks(sim, scen) {
   out.push(!scen.urgent.length
     ? { key: 'urgent', label: '긴급 출하', state: '판단 불가', evidence: '긴급 출하 계획 미입력.', alternative: '출하팀에 긴급 출하 여부 확인.', caution: '-' }
     : late.length
-      ? { key: 'urgent', label: '긴급 출하', state: '해당',
+      ? { key: 'urgent', label: '긴급 출하', state: '해당', at: late[0].u.deadline,
           evidence: late.map(({ u, p }) => `${v[u.vid].name}: ${u.note} 납기 대비 ${Math.round((p.etu - u.deadline) / 60)}시간 지연.`).join(' '),
           alternative: '해당 선박을 앞당긴 후보와 체선료 차이 비교.', caution: '납기 위반 비용은 체선료 합계에 포함되지 않음.' }
       : { key: 'urgent', label: '긴급 출하', state: '해당 없음', evidence: `긴급 출하(${scen.urgent.map((u) => v[u.vid].name).join(', ')}) 납기 내 완료.`, alternative: '-', caution: '-' })
 
   const night = P.filter((p) => nightOf(p.etb, scen.env))
   out.push(night.length
-    ? { key: 'safety', label: '현장 안전', state: '해당',
+    ? { key: 'safety', label: '현장 안전', state: '해당', at: Math.min(...night.map((p) => p.etb)),
         evidence: `야간 접안 ${night.length}건: ${night.map((p) => v[p.vid].name).join(', ')}.`,
         alternative: '야간 접안을 일출 이후로 미룬 후보와 체선료 차이 비교.',
         caution: '작업 지시 전 야간 도선·계류 인력 배치 확인.' }

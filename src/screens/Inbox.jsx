@@ -25,7 +25,7 @@ export default function Inbox() {
   const resolveAll = () => { for (const a of shown) setAlertStatus(a.id, 'done', a.title) }
 
   return (
-    <Screen tab="inbox" title="알림함" desc={isScheduler ? '기상 예보·ETA 변경·체선 예상·미확인 리스크·확정을 한곳에서 처리합니다.' : '확정·취소된 접안 일정 알림입니다.'} bodyClass="inbox-page">
+    <Screen tab="inbox" title="알림함" desc={isScheduler ? '현장에서 들어온 돌발 상황(부두 공사·재고 변동), 기상 예보, ETA 변경, 확정 알림을 받습니다. 계산 결과는 후보 비교에서 봅니다.' : '확정·취소된 접안 일정 알림입니다.'} bodyClass="inbox-page">
       <div className="inbox-grid">
         <Panel code="CHANNEL" title="분류">
           <ul className="inbox-channels">

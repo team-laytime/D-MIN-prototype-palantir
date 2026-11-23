@@ -25,7 +25,7 @@
 .home-weather-period { padding: 0 10px; }
 .home-weather-source { color: var(--fg-2); }
 .home-main { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 8px; min-height: 0; }
-.home-sidebar { display: grid; grid-template-rows: 208px minmax(144px, 1fr) minmax(106px, .65fr); gap: 8px; min-height: 0; }
+.home-sidebar { display: grid; grid-template-rows: 222px auto minmax(90px, 1fr); gap: 8px; min-height: 0; }
 .home-console .panel-head { padding-left: 9px; gap: 8px; min-height: 32px; }
 .home-console .panel-code { font-size: 9px; }
 .home-console .panel-title { font-size: 12px; }
@@ -116,7 +116,7 @@
 .home-berth-key .st { gap: 4px; }
 .home-berth-key .st::before { width: 4px; height: 4px; }
 .home-berth-board { display: grid; min-width: 380px; font-size: 10px; }
-.home-berth-labels, .home-berth-column { display: grid; grid-template-rows: 25px 34px repeat(6, 20px); min-width: 0; }
+.home-berth-labels, .home-berth-column { display: grid; grid-template-rows: 25px 34px repeat(5, 20px); min-width: 0; }
 .home-berth-labels { background: var(--bg-3); color: var(--fg-2); }
 .home-berth-labels > div { display: flex; align-items: center; padding-left: 5px; border-bottom: 1px solid var(--line); white-space: nowrap; font-size: 9px; }
 .home-berth-column { border-left: 1px solid var(--line); }
@@ -173,7 +173,76 @@
 }
 @media (max-height: 820px) {
   .home-console { grid-template-rows: 62px auto minmax(0, 1fr) 176px; padding: 8px; gap: 6px; }
-  .home-sidebar { grid-template-rows: 208px minmax(94px, 1fr) 90px; gap: 6px; }
+  .home-sidebar { grid-template-rows: 222px auto minmax(80px, 1fr); gap: 6px; }
   .home-main { gap: 6px; }
   .home-time-dock { min-height: 60px; }
 }
+
+/* 11-20 피드백 반영: 부두 상태 색 · 예상 경로 · 부두 상세 · 72시간 계획 범위 */
+.home-map-berth.st-busy { color: #fff; background: var(--green); border-color: var(--green); }
+.home-map-berth.st-idle { color: var(--fg-2); background: var(--bg-2); border-color: var(--line-3); }
+.home-map-berth.st-maint { color: #fff; background: var(--violet); border-color: var(--violet); }
+.home-map-berth.st-blocked { color: #fff; background: var(--red); border-color: var(--red); }
+.home-map-berth.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-console .panel-actions .home-map-berth, .home-map-legend .home-map-berth { position: static; transform: none; display: inline-block; font-size: 10px; }
+.home-legend-route { display: inline-flex; align-items: center; gap: 5px; }
+.home-legend-route i { width: 18px; border-top: 2px dashed #c98a1f; }
+.home-time-plan { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px solid var(--accent); }
+.home-band-key .plan { border: 0; border-left: 2px solid var(--accent); }
+.home-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1px solid var(--line-3); background: var(--bg-2); }
+.home-dot.st-busy { background: var(--green); border-color: var(--green); }
+.home-dot.st-maint { background: var(--violet); border-color: var(--violet); }
+.home-dot.st-blocked { background: var(--red); border-color: var(--red); }
+.home-bdetail-panel .panel-body { display: flex; flex-direction: column; min-height: 0; overflow: auto; }
+.home-bdetail-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+.home-bdetail-tabs button { height: 26px; border: 0; border-right: 1px solid var(--line); background: var(--bg-1); color: var(--fg-2); font-size: 11px; cursor: pointer; }
+.home-bdetail-tabs button.on { background: var(--bg-2); color: var(--fg); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.home-bdetail { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; padding: 8px 10px; }
+.home-bdetail-now { grid-column: 1; display: flex; flex-direction: column; gap: 3px; }
+.home-bdetail-ship { border: 0; padding: 0; background: none; color: var(--fg); font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; }
+.home-bdetail-ship:hover { color: var(--accent); }
+.home-bdetail-bar { height: 5px; background: var(--bg-3); }
+.home-bdetail-bar i { display: block; height: 100%; background: var(--green); }
+.home-bdetail-queue { grid-column: 2; grid-row: 1 / span 2; align-self: start; }
+.home-console .home-bdetail-queue th { height: 22px; font-size: 10px; padding: 0 5px; }
+.home-console .home-bdetail-queue td { height: 24px; font-size: 11px; padding: 0 5px; white-space: nowrap; }
+.home-bdetail-kv { grid-column: 1; display: grid; grid-template-columns: 30px 1fr; gap: 2px 6px; margin: 8px 0 0; }
+.home-bdetail-kv dt { color: var(--fg-3); }
+.home-bdetail-kv dd { margin: 0; }
+.home-berth-column.sel { box-shadow: inset 0 2px 0 var(--accent); }
+
+/* 11-23 피드백: 기본은 지도만, 부두를 누르면 그 부두 패널 */
+.home-console { grid-template-rows: minmax(0, 1fr) !important; }
+.home-main.map-only { grid-template-columns: minmax(0, 1fr); }
+.home-sidebar.one { grid-template-rows: minmax(0, 1fr); }
+.home-bdetail.v3 { grid-template-columns: 1fr; gap: 10px; }
+.home-bdetail.v3 .home-bdetail-kv { grid-column: 1; grid-template-columns: 34px 1fr; }
+.home-console .home-bdetail-queue.v3 { width: 100%; }
+.home-console .home-bdetail-queue.v3 td, .home-console .home-bdetail-queue.v3 th { height: 30px; font-size: 11.5px; padding: 0 8px; }
+.home-wx-chip, .home-plan-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; font-size: 11.5px; background: var(--bg-1); border: 1px solid var(--amber); color: var(--amber); }
+.home-wx-chip.on { background: var(--red); border-color: var(--red); color: #fff; }
+.home-plan-chip { border-color: var(--line-3); color: var(--fg-2); }
+.home-map-context { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* 11-23 3차 피드백: 사이드 픽 + 확정 스케줄 경로 */
+.home-map-stage { position: relative; }
+.home-side-handle { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 900; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border: 1px solid var(--line-3); border-right: 0; background: var(--bg-1); color: var(--fg); font-size: 12px; font-weight: 600; writing-mode: vertical-rl; cursor: pointer; box-shadow: -2px 0 6px rgba(0,0,0,.12); }
+.home-side-handle .bp6-icon { writing-mode: horizontal-tb; }
+.home-side-handle.open { background: var(--accent); color: #fff; border-color: var(--accent); }
+.home-sidebar.one { grid-template-rows: auto minmax(0, 1fr); gap: 0; }
+.home-side-tabs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-2); border-bottom: 0; }
+.home-side-tabs button { height: 30px; border: 0; border-right: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-size: 12px; cursor: pointer; }
+.home-side-tabs button:last-child { border-right: 0; }
+.home-side-tabs button.on { background: var(--bg-1); color: var(--fg); font-weight: 700; box-shadow: inset 0 2px 0 var(--accent); }
+.home-side-tabs button:disabled { color: var(--fg-3); cursor: default; }
+.home-sched-gantt { padding: 10px 10px 4px; display: grid; gap: 6px; }
+.home-sched-row { display: grid; grid-template-columns: 36px 1fr; align-items: center; }
+.home-sched-name { font-size: 11px; font-weight: 600; }
+.home-sched-track { position: relative; height: 24px; background: var(--bg-2); border: 1px solid var(--line); }
+.home-sched-bar { position: absolute; top: 3px; bottom: 3px; padding: 0 4px; overflow: hidden; white-space: nowrap; font-size: 10px; line-height: 16px; color: #fff; background: var(--accent); border-right: 1px solid var(--bg-1); }
+.home-sched-now { position: absolute; top: -4px; bottom: -4px; border-left: 2px solid var(--red); }
+.home-sched-axis { display: flex; justify-content: space-between; margin-left: 36px; font-size: 10px; color: var(--fg-3); }
+.home-side-empty { padding: 18px 14px; display: grid; gap: 10px; justify-items: start; }
+.home-side-empty p { margin: 0; }
+.home-side-note { padding: 6px 10px; margin: 0; }
+.home-route-label { position: absolute; transform: translate(0, -50%); padding: 1px 5px; background: var(--bg-1); border: 1px solid #0b7489; color: #0b7489; font: 600 10px var(--sans); white-space: nowrap; }

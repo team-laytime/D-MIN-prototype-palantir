@@ -1,10 +1,12 @@
 // 화면 전체가 공유하는 상태 한 곳. 화면 컴포넌트는 props 대신 useApp()으로 읽는다.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { SCENARIOS } from '../lib/scenarios.js'
+import { SCENARIOS, applyParams } from '../lib/scenarios.js'
 import { runSearch } from '../lib/engine.js'
 import { diffScen } from '../lib/scenDiff.js'
 import { ROLES, activePlan, canUse, groupOf, logActivity, recordChange, resetWorkspace, setRole, useWorkspace, ws } from '../lib/workspace.js'
-import { TOUR } from '../tour.js'
+import { TOUR as TOUR_ALL } from '../tour.js'
+
+const TOUR = TOUR_ALL.filter((s) => groupOf(s.tab === 'risk' ? 'compare' : s.tab)).map((s) => (s.tab === 'risk' ? { ...s, tab: 'compare' } : s))
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -19,7 +21,9 @@ export function AppProvider({ children }) {
   const [scenState, setScenState] = useState(() => ({ scen: SCENARIOS.S1(), version: 1 }))
   const scenRef = useRef(scenState)
   const scenarioIdRef = useRef(scenarioId)
-  const { scen, version } = scenState
+  const { scen: scenInput, version } = scenState
+  // 화면과 계산은 스케줄러 조절값(안전재고·기상 여유)을 반영한 시나리오를 쓰고, 입력 화면만 원래 값을 고친다.
+  const scen = useMemo(() => applyParams(scenInput), [scenInput])
   const replaceScen = useCallback((next) => { scenRef.current = next; setScenState(next) }, [])
   const setScenarioId = useCallback((id) => {
     if (id === scenarioIdRef.current) return
@@ -58,7 +62,8 @@ export function AppProvider({ children }) {
   const isScheduler = ws.roleId === 'scheduler'
 
   // 권한 밖 화면을 가리키면 그 계정의 첫 화면으로 보낸다.
-  const go = useCallback((next) => {
+  const go = useCallback((target) => {
+    const next = target === 'risk' ? 'compare' : target // 리스크·확정은 후보 비교에 합침
     const g = groupOf(next)
     setTab(ws.roleId && g && !canUse(ws.roleId, g) ? ROLES[ws.roleId].home : next)
   }, [])
@@ -114,7 +119,7 @@ export function AppProvider({ children }) {
 
   const value = {
     wsRev, role, isScheduler, login, logout, resetDemo, resetKey,
-    scenarioId, setScenarioId, scen, editScen, version, result, all,
+    scenarioId, setScenarioId, scen, scenInput, editScen, version, result, all,
     tab, go, focusId, setFocusId,
     drawer, drawerSim, openVessel, closeDrawer,
     checks, setCheck, current, tour, reportDraft, setReportDraft,

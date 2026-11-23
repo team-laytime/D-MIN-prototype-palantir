@@ -16,7 +16,7 @@ import VesselDrawer from './screens/VesselDrawer.jsx'
 import Tour from './screens/Tour.jsx'
 
 // 후보 계산이 필요한 화면만 막는다. 확정 일정은 확정 당시 스냅숏이라 계산 실패와 상관없이 열린다.
-const NEEDS_RESULT = ['home', 'compare', 'risk', 'report', 'mail']
+const NEEDS_RESULT = ['home', 'compare', 'report', 'mail']
 // 보고서·메일은 후보 중 하나를 고르는 화면이라, 기준안보다 나은 후보가 하나도 없으면 열 수 없다.
 const NEEDS_CANDIDATE = ['report', 'mail']
 

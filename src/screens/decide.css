@@ -67,3 +67,31 @@
   .risk-total { font-size: 24px; }
   .schedule-table th, .schedule-table td { padding-left: 8px; padding-right: 8px; }
 }
+
+/* 11-20 피드백: 이용자 일정 */
+.sch-bar { display: flex; align-items: center; gap: 14px; }
+.sch-days { display: flex; border: 1px solid var(--line-2); }
+.sch-days button { height: 26px; padding: 0 12px; border: 0; border-right: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg-2); font-size: 12px; cursor: pointer; }
+.sch-days button:last-child { border-right: 0; }
+.sch-days button.on { background: var(--accent-wash); color: var(--fg); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.sch-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.sch-mine-key { width: 14px; height: 12px; background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
+.schedule-table tr.sch-mine td { background: var(--accent-wash); }
+.schedule-table tr.sch-mine td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.schedule-table tr.sch-done td { color: var(--fg-3); }
+.schedule-table td { height: 46px; }
+.sch-berths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.sch-mine-panel { box-shadow: inset 0 3px 0 var(--accent); }
+.sch-card { display: grid; gap: 3px; padding: 8px 10px; margin-bottom: 6px; border: 1px solid var(--line-2); background: var(--bg-1); }
+.sch-card.sch-done { opacity: 0.55; }
+.sch-gantt { position: relative; display: grid; gap: 8px; padding-top: 18px; }
+.sch-gantt-axis { position: absolute; left: 100px; right: 0; top: 0; height: 16px; font-size: 11px; color: var(--fg-3); }
+.sch-gantt-axis span { position: absolute; }
+.sch-gantt-row { display: grid; grid-template-columns: 100px 1fr; align-items: center; }
+.sch-gantt-row.mine .sch-gantt-name { color: var(--accent); font-weight: 700; }
+.sch-gantt-name { font-size: 12px; }
+.sch-gantt-track { position: relative; height: 34px; background: var(--bg-2); border: 1px solid var(--line); }
+.sch-bar-item { position: absolute; top: 5px; bottom: 5px; padding: 0 6px; overflow: hidden; white-space: nowrap; font-size: 11px; line-height: 22px; color: #fff; background: var(--accent); }
+.sch-bar-item.sch-done { background: var(--fg-3); }
+.sch-bar-item.sch-on { background: var(--green); }
+.sch-now { position: absolute; top: -6px; bottom: -6px; border-left: 2px solid var(--red); }

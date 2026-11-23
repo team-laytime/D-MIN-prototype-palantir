@@ -33,7 +33,7 @@ export function Stats({ items, className = '' }) {
   )
 }
 
-const PLAN_STEPS = ['입력 확인', '후보 비교', '리스크 확인', '계획 확정', '보고서 작성']
+const PLAN_STEPS = ['시나리오 불러오기', '후보 비교·확정', '보고서', '통보 메일']
 /** 계획 흐름 단계. now = 1..5 */
 export function Steps({ now }) {
   return (
@@ -55,7 +55,7 @@ export function Screen({ tab, title, desc, step, actions, bodyClass = '', childr
     <div className="screen">
       <div className="screen-head">
         <div>
-          <div className="screen-path">{g?.key} / {g?.code}-{tab.toUpperCase()}</div>
+          <div className="screen-path">{g?.label}{item?.no ? ` · ${item.no}단계` : ''}</div>
           <h1 className="screen-title">{title ?? item?.label}</h1>
         </div>
         {desc && <p className="screen-desc">{desc}</p>}

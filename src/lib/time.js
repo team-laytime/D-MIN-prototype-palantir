@@ -1,5 +1,7 @@
 // 시각은 2026-11-14 00:00 KST를 0으로 둔 분 단위 정수로 다룬다.
 export const at = (day, h, m = 0) => (day - 14) * 1440 + h * 60 + m
+// 시연의 '지금'. 운영 현황·확정 일정의 시간축 왼쪽 끝이고, 남은 시간 계산의 기준이다.
+export const NOW = at(14, 8)
 
 const pad = (n) => String(n).padStart(2, '0')
 

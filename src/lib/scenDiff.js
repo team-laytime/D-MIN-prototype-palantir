@@ -28,5 +28,13 @@ export function diffScen(prev, next) {
   if (Boolean(a) !== Boolean(b) || (a && b && (a.start !== b.start || a.end !== b.end))) {
     out.push({ key: 'env', field: 'weather', label: '기상 악화 예보', targetName: '기상·조석', from: wx(a), to: wx(b), kind: 'weather' })
   }
+  const PARAMS = [
+    ['switchingMin', '접안 간격', (o) => o.env.switchingMin, (x) => `${x}분`],
+    ['safetyStockPct', '안전재고', (o) => o.params?.safetyStockPct, (x) => `${x}%`],
+    ['weatherMarginH', '기상 여유', (o) => o.params?.weatherMarginH, (x) => `${x}시간`],
+  ]
+  for (const [field, label, get, show] of PARAMS) {
+    if (get(prev) !== get(next)) out.push({ key: 'env', field, label, targetName: '운영 조건', from: show(get(prev)), to: show(get(next)), kind: 'param' })
+  }
   return out
 }

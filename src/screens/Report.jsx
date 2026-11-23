@@ -5,10 +5,11 @@ import { createPortal } from 'react-dom'
 import { Button, Callout, SegmentedControl, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { downloadMarkdown, useReport } from '../state/useReport.js'
-import { fixPlan, logActivity } from '../lib/workspace.js'
+import { logActivity } from '../lib/workspace.js'
 import { fmt, fmtDur, money } from '../lib/time.js'
 import { Panel, Screen, St, Stats, riskTone } from '../ui/kit.jsx'
 import { TotalChart, VesselChart } from './ReportCharts.jsx'
+import { describe } from './Compare.jsx'
 import './report.css'
 
 export default function Report() {
@@ -21,12 +22,8 @@ export default function Report() {
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
   const sel = model.sel
-  const choose = (id) => {
-    if (id === selId) return
-    setReportDraft({ selId: id })
-    setFocusId(id)
-    logActivity('보고서', '후보 선택', model.items.find((it) => it.id === id)?.label ?? id)
-  }
+  // 11-20 피드백: 체선료 차이만이 아니라 그 차이가 어디서(어느 선박, 어떤 규칙) 생겼는지
+  const why = result.error ? [] : result.candidates.map((c) => ({ id: c.id, label: c.label, ...describe(c, result.fcfs, scen) }))
   // 판단근거는 입력이 끝났을 때(포커스가 빠질 때) 바뀐 경우만 한 번 기록한다.
   const loggedJudgment = useRef(judgment)
   const logJudgment = () => {
@@ -34,8 +31,6 @@ export default function Report() {
     loggedJudgment.current = judgment
     logActivity('보고서', '판단근거 수정', sel.label, judgment.length > 60 ? `${judgment.slice(0, 60)}…` : judgment)
   }
-  const unchecked = sel.active.filter((r) => !checks[`${version}:${sel.id}:${r.key}`])
-  const canFix = isScheduler && model.judgment.length > 0 && !shownPlan
 
   async function copy() {
     setCopyError('')
@@ -50,11 +45,6 @@ export default function Report() {
       setCopyError('클립보드에 복사하지 못했습니다. 문구를 선택해 직접 복사해 주십시오.')
     }
   }
-  function confirmPlan() {
-    const cand = result.candidates.find((c) => c.id === selId)
-    fixPlan({ cand, scen, version, reason: model.judgment, uncheckedRisks: unchecked.map((r) => r.label) })
-    setFocusId(selId)
-  }
   function exportPdf() {
     logActivity('보고서', 'PDF 내보내기', sel.label)
     // 인쇄용 사본(#print-root)만 남기고 찍는다. 브라우저의 'PDF로 저장'을 고르면 PDF가 된다.
@@ -66,10 +56,10 @@ export default function Report() {
   }
 
   return (
-    <Screen tab="report" title="접안계획 보고서" step={5} bodyClass="rpt-page" actions={
+    <Screen tab="report" title="접안계획 보고서" step={3} bodyClass="rpt-page" actions={
       <Button icon="envelope" text="메일 작성" endIcon="arrow-right" onClick={() => go('mail')} />
     }>
-      <p className="muted small">후보안을 고르고 숙련자 판단근거를 적으면 아래에 후보 3개 비교·차트·후보별 분석·공통 리스크가 담긴 보고서가 만들어집니다. 금액은 계산 결과를 그대로 넣고 자동 대조합니다.</p>
+      <p className="muted small">「후보 비교·확정」에서 고른 안으로 보고서를 만듭니다. 판단근거를 적으면 후보 3개 비교, 차트(막대 아래 이유), 후보별 분석, 공통 리스크가 담깁니다. 금액은 계산 결과를 그대로 넣고 자동 대조합니다.</p>
       <Stats items={[
         { label: '선택 후보', value: <span className="rpt-prose">{sel.label}</span>, sub: shownPlan ? shownPlan.status : '확정 전' },
         { label: '총 예상 체선료', value: money(sel.total), tone: 'accent' },
@@ -83,25 +73,14 @@ export default function Report() {
 
       <div className="rpt-grid">
         <div className="stack">
-        <Panel code="RPT-PICK" title="후보안 선택" desc="보고서의 기준이 될 안">
-          <div className="rpt-picks" role="radiogroup" aria-label="후보안">
-            {model.items.map((it) => (
-              <button key={it.id} type="button" role="radio" aria-checked={selId === it.id} className={`rpt-pick ${selId === it.id ? 'on' : ''}`} onClick={() => choose(it.id)}>
-                <span className="rpt-pick-head">
-                  <span className="rpt-pick-dot" />
-                  <b>{it.label}</b>
-                  {plan?.candId === it.id && <span className="chip green">확정 v{plan.planNo}</span>}
-                  <span className="num rpt-pick-total">{money(it.total)}</span>
-                </span>
-                <span className="rpt-pick-meta small">
-                  <span className="c-green num">-{it.savingPct}%</span>
-                  <span>체선 <b className="num">{it.demVessels.length}</b>척</span>
-                  <span>리스크 <b className="num c-amber">{it.active.length}</b>건</span>
-                  <span>변경 <b className="num">{it.changed.length}</b>척</span>
-                </span>
-              </button>
-            ))}
+        {/* 11-23 피드백: 후보는 「후보 비교·확정」에서만 고른다. 여기서는 고른 안을 보여 주기만 한다. */}
+        <Panel code="RPT-BASE" title="보고할 안" desc={shownPlan ? '확정안' : '후보 비교·확정에서 고른 안'} pad>
+          <div className="rpt-base">
+            <b>{sel.label}</b>{shownPlan ? <St tone="ok">확정 v{shownPlan.planNo}</St> : <St tone="warn">확정 전</St>}
+            <span className="num rpt-base-total">{money(sel.total)}</span>
+            <span className="small muted">기준안 대비 <span className="num c-green">-{sel.savingPct}%</span> · 체선 {sel.demVessels.length}척 · 리스크 {sel.active.length}건</span>
           </div>
+          <Button size="small" icon="comparison" onClick={() => go('compare')}>{shownPlan ? '후보 비교·확정 보기' : '다른 안은 후보 비교에서 고르기'}</Button>
         </Panel>
 
         <Panel code="EXPERT-NOTE" title="숙련자 판단근거" desc="후보 중 이 안을 고른 이유" pad>
@@ -119,27 +98,6 @@ export default function Report() {
           </ul>
         </Panel>
 
-        <Panel code="RPT-FIX" title="확정" pad>
-          {shownPlan ? (
-            <div className="rpt-fixed">
-              <St tone="ok">{sel.label} 확정 v{shownPlan.planNo}</St>
-              <p className="small muted">판단근거가 보고서와 확정 이력에 남았습니다. 확정 취소는 「리스크·확정」에서 합니다.</p>
-              <Button size="small" icon="shield" onClick={() => go('risk')}>리스크·확정</Button>
-            </div>
-          ) : (
-            <>
-              {plan && <Callout compact intent="primary" icon="info-sign" className="rpt-note">지금 적용 중인 확정안은 {plan.label}입니다. 확정하면 {sel.label}로 바뀝니다.</Callout>}
-              {unchecked.length > 0 && (
-                <Callout compact intent="warning" icon="warning-sign" className="rpt-note">
-                  {sel.label}의 리스크 {unchecked.length}건을 아직 확인하지 않았습니다({unchecked.map((r) => r.label).join(', ')}). 확정하면 미확인 상태로 기록됩니다.
-                  <Button variant="minimal" size="small" intent="warning" onClick={() => go('risk')}>확인하러 가기</Button>
-                </Callout>
-              )}
-              <Button intent="primary" fill icon="endorsed" disabled={!canFix} onClick={confirmPlan} text={`${sel.label}으로 보고서 확정`} />
-              {!model.judgment && <p className="tiny muted rpt-hint">판단근거를 적어야 확정할 수 있습니다.</p>}
-            </>
-          )}
-        </Panel>
         </div>
 
       <Panel code="RPT-DOC" title="보고서 미리보기" desc={`${sel.label} 기준 · ${model.status}`} className="rpt-doc-panel" data-tour="report-doc" actions={
@@ -151,7 +109,7 @@ export default function Report() {
           <Button size="small" icon="print" onClick={exportPdf}>PDF</Button>
         </div>
       }>
-        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} onVessel={(simId, vid) => openVessel(simId, vid)} />}
+        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} why={why} onVessel={(simId, vid) => openVessel(simId, vid)} />}
         </Panel>
       </div>
       {createPortal(<div id="print-root" className="rpt-print-root"><ReportDoc m={model} onVessel={() => {}} /></div>, document.body)}
@@ -164,7 +122,7 @@ function VesselLink({ simId, vid, name, onVessel }) {
   return <button type="button" className="rpt-obj" title="선박 카드 열기" onClick={() => onVessel(simId, vid)}>{name}</button>
 }
 
-function ReportDoc({ m, onVessel }) {
+function ReportDoc({ m, why = [], onVessel }) {
   const series = [{ id: 'FCFS', label: '기준안' }, ...m.items.map((it) => ({ id: it.id, label: it.label }))]
   return (
     <article className="rpt-doc">
@@ -207,7 +165,7 @@ function ReportDoc({ m, onVessel }) {
           </figure>
           <div>
             <p className="rpt-fig-title small strong">선박별 예상 체선료</p>
-            <VesselChart rows={m.perVessel} series={series} selId={m.sel.id} />
+            <VesselChart rows={m.perVessel} series={series} selId={m.sel.id} reasons={Object.fromEntries((why.find((c) => c.id === m.sel.id)?.diffs ?? []).map((d) => [d.name, `${d.text} · ${d.why}`]))} />
           </div>
         </div>
       </section>

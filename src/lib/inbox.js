@@ -1,14 +1,12 @@
 // 알림함 알림. 저장해 두는 것은 처리 상태(ws.inbox)뿐이고, 알림 자체는 지금 입력·계산·기록에서 매번 다시 뽑는다.
 // 그래서 금액이나 입력이 바뀌면 id가 바뀌어 새 알림으로 다시 올라온다.
-import { risks } from './engine.js'
-import { fmt, fmtDur, money } from './time.js'
+import { fmt } from './time.js'
 
 export const CHANNELS = [
   { id: 'all', label: '전체', icon: 'inbox' },
   { id: 'weather', label: '기상', icon: 'cloud' },
   { id: 'eta', label: 'ETA·입력 변경', icon: 'time' },
-  { id: 'dem', label: '체선', icon: 'dollar' },
-  { id: 'risk', label: '리스크', icon: 'warning-sign' },
+  { id: 'incident', label: '돌발 상황', icon: 'warning-sign' },
   { id: 'plan', label: '확정', icon: 'endorsed' },
 ]
 
@@ -21,10 +19,10 @@ export function deriveAlerts({ ws, roleId, scenarioId, scen, result, focusId, cu
   // 이용자에게는 확정 사유(판단근거)를 보여 주지 않는다. 금액이 적혀 있을 수 있어서다(HN-095). 일정 범위만 알린다.
   const userDetail = (p) => `선박 ${p.placements.length}척 · ${fmt(Math.min(...p.placements.map((x) => x.etb)))} ~ ${fmt(Math.max(...p.placements.map((x) => x.etu)))} 접안 일정`
   for (const p of ws.plans) {
-    out.push({ id: `plan:${p.no}`, channel: 'plan', tone: 'info', title: `접안 계획 v${p.no} 확정 · ${p.label}`, detail: roleId === 'user' ? userDetail(p) : p.reason || '확정 사유 없음', at: p.at, by: p.who, action: { tab: roleId === 'user' ? 'ops' : 'risk' } })
+    out.push({ id: `plan:${p.no}`, channel: 'plan', tone: 'info', title: `접안 계획 v${p.no} 확정 · ${p.label}`, detail: roleId === 'user' ? userDetail(p) : p.reason || '확정 사유 없음', at: p.at, by: p.who, action: { tab: roleId === 'user' ? 'ops' : 'compare' } })
     if (p.cancelled) {
       const log = ws.log.find((l) => l.action === '확정 취소' && l.target.startsWith(`접안 계획 v${p.no} `))
-      out.push({ id: `plan-cancel:${p.no}`, channel: 'plan', tone: 'warn', title: `접안 계획 v${p.no} 확정 취소`, detail: roleId === 'user' ? '이 일정은 더 이상 적용되지 않습니다.' : log?.detail || '취소 사유 없음', at: log?.at ?? '-', by: log?.who ?? '-', action: { tab: roleId === 'user' ? 'ops' : 'risk' } })
+      out.push({ id: `plan-cancel:${p.no}`, channel: 'plan', tone: 'warn', title: `접안 계획 v${p.no} 확정 취소`, detail: roleId === 'user' ? '이 일정은 더 이상 적용되지 않습니다.' : log?.detail || '취소 사유 없음', at: log?.at ?? '-', by: log?.who ?? '-', action: { tab: roleId === 'user' ? 'ops' : 'compare' } })
     }
   }
   if (roleId !== 'scheduler') return out.reverse()
@@ -47,29 +45,9 @@ export function deriveAlerts({ ws, roleId, scenarioId, scen, result, focusId, cu
     }
   }
 
-  if (!result.error) {
-    // 확정안이 지금 입력과 같으면 확정안, 아니면 보고 있는 후보를 기준으로 본다.
-    const all = [result.fcfs, ...result.candidates]
-    // 기준안보다 나은 후보가 없을 수도 있으므로 마지막에는 기준안을 본다.
-    const plan = (current && current.version === version && all.find((s) => s.id === current.candId)) || all.find((s) => s.id === focusId) || result.candidates[0] || result.fcfs
-    const basis = current && current.version === version && plan.id === current.candId ? `${plan.label} 확정안` : `${plan.label} 기준`
-    for (const p of plan.placements.filter((x) => x.dem.cents > 0)) {
-      const v = vessels[p.vid]
-      out.push({
-        id: `dem:${scenarioId}:${plan.id}:${p.vid}:${p.dem.cents}`, channel: 'dem', tone: 'bad',
-        title: `${v.name} 체선 발생 예상 · ${money(p.dem.cents)}`,
-        detail: `${scen.berths.find((b) => b.id === p.bid).name} · 허용 초과 ${fmtDur(p.dem.excessMin)} · 작업 종료 ${fmt(p.etu)} · ${basis}`,
-        at: '계산 결과', by: '체선료 엔진', action: { vessel: { simId: plan.id, vid: p.vid, mode: 'evidence' } },
-      })
-    }
-    for (const r of risks(plan, scen).filter((x) => x.state !== '해당 없음')) {
-      const checked = Boolean(checks[`${version}:${plan.id}:${r.key}`])
-      out.push({
-        id: `risk:${scenarioId}:${plan.id}:${r.key}`, channel: 'risk', tone: r.state === '판단 불가' ? 'unknown' : 'warn',
-        title: `리스크 확인 필요 · ${r.label} (${r.state})`, detail: r.evidence, at: basis, by: '리스크 판정',
-        action: { tab: 'risk' }, autoDone: checked ? '리스크·확정에서 확인함' : null,
-      })
-    }
+  // 11-20 피드백: 계산 결과(체선·리스크) 알림은 보고서와 같아서 뺐다. 대신 현장에서 메일로 들어오는 돌발 상황을 받는다.
+  for (const inc of scen.incidents ?? []) {
+    out.push({ id: `inc:${scenarioId}:${inc.id}`, channel: 'incident', tone: 'warn', title: `[${inc.kind}] ${inc.title}`, detail: `영향: ${inc.effect}`, at: fmt(inc.at), by: `${inc.from} (메일)`, action: { tab: 'input' } })
   }
   return out.reverse()
 }

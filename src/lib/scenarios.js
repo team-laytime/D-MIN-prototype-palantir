@@ -78,7 +78,7 @@ const PARTICULARS = {
   V1: { built: 2017, cls: 'KR', nt: 12900, depth: 19.1, speedKn: 13.5, engine: 'MAN B&W 6S50ME-C8.2 · 8,600kW', owner: 'Pacific Marine Ltd. (가상)', manager: '해성선박관리 (가상)', cargoM3: 54200, tanks: 12, manifold: '12in × 4', aisDest: 'KR USN', aisEtaDiff: 12 },
   V2: { built: 2014, cls: 'LR', nt: 10800, depth: 18.2, speedKn: 13.0, engine: 'MAN B&W 6S50MC-C · 7,860kW', owner: 'Ocean Lily Shipping S.A. (가상)', manager: 'Aegean Ship Mgmt (가상)', cargoM3: 46800, tanks: 10, manifold: '12in × 4', aisDest: 'ULSAN', aisEtaDiff: -25 },
   V3: { built: 2012, cls: 'ABS', nt: 15800, depth: 21.0, speedKn: 14.0, engine: 'MAN B&W 6S60ME-C8 · 11,300kW', owner: 'Golden Star Maritime (가상)', manager: 'Pacific Basin Tankers (가상)', cargoM3: 78500, tanks: 14, manifold: '16in × 4', aisDest: 'KRUSN', aisEtaDiff: 95 },
-  V4: { built: 2019, cls: 'NK', nt: 2690, depth: 9.4, speedKn: 11.5, engine: 'Yanmar 6EY22 · 2,100kW', owner: '하나해운 (가상)', manager: '하나해운 (가상)', cargoM3: 11200, tanks: 8, manifold: '8in × 3', aisDest: 'ULSAN KOREA', aisEtaDiff: 0 },
+  V4: { built: 2019, cls: 'NK', nt: 2690, depth: 9.4, speedKn: 11.5, engine: 'Yanmar 6EY22 · 2,100kW', owner: '하나해운 (가상)', manager: '하나해운 (가상)', cargoM3: 11200, tanks: 8, manifold: '8in × 3', aisDest: 'ULSAN KOREA', aisEtaDiff: 150 },
   V5: { built: 2016, cls: 'KR', nt: 12000, depth: 18.8, speedKn: 13.0, engine: 'MAN B&W 6S50ME-B9 · 8,200kW', owner: 'Stella Tankers Co. (가상)', manager: '한서선박 (가상)', cargoM3: 51000, tanks: 12, manifold: '12in × 4', aisDest: 'KR USN', aisEtaDiff: 8 },
   V6: { built: 2010, cls: 'DNV', nt: 8300, depth: 15.2, speedKn: 12.0, engine: 'Wärtsilä 6RT-flex50 · 7,100kW', owner: 'Blue Coral Pte. Ltd. (가상)', manager: 'Straits Tanker Mgmt (가상)', cargoM3: 34500, tanks: 10, manifold: '10in × 4', aisDest: 'ULSAN', aisEtaDiff: -40 },
 }
@@ -107,8 +107,37 @@ const urgent = () => [
   { vid: 'V5', deadline: at(15, 22), note: '김해·김포 항공유 재고 보충 출하' },
 ]
 
+// 스케줄러가 바꿀 수 있는 값(11-20 피드백). 계약 정보는 바꿀 수 없다.
+//   switchingMin(접안 간격)은 env에 있고, 나머지 둘은 계산 직전에 applyParams로 반영한다.
+export const DEFAULT_PARAMS = { safetyStockPct: 5, weatherMarginH: 0 }
+
+/** 계산에 쓰는 시나리오: 기상 여유만큼 접안 금지 구간을 넓히고, 안전재고만큼 탱크 여유를 줄인다. */
+export function applyParams(s) {
+  const p = s.params ?? DEFAULT_PARAMS
+  const o = structuredClone(s)
+  if (o.env.weather && p.weatherMarginH) {
+    o.env.weather.start -= p.weatherMarginH * 60
+    o.env.weather.end += p.weatherMarginH * 60
+  }
+  o.tanks = o.tanks.map((t) => ({ ...t, ullageTon: Math.round(t.ullageTon * (1 - p.safetyStockPct / 100)) }))
+  return o
+}
+
+// 부두 담당(가상). 확정 일정 화면에서 연락처로 쓴다.
+export const BERTH_TEAMS = {
+  B1: { team: 'SK 6부두 하역 2팀', lead: '김도윤 반장', tel: '052-000-6021' },
+  B2: { team: 'SK 3부두 하역 1팀', lead: '박서준 반장', tel: '052-000-3011' },
+  B3: { team: 'SK 5부두 하역 1팀', lead: '이하은 반장', tel: '052-000-5011' },
+}
+
+// 돌발 상황(가상). 계산 입력과 별개로 현장에서 메일로 들어오는 소식이다(11-20 피드백: 알림함은 이런 걸 받는 곳).
+const incidents = () => [
+  { id: 'INC-1', at: at(14, 7, 40), from: '설비팀 정비파트', kind: '부두 공사', berth: 'B2', title: 'SK 3부두 로딩암 2번 점검을 11/15 08:00으로 2시간 앞당길 수 있음', effect: '확정되면 SK 3부두 11/15 08:00~14:00 접안선 작업 시간이 늘어남' },
+  { id: 'INC-2', at: at(14, 7, 55), from: '생산계획팀', kind: '재고 변동', title: '나프타 공정 투입 지연, 11/15 06:00 이후 여유 확보가 6시간 늦어질 수 있음', effect: 'GOLDEN STAR 하역 시작 가능 시각이 늦어질 수 있음' },
+]
+
 function build(id, name, summary, patch) {
-  const s = { id, name, summary, berths: berths(), vessels: vessels(), env: env(), tanks: tanks(), urgent: urgent() }
+  const s = { id, name, summary, berths: berths(), vessels: vessels(), env: env(), tanks: tanks(), urgent: urgent(), incidents: incidents(), params: { ...DEFAULT_PARAMS } }
   patch?.(s)
   return s
 }

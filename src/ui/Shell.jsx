@@ -98,10 +98,10 @@ export function Shell({ children }) {
       <nav className="rail" aria-label="메뉴">
         {menus.map((g) => (
           <div key={g.key} className={`rail-group ${group?.key === g.key ? 'on' : ''}`}>
-            <div className="rail-head mono"><span>{g.code}</span><span className="faint">{g.key}</span></div>
+            {g.items.length > 1 && <div className="rail-head">{g.label}</div>}
             {g.items.map((it) => (
               <button key={it.id} className={`rail-item ${tab === it.id ? 'on' : ''}`} aria-current={tab === it.id ? 'page' : undefined} onClick={() => go(it.id)}>
-                <Icon icon={it.icon} size={14} />
+                {it.no ? <span className="rail-no num">{it.no}</span> : <Icon icon={it.icon} size={14} />}
                 <span>{it.label}</span>
                 {it.id === 'inbox' && unread > 0 && <span className="rail-badge num" aria-label={`새 알림 ${unread}건`}>{unread}</span>}
               </button>
@@ -109,7 +109,7 @@ export function Shell({ children }) {
           </div>
         ))}
         <div className="rail-status">
-          <div className="rail-head mono"><span>PLAN</span><span className="faint">STATUS</span></div>
+          <div className="rail-head">계획 상태</div>
           {current ? (
             <p className={stale ? 'c-amber' : 'c-green'}>
               <span className="strong">{current.label} {current.status}</span>

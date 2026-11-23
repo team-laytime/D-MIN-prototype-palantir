@@ -7,27 +7,23 @@ import { useSyncExternalStore } from 'react'
 export const PASSWORD = '1234'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
-  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회' },
+  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: 'SK 3부두 하역 1팀' },
 }
 
 // 왼쪽 레일 = 묶음. roles에 없는 계정에게는 어디에도 나오지 않는다. icon은 Blueprint 아이콘 이름.
 export const NAV = [
-  { key: 'DASHBOARD', code: 'COP', gnb: '운영 현황', roles: ['scheduler'], items: [{ id: 'home', label: '운영 현황', icon: 'globe-network' }] },
-  { key: 'INBOX', code: 'INBOX', gnb: '알림함', roles: ['scheduler', 'user'], items: [{ id: 'inbox', label: '알림함', icon: 'notifications' }] },
-  { key: 'BERTH PLANNING', code: 'PLAN', gnb: '접안 계획', roles: ['scheduler'], items: [
-    { id: 'input', label: '시나리오 입력', icon: 'properties' },
-    { id: 'compare', label: '후보 비교', icon: 'comparison' },
-    { id: 'risk', label: '리스크·확정', icon: 'shield' },
+  { key: 'DASHBOARD', label: '운영', roles: ['scheduler'], items: [{ id: 'home', label: '운영 현황', icon: 'globe-network' }] },
+  { key: 'INBOX', label: '알림', roles: ['scheduler', 'user'], items: [{ id: 'inbox', label: '알림함', icon: 'notifications' }] },
+  // 11-20 피드백: REPORT 묶음 제목이 별도 탭처럼 보임 → 계획부터 메일까지 한 묶음, 번호로 순서를 보인다.
+  // 리스크 확인·확정은 후보 비교 화면에 합쳤다.
+  { key: 'BERTH PLANNING', label: '접안 계획 업무', roles: ['scheduler'], items: [
+    { id: 'input', label: '시나리오 불러오기', icon: 'properties', no: 1 },
+    { id: 'compare', label: '후보 비교·확정', icon: 'comparison', no: 2 },
+    { id: 'report', label: '접안계획 보고서', icon: 'document', no: 3 },
+    { id: 'mail', label: '확정 통보 메일', icon: 'envelope', no: 4 },
   ] },
-  { key: 'REPORT', code: 'RPT', gnb: '보고서', roles: ['scheduler'], items: [
-    { id: 'report', label: '접안계획 보고서', icon: 'document' },
-    { id: 'mail', label: '메일 작성', icon: 'envelope' },
-  ] },
-  { key: 'QUALITY', code: 'QA', gnb: '검증', roles: ['scheduler'], items: [
-    { id: 'verify', label: '계산 검증', icon: 'endorsed' },
-    { id: 'activity', label: '활동 기록', icon: 'history' },
-  ] },
-  { key: 'SCHEDULE', code: 'SCHED', gnb: '확정 일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
+  // 11-20 피드백: 계산 검증·활동 기록 화면은 뺀다(C).
+  { key: 'SCHEDULE', label: '일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
 ]
 
 export const canUse = (roleId, group) => group.roles.includes(roleId)
