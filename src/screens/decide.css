@@ -40,8 +40,8 @@
 .risk-log li:last-child { padding-bottom: 0; border-bottom: 0; }
 .risk-log-title { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; }
 
-/* 검증 표는 손계산과 자동 계산을 같은 행에서 바로 대조한다. */
-.verify-answers { min-width: 1110px; }
+/* 검증 표는 팀 엔진 계산값과 자동 계산을 같은 행에서 바로 대조한다. */
+.verify-answers { min-width: 1220px; }
 .verify-answers th, .verify-answers td { padding-left: 8px; padding-right: 8px; }
 .verify-answers td { height: 41px; font-size: 11.5px; }
 .verify-case { min-width: 150px; max-width: 180px; word-break: keep-all; line-height: 1.45; }

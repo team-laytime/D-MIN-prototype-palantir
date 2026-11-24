@@ -23,8 +23,8 @@ export const TOUR = [
     try: 'GOLDEN STAR 도착 시각을 몇 시간 늦춰 후보 변화 확인',
   },
   {
-    section: '시나리오 입력', tab: 'input', target: '[data-tour="env"]', title: '기상·조석',
-    body: '기상 악화 예보를 끄거나 시간을 바꿉니다. 만조와 일출·일몰은 대형선의 접안 가능 시간을 정합니다.',
+    section: '시나리오 입력', tab: 'input', target: '[data-tour="env"]', title: '기상·일출몰',
+    body: '기상 악화 예보(부두 제약)를 끄거나 시간을 바꿉니다. 일출·일몰은 야간 도선 제한(Last POB)과 정박개시(Daylight 07시) 계산에 쓰입니다.',
   },
   {
     section: '후보 비교', tab: 'compare', target: '[data-tour="cards"]', title: '후보 3개',
@@ -63,7 +63,7 @@ export const TOUR = [
   },
   {
     section: '검증', tab: 'verify', target: '[data-tour="answer-set"]', title: '계산 검증',
-    body: '손계산 정답과의 일치 건수, 시나리오별 절감액, 제약 위반 수입니다.',
+    body: '팀 최적화 엔진 계산값과의 일치 건수, 시나리오별 절감액, 제약 위반 수입니다.',
   },
   {
     section: '알림함', tab: 'inbox', target: '[data-tour="inbox-list"]', title: '알림함',

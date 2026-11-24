@@ -10,7 +10,7 @@ export default function Timeline({ sim, scen, range, changed = [], compact = fal
     const right = Math.min(end, range.end)
     return right > left ? { left: position(left), width: `${(right - left) / span * 100}%` } : null
   }
-  const { vessels, rows, nights, ticks, tides } = useMemo(() => {
+  const { vessels, rows, nights, ticks } = useMemo(() => {
     const vessels = Object.fromEntries(scen.vessels.map((vessel) => [vessel.id, vessel]))
     const rows = scen.berths.map((berth) => ({ berth, bars: sim.placements.filter((placement) => placement.bid === berth.id) }))
     const nights = scen.env.days.slice(0, -1).map((day, index) => ({ start: day.sunset, end: scen.env.days[index + 1].sunrise }))
@@ -20,7 +20,7 @@ export default function Timeline({ sim, scen, range, changed = [], compact = fal
       const hour = ((time % 1440) + 1440) % 1440 / 60
       ticks.push({ time, day: hour === 0, label: hour === 0 ? fmt(time).slice(0, 5) : `${String(hour).padStart(2, '0')}:00` })
     }
-    return { vessels, rows, nights, ticks, tides: scen.env.highTides.filter((time) => time >= range.start && time <= range.end) }
+    return { vessels, rows, nights, ticks }
   }, [sim, scen, range])
   const weather = scen.env.weather
   const weatherStyle = weather && interval(weather.start, weather.end)
@@ -56,7 +56,6 @@ export default function Timeline({ sim, scen, range, changed = [], compact = fal
               {ticks.map((tick) => <span key={tick.time} className={`plan-timeline-gridline ${tick.day ? 'plan-day-line' : ''}`} style={{ left: position(tick.time) }} aria-hidden="true" />)}
               {weatherStyle && <div className="plan-timeline-band plan-timeline-weather" style={weatherStyle} title={`${weather.label} · ${fmt(weather.start)} ~ ${fmt(weather.end)} · 접안 금지`} />}
               {maintenanceStyle && <div className="plan-timeline-band plan-timeline-maintenance" style={maintenanceStyle} title={`${maintenance.label} · ${fmt(maintenance.start)} ~ ${fmt(maintenance.end)}`} />}
-              {berth.tideLimited && tides.map((time) => <span key={time} className="plan-timeline-tide" style={{ left: position(time) }} title={`만조 ${fmt(time)}`} />)}
               {occupiedStyle && (
                 <div className="plan-timeline-bar plan-timeline-occupied" style={occupiedStyle} title={`${berth.occupiedBy} 현재 접안 · ${fmt(berth.occupiedUntil)}까지`}>
                   <span className="plan-timeline-bar-name mono">{berth.occupiedBy}</span>

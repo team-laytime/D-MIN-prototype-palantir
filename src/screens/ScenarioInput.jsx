@@ -1,5 +1,5 @@
 import { Button, Callout, Icon, InputGroup, NumericInput, Switch } from '@blueprintjs/core'
-import { compatibleBerths } from '../lib/engine.js'
+import { PARAMS, compatibleBerths } from '../lib/engine.js'
 import { WEATHER_CLAUSE } from '../lib/scenarios.js'
 import { NOW, at, fmt, fmtDur, fromInput, money, toInput } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
@@ -26,8 +26,8 @@ export default function ScenarioInput() {
     editScen((draft) => { draft.params[field] = value })
   }
   const setSwitching = (value) => {
-    if (!Number.isFinite(value) || value < 0 || value === scen.env.switchingMin) return
-    editScen((draft) => { draft.env.switchingMin = value })
+    if (!Number.isFinite(value) || value < 0 || value === scen.env.switchBufferMin) return
+    editScen((draft) => { draft.env.switchBufferMin = value })
   }
   const lock = <Icon icon="lock" size={10} className="faint" />
   const setEta = (index, value) => {
@@ -73,7 +73,7 @@ export default function ScenarioInput() {
 
       <Panel code="PARAM-IN" title="스케줄러 조절값" desc="스케줄러가 바꿀 수 있는 값만 · 바꾸면 후보를 바로 다시 계산" pad>
         <div className="pi-params">
-          <label><span>접안 간격 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={scen.env.switchingMin} min={0} stepSize={10} onValueChange={setSwitching} /><small>분 · 앞 선박 작업 종료 뒤 다음 접안까지</small></label>
+          <label><span>교대 여유 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={scen.env.switchBufferMin} min={0} stepSize={10} onValueChange={setSwitching} /><small>분 · 부두별 Switching(앞 선박 ETU → 다음 접안)에 더하는 계획 여유</small></label>
           <label><span>안전재고 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={params.safetyStockPct} min={0} max={50} onValueChange={(v) => setParam('safetyStockPct', v)} /><small>% · 탱크 여유에서 빼 둘 비율 (나프타 여유 {calc.tanks[0].ullageTon.toLocaleString()}t로 계산)</small></label>
           <label><span>기상 여유 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={params.weatherMarginH} min={0} max={12} onValueChange={(v) => setParam('weatherMarginH', v)} /><small>시간 · 접안 금지 구간 앞뒤로 더 비움{calc.env.weather ? ` (계산 구간 ${fmt(calc.env.weather.start)}~${fmt(calc.env.weather.end).slice(6)})` : ''}</small></label>
         </div>
@@ -149,7 +149,7 @@ export default function ScenarioInput() {
             <tbody>
               {scen.berths.map((berth) => (
                 <tr key={berth.id}>
-                  <td className="plan-nowrap"><strong>{berth.name}</strong>{berth.tideLimited && <div className="c-blue tiny">조석 제한</div>}</td>
+                  <td className="plan-nowrap"><strong>{berth.name}</strong><div className="faint tiny">Switching {PARAMS.shifting[berth.shiftGroup][0]}h · Direction {PARAMS.shifting[berth.shiftGroup][1]}h</div></td>
                   <td className="num r">{berth.maxDwt.toLocaleString()}</td>
                   <td className="num r">{berth.maxDraft}m</td>
                   <td className="small muted">{berth.products.join(', ')}</td>
@@ -171,10 +171,10 @@ export default function ScenarioInput() {
           </table>
         </Panel>
 
-        <Panel code="ENV-IN" title="기상·조석·일출몰" desc="공공데이터포털 형식 · 가상 값" data-tour="env" pad>
+        <Panel code="ENV-IN" title="기상·일출몰" desc="공공데이터포털 형식 · 가상 값" data-tour="env" pad>
           <div className="plan-weather-switch">
             <Switch checked={!!weather} onChange={(event) => toggleWeather(event.target.checked)} label="기상 악화 예보" />
-            <St tone={weather ? 'warn' : 'ok'}>{weather ? '구간 내 전 부두 접안 금지' : '기상 악화 없음'}</St>
+            <St tone={weather ? 'warn' : 'ok'}>{weather ? '종료 + Direction까지 전 부두 접안 금지' : '기상 악화 없음'}</St>
           </div>
           {weather && (
             <div className="plan-weather">
@@ -186,14 +186,12 @@ export default function ScenarioInput() {
             </div>
           )}
           <dl className="plan-env-list small">
-            <dt>만조</dt>
-            <dd className="plan-time-list">{scen.env.highTides.slice(0, 6).map((time) => <span className="num" key={time}>{fmt(time)}</span>)}</dd>
             <dt>일출 / 일몰</dt>
             <dd className="plan-time-list">{scen.env.days.slice(1, 4).map((day) => <span className="num" key={day.day}>{fmt(day.sunrise)} / {fmt(day.sunset).slice(6)}</span>)}</dd>
             <dt>접안 규칙</dt>
             <dd>
-              부두 전환 <span className="num">{scen.env.switchingMin / 60}</span>시간 · DWT <span className="num">{(scen.env.daylightDwt / 10000).toFixed(0)}</span>만 톤 이상은 주간(일몰 1시간 전까지)만 접안 ·
-              SK 6부두 흘수 <span className="num">{scen.env.tideDraft}</span>m 이상은 만조 ±<span className="num">{scen.env.tideWindowMin / 60}</span>시간
+              ETB = max(ETA + Direction, 앞 선박 ETU + Switching) · 야간 도선 제한(GRT 7.5만 톤 이상, 또는 3만 톤 이상 수입선 · 흘수 10.5m 이상): 02~08시 접안 불가, Last POB(일몰 − 1.5~2시간) 뒤 도착은 다음 날 08시 ·
+              기상 부두 제약 종료 + Direction 뒤 접안 · 조석은 계산에 넣지 않음
             </dd>
             <dt>탱크</dt>
             <dd>{scen.tanks.map((tank) => <span key={tank.product}>{tank.product} 여유 <span className="num">{tank.ullageTon.toLocaleString()}</span>톤 </span>)}</dd>

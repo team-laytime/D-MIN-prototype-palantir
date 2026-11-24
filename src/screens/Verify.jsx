@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useApp } from '../state/app.jsx'
 import { ANSWER_SET } from '../lib/answerSet.js'
-import { demurrage, runSearch, validate } from '../lib/engine.js'
-import { SCENARIOS } from '../lib/scenarios.js'
+import { afterEtb, demurrage, runSearch, validate } from '../lib/engine.js'
+import { SCENARIOS, SUN_DAYS } from '../lib/scenarios.js'
 import { fmt, fmtDur, money } from '../lib/time.js'
 import { Panel, Screen, Stats, St } from '../ui/kit.jsx'
 import './decide.css'
@@ -12,9 +12,13 @@ const CLAUSE = { FULL: '전부 공제', HALF: '50% 공제', NONE: '공제 없음
 export default function Verify() {
   const { scenarioId } = useApp()
   const calc = useMemo(() => ANSWER_SET.map((test) => {
-    const vessel = { eta: test.eta, contract: { laytimeH: test.laytimeH, rateUsd: test.rateUsd, norTurnH: test.turnH, weather: test.weather } }
-    const dem = demurrage(vessel, test.etb, test.etu, { weather: test.wx })
-    return { ...test, got: dem.cents, ok: dem.cents === test.expectedCents, excess: dem.excessMin }
+    const vessel = {
+      eta: test.eta, ton: test.ton, rates: { X: test.rate }, vesselType: test.vesselType,
+      contract: { laytimeH: test.laytimeH, rateUsd: test.rateUsd, norTurnH: test.turnH, weather: test.weather, laycan: test.laycan, cfr: test.cfr },
+    }
+    const work = afterEtb(vessel, 'X', test.etb)
+    const dem = demurrage(vessel, test.etb, work.etu, { weather: test.wx, days: SUN_DAYS })
+    return { ...test, hoseOff: work.hoseOff, ltStart: dem.ltStart, got: dem.cents, ok: dem.cents === test.expectedCents, excess: dem.excessMin }
   }), [])
   const scenarios = useMemo(() => Object.entries(SCENARIOS).map(([id, make]) => {
     const scenario = make()
@@ -34,7 +38,7 @@ export default function Verify() {
 
   return (
     <Screen tab="verify" title="계산 검증" bodyClass="verify-page">
-      <p className="verify-intro muted small">손계산 정답과 자동 계산의 일치 여부, 시나리오별 도착순 기준안 대비 절감액과 제약 위반 수.</p>
+      <p className="verify-intro muted small">팀 최적화 엔진(D-MIN-optimization) 계산값과 자동 계산의 일치 여부, 시나리오별 도착순 기준안 대비 절감액과 제약 위반 수.</p>
       <Stats items={[
         { label: '정답 일치', value: <>{okCount}/{calc.length}<span className="verify-stat-unit">일치</span></>, tone: okCount === calc.length ? 'green' : 'red', sub: '센트 단위 대조 · HALF_UP' },
         { label: '시나리오', value: <>{scenarios.length}<span className="verify-stat-unit">개</span></>, sub: 'S1–S3 · 같은 계산 규칙' },
@@ -43,12 +47,12 @@ export default function Verify() {
 
       <Panel
         code="ANSWER-SET" title="체선료 계산 정답 세트" data-tour="answer-set"
-        desc="팀원 손계산 값(Decimal, HALF_UP)과 자동 계산을 센트 단위로 비교"
+        desc="팀 엔진 berth_sim/after_etb로 낸 값(Decimal, HALF_UP)과 이 화면의 자동 계산을 센트 단위로 비교"
         actions={<St tone={okCount === calc.length ? 'ok' : 'bad'}>일치 <span className="num">{okCount} / {calc.length}</span>건</St>}
       >
         <table className="dt verify-answers">
           <thead>
-            <tr><th>ID</th><th>사례</th><th>NOR</th><th>접안</th><th>작업 종료</th><th className="r">허용</th><th>기상 조항</th><th className="r">초과</th><th className="r">손계산</th><th className="r">자동 계산</th><th className="c">결과</th></tr>
+            <tr><th>ID</th><th>사례</th><th>NOR</th><th>접안</th><th>정박개시</th><th>호스분리</th><th className="r">허용</th><th>기상 조항</th><th className="r">초과</th><th className="r">팀 엔진</th><th className="r">자동 계산</th><th className="c">결과</th></tr>
           </thead>
           <tbody>
             {calc.map((row) => (
@@ -57,11 +61,12 @@ export default function Verify() {
                 <td className="verify-case">{row.note}</td>
                 <td className="verify-time"><span className="num">{fmt(row.eta)}</span>{row.turnH > 0 && <span className="num faint"> +{row.turnH}h</span>}</td>
                 <td className="num verify-time">{fmt(row.etb)}</td>
-                <td className="num verify-time">{fmt(row.etu)}</td>
+                <td className="num verify-time">{fmt(row.ltStart)}</td>
+                <td className="num verify-time">{fmt(row.hoseOff)}</td>
                 <td className="num r">{row.laytimeH}h</td>
                 <td className="verify-clause">{CLAUSE[row.weather]}</td>
                 <td className="r verify-duration">{fmtDur(row.excess)}</td>
-                <td className="num r">{money(row.expectedCents)}</td>
+                <td className="num r">{money(row.expectedCents)}{row.teamCents !== undefined && <div className="tiny c-amber" title="팀 엔진은 float로 계산한 뒤 반올림해 정확한 반 센트를 내림합니다">엔진 {money(row.teamCents)}</div>}</td>
                 <td className="num r">{money(row.got)}</td>
                 <td className="c"><St tone={row.ok ? 'ok' : 'bad'}>{row.ok ? '일치' : '불일치'}</St></td>
               </tr>

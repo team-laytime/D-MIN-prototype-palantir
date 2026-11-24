@@ -1,25 +1,26 @@
 import { at } from './time.js'
 
-// 전부 가상 데이터다. 조석·일출몰 값은 11월 울산 근처 수준으로 맞춘 예시일 뿐이다.
+// 전부 가상 데이터다. 일출·일몰은 팀 최적화 엔진(D-MIN-optimization berth_sim/sun.py) 근사식으로 뽑은 2026-11 울산 값이다.
+// 조석은 계산에 쓰지 않는다(멘토링: 조석은 고려하지 않음). 부두 그룹(shiftGroup)은 팀 엔진 Shifting 표의 행 이름이다.
 // 부두 이름·위치·제원은 SK 울산 액체부두 공개 자료 수준(팀 portwise 프로토타입과 같은 값)에 맞췄다.
 const berths = () => [
   {
     id: 'B1', name: 'SK 6부두', code: 'SK6', maxDwt: 70000, maxDraft: 14.5,
-    products: ['나프타', '경유', '휘발유', '벙커C'], tideLimited: true,
+    products: ['나프타', '경유', '휘발유', '벙커C'], shiftGroup: '#6',
     occupiedBy: 'SEA DRAGON', occupiedUntil: at(14, 9),
     facility: { known: true, maintenance: null },
     pos: [35.4855, 129.3907], moor: [35.4851, 129.3926],
   },
   {
     id: 'B2', name: 'SK 3부두', code: 'SK3', maxDwt: 50000, maxDraft: 11.5,
-    products: ['휘발유', '경유', '항공유', '등유'], tideLimited: false,
+    products: ['휘발유', '경유', '항공유', '등유'], shiftGroup: '#3',
     occupiedBy: 'KOMODO', occupiedUntil: at(14, 4),
     facility: { known: true, maintenance: { start: at(15, 10), end: at(15, 14), label: '로딩암 2번 정기 점검' } },
     pos: [35.4946, 129.3829], moor: [35.4941, 129.3848],
   },
   {
     id: 'B3', name: 'SK 5부두', code: 'SK5', maxDwt: 15000, maxDraft: 9.0,
-    products: ['등유', '경유', '휘발유'], tideLimited: false,
+    products: ['등유', '경유', '휘발유'], shiftGroup: '#5-5',
     occupiedBy: null, occupiedUntil: null,
     facility: { known: false, maintenance: null },
     pos: [35.4892, 129.3863], moor: [35.4888, 129.3882],
@@ -43,8 +44,8 @@ export const MAP_CONTEXT = {
   ],
 }
 
-// workMin = 물량 / 펌프율 + 부대작업 120분(호스 연결·검척·서류)
-const work = (ton, rate) => Math.round((ton / rate) * 60) + 120
+// workMin = ETB→작업시작 1시간 + 물량 / 하역 속도 + 작업완료→ETU 2시간 (팀 엔진 after_etb s1~s3, 가장 빠른 부두 기준)
+const work = (ton, rate) => 60 + Math.round((ton / rate) * 60) + 120
 
 const vessels = () => [
   { id: 'V1', name: 'PACIFIC JADE', product: '경유', dir: '수출', dwt: 48000, draft: 11.0, ton: 45000, pump: 2500,
@@ -52,14 +53,32 @@ const vessels = () => [
   { id: 'V2', name: 'OCEAN LILY', product: '휘발유', dir: '수출', dwt: 40000, draft: 10.2, ton: 35000, pump: 2500,
     eta: at(14, 5, 30), contract: { id: 'CA-2611-021', laytimeH: 22, rateUsd: 22000, norTurnH: 6, weather: 'HALF' } },
   { id: 'V3', name: 'GOLDEN STAR', product: '나프타', dir: '수입', dwt: 68000, draft: 13.2, ton: 62000, pump: 3000,
-    eta: at(14, 8), contract: { id: 'CA-2610-087', laytimeH: 32, rateUsd: 35000, norTurnH: 6, weather: 'NONE' } },
+    eta: at(14, 8), contract: { id: 'CA-2610-087', laytimeH: 28, rateUsd: 45000, norTurnH: 6, weather: 'NONE' } },
   { id: 'V4', name: 'HANA MARU', product: '등유', dir: '수출', dwt: 12000, draft: 7.5, ton: 10000, pump: 1250,
     eta: at(14, 10), contract: { id: 'CA-2611-030', laytimeH: 14, rateUsd: 12000, norTurnH: 0, weather: 'FULL' } },
   { id: 'V5', name: 'STELLA', product: '항공유', dir: '수출', dwt: 45000, draft: 11.0, ton: 40000, pump: 2500,
     eta: at(14, 14), contract: { id: 'CA-2611-033', laytimeH: 26, rateUsd: 30000, norTurnH: 6, weather: 'FULL' } },
-  { id: 'V6', name: 'BLUE CORAL', product: '벙커C', dir: '수출', dwt: 30000, draft: 9.8, ton: 25000, pump: 1800,
+  { id: 'V6', name: 'BLUE CORAL', product: '벙커C', dir: '수출', dwt: 30000, draft: 9.8, ton: 25000, pump: 2000,
     eta: at(14, 20), contract: { id: 'CA-2611-041', laytimeH: 22, rateUsd: 18000, norTurnH: 6, weather: 'HALF' } },
-].map((v) => ({ ...v, ...SPECS[v.id], ...PARTICULARS[v.id], workMin: work(v.ton, v.pump) }))
+].map((v) => ({ ...v, vesselType: '석유제품선', nrTender: null, ...SPECS[v.id], ...PARTICULARS[v.id], rates: RATES[v.id], contract: { ...v.contract, laycan: LAYCAN[v.id] }, workMin: work(v.ton, Math.max(...Object.values(RATES[v.id]))) }))
+
+// 배 × 부두 하역 속도(t/h, 가상). 팀 엔진은 전처리(berth_prep/rates.py)가 과거 하역 실적
+// (선박코드 + 자재 + 부두 → 없으면 부두 + 자재, 같은 배 기록은 물량 0.5~2배일 때만)의 평균으로 만든다.
+const RATES = {
+  V1: { B1: 2500, B2: 2250 }, V2: { B1: 2500, B2: 2000 }, V3: { B1: 3000 },
+  V4: { B2: 1250, B3: 1000 }, V5: { B2: 2500 }, V6: { B1: 2000 },
+}
+
+// LayCan(가상). 데이터 팀 묶음 규칙: 울산에서 싣는 배만 있고 ATA 기준 3일 창(첫날 00:00 ~ 마지막 날 16:00),
+// 실제 묶음은 창 안 60% · 조기 25% · 지연 15%이고, 이 시연 6척은 모두 창 안으로 둔다. 내리기만 하는 배(수입)는 없음(null) → LayCan 분기를 건너뛴다.
+const LAYCAN = {
+  V1: { from: at(13, 0), to: at(15, 16), case: '창 안' },
+  V2: { from: at(13, 0), to: at(15, 16), case: '창 안' },
+  V3: null,
+  V4: { from: at(13, 0), to: at(15, 16), case: '창 안' },
+  V5: { from: at(13, 0), to: at(15, 16), case: '창 안' },
+  V6: { from: at(14, 0), to: at(16, 16), case: '창 안' },
+}
 
 // 선박 카드용 제원(가상). 선명·MMSI·IMO·호출부호는 실제 선박과 무관하다.
 const SPECS = {
@@ -83,19 +102,21 @@ const PARTICULARS = {
   V6: { built: 2010, cls: 'DNV', nt: 8300, depth: 15.2, speedKn: 12.0, engine: 'Wärtsilä 6RT-flex50 · 7,100kW', owner: 'Blue Coral Pte. Ltd. (가상)', manager: 'Straits Tanker Mgmt (가상)', cargoM3: 34500, tanks: 10, manifold: '10in × 4', aisDest: 'ULSAN', aisEtaDiff: -40 },
 }
 
+// 울산 일출 · 일몰 (팀 엔진 berth_sim/sun.py, NOAA 근사식, 분 단위 반올림)
+export const SUN_DAYS = [
+  { day: 13, sunrise: at(13, 6, 56), sunset: at(13, 17, 19) },
+  { day: 14, sunrise: at(14, 6, 57), sunset: at(14, 17, 18) },
+  { day: 15, sunrise: at(15, 6, 58), sunset: at(15, 17, 17) },
+  { day: 16, sunrise: at(16, 6, 59), sunset: at(16, 17, 17) },
+  { day: 17, sunrise: at(17, 7, 0), sunset: at(17, 17, 16) },
+  { day: 18, sunrise: at(18, 7, 1), sunset: at(18, 17, 16) },
+]
+
 const env = () => ({
-  switchingMin: 120,
-  daylightDwt: 60000,
-  tideDraft: 11.5,
-  tideWindowMin: 120,
-  days: [
-    { day: 13, sunrise: at(13, 7, 8), sunset: at(13, 17, 25) },
-    { day: 14, sunrise: at(14, 7, 9), sunset: at(14, 17, 24) },
-    { day: 15, sunrise: at(15, 7, 10), sunset: at(15, 17, 23) },
-    { day: 16, sunrise: at(16, 7, 11), sunset: at(16, 17, 23) },
-    { day: 17, sunrise: at(17, 7, 12), sunset: at(17, 17, 22) },
-  ],
-  highTides: [at(14, 3, 10), at(14, 15, 28), at(15, 3, 52), at(15, 16, 15), at(16, 4, 33), at(16, 16, 58), at(17, 5, 15), at(17, 17, 40)],
+  // 계획 여유(분): 부두별 Switching에 더하는 값 (팀 엔진 shifting.buffer_switch_h, 기본 0)
+  switchBufferMin: 0,
+  days: SUN_DAYS.map((d) => ({ ...d })),
+  // 기상은 '사용자 설정 부두 제약'(멘토링 장표 13쪽: 기상 정보 대신 부두 제약 시간 설정)으로 전 부두에 건다.
   weather: { start: at(14, 18), end: at(15, 6), label: '강풍 주의보 (최대 풍속 17m/s)', source: '기상청 단기예보 (가상)' },
 })
 
@@ -108,7 +129,7 @@ const urgent = () => [
 ]
 
 // 스케줄러가 바꿀 수 있는 값(11-20 피드백). 계약 정보는 바꿀 수 없다.
-//   switchingMin(접안 간격)은 env에 있고, 나머지 둘은 계산 직전에 applyParams로 반영한다.
+//   switchBufferMin(교대 여유)은 env에 있고, 나머지 둘은 계산 직전에 applyParams로 반영한다.
 export const DEFAULT_PARAMS = { safetyStockPct: 5, weatherMarginH: 0 }
 
 /** 계산에 쓰는 시나리오: 기상 여유만큼 접안 금지 구간을 넓히고, 안전재고만큼 탱크 여유를 줄인다. */
@@ -145,13 +166,13 @@ function build(id, name, summary, patch) {
 export const SCENARIOS = {
   S1: () => build('S1', '기상 악화 예보일 선박 집중', '11/14 18시부터 12시간 강풍 예보, 6척이 하루 안에 도착'),
   S2: () => build('S2', '평시 (기상 이상 없음)', 'S1과 같은 선박, 기상 악화 예보 없음', (s) => { s.env.weather = null }),
-  S3: () => build('S3', '대형선 지연 + 조석 제약', 'GOLDEN STAR가 8시간 늦게 도착, 만조·주간 접안 제약이 겹침', (s) => {
+  S3: () => build('S3', '대형선 지연 + 야간 도선 제한', 'GOLDEN STAR가 8시간 늦게 도착해 Last POB를 넘김, 다음 날 08시까지 접안 불가', (s) => {
     s.vessels.find((v) => v.id === 'V3').eta = at(14, 16)
   }),
 }
 
 export const WEATHER_CLAUSE = {
-  FULL: { label: '기상 대기 전부 공제', ratio: 1, rule: 'WX-DED-FULL' },
-  HALF: { label: '기상 대기 50% 공제', ratio: 0.5, rule: 'WX-DED-HALF' },
-  NONE: { label: '기상 대기 공제 없음', ratio: 0, rule: 'WX-DED-NONE' },
+  FULL: { label: '기상체선 시간 전부 공제', ratio: 1, rule: 'WX-DED-FULL' },
+  HALF: { label: '기상체선 시간 50% 공제', ratio: 0.5, rule: 'WX-DED-HALF' },
+  NONE: { label: '기상체선 시간 공제 없음', ratio: 0, rule: 'WX-DED-NONE' },
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Drawer, Icon, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { useDarkClass } from '../state/theme.js'
-import { RULES, compatibleBerths, stateAt } from '../lib/engine.js'
+import { PARAMS, RULES, compatibleBerths, stateAt } from '../lib/engine.js'
 import { NAV, anchorageFor, positionOf } from '../lib/vesselState.js'
 import { fmt, fmtDur, money } from '../lib/time.js'
 import { addNote, historyOf, notesOf, removeNote, role } from '../lib/workspace.js'
@@ -10,7 +10,7 @@ import { Panel, St } from '../ui/kit.jsx'
 import './drawer.css'
 
 const yearTime = (minutes) => `26-${fmt(minutes).replace('/', '-')}`
-const weatherLabel = { FULL: '기상 대기 전부 공제', HALF: '기상 대기 50% 공제', NONE: '공제 없음' }
+const weatherLabel = { FULL: '기상체선 시간 전부 공제', HALF: '기상체선 시간 50% 공제', NONE: '공제 없음' }
 const phaseTone = { coming: 'live', waiting: 'warn', berthed: 'ok', left: 'idle' }
 
 function Details({ rows }) {
@@ -66,16 +66,17 @@ export default function VesselDrawer() {
   const etbDiff = p.etb - base.etb
   const feeDiff = d.cents - base.dem.cents
   const steps = [
-    { rule: 'ETA', k: '도착 (NOR)', f: `NOR 제출 ${fmt(v.eta)}`, val: fmt(v.eta), numeric: true },
-    { rule: p.binding, k: '접안 (ETB)', f: p.blockers.length ? `${p.blockers.map((b) => RULES[b.rule].label).join(' · ')} → ${fmt(d.etb)} 접안` : `제약 없음 → ${fmt(d.etb)} 접안`, val: fmt(d.etb), numeric: true },
-    { rule: d.ltStartRule, k: '정박개시', f: d.turnMin > 0 ? `min(NOR + ${v.contract.norTurnH}시간, 접안)` : 'NOR 제출 즉시', val: fmt(d.ltStart), numeric: true },
-    { rule: 'LT-END-WORK', k: '정박종료', f: '작업 종료(호스 분리)', val: fmt(d.etu), numeric: true },
-    { rule: d.clause.rule, k: '기상 공제', f: d.wxOverlap ? `대기 중 기상 악화 ${fmtDur(d.wxOverlap)} × ${d.clause.ratio * 100}%` : '정박시간 중 기상 대기 없음', val: d.wxDeduct ? `− ${fmtDur(d.wxDeduct)}` : '0' },
-    { rule: '-', k: '산입 시간', f: `사용 ${fmtDur(d.usedMin)} − 공제`, val: fmtDur(d.countedMin) },
-    { rule: '-', k: '체선 시간', f: `산입 − 허용 ${fmtDur(d.allowMin)} (0 미만은 0)`, val: fmtDur(d.excessMin) },
+    { rule: 'ETANR', k: 'ETANR (NOR)', f: v.nrTender != null ? `N/R Tender ${fmt(v.nrTender)}` : `N/R Tender 없음 → ETA ${fmt(v.eta)}`, val: fmt(d.etanr), numeric: true },
+    { rule: p.binding, k: '접안 (ETB)', f: `${p.binding === 'ETB-SWITCHING' ? `앞 선박 ETU + Switching ${fmtDur(p.sw)}` : `ETA + Direction ${fmtDur(p.dir)}`} = ${fmt(p.from)}${p.blockers.length ? ` → ${p.blockers.map((b) => RULES[b.rule].label).join(' · ')} → ${fmt(d.etb)}` : ''}`, val: fmt(d.etb), numeric: true },
+    { rule: 'WORK-FINISH', k: '작업완료', f: <>ETB + 1시간 + {v.ton.toLocaleString()}톤 ÷ {p.rate.toLocaleString()} t/h ({fmtDur(p.pumpMin)})</>, val: fmt(p.finish), numeric: true },
+    { rule: 'HOSE-OFF', k: '호스분리', f: `작업완료 + 30분 (ETU는 작업완료 + 2시간 = ${fmt(d.etu)})`, val: fmt(d.hoseOff), numeric: true },
+    { rule: d.ltStartRule, k: '정박개시', f: d.ltReason, val: fmt(d.ltStart), numeric: true },
+    { rule: 'LT-END', k: '정박종료', f: `정박개시 + Laytime ${fmtDur(d.allowMin)}${d.crudeHalf ? ' (원유선 · CFR 아님 50%)' : ''}`, val: fmt(d.ltEnd), numeric: true },
+    { rule: d.clause.rule, k: '기상체선', f: d.wxOverlap ? `정박개시 ~ 호스분리 중 기상 제약 ${fmtDur(d.wxOverlap)} × ${d.clause.ratio * 100}%` : '정박개시 ~ 호스분리 중 기상 제약 없음', val: d.wxDeduct ? `− ${fmtDur(d.wxDeduct)}` : '0' },
+    { rule: '-', k: '체선 시간', f: '호스분리 − 정박종료 − 기상 공제 (0 미만은 0)', val: fmtDur(d.excessMin) },
     { rule: 'DEM-PRORATA', k: '체선료', f: <>{fmtDur(d.excessMin)} ÷ 24시간 × {rate(d.rateCents)}/일</>, val: money(d.cents), numeric: true, strong: true },
   ]
-  const allowEnd = d.ltStart + d.allowMin + d.wxDeduct
+  const allowEnd = d.ltEnd + d.wxDeduct
   const t0 = Math.min(v.eta, d.ltStart) - 120
   const t1 = Math.max(d.etu, allowEnd) + 120
   const X = (m) => `${(2 + ((m - t0) / (t1 - t0)) * 96).toFixed(2)}%`
@@ -167,7 +168,7 @@ export default function VesselDrawer() {
                 ['치수', <>길이(LOA) <span className="num">{v.loa} m</span> · 폭 <span className="num">{v.beam} m</span> · 형심 <span className="num">{v.depth} m</span> · 흘수 <span className="num">{v.draft} m</span></>],
                 ['기관 · 속력', <>{v.engine} <span className="muted">· 서비스 속력 <span className="num">{v.speedKn}kn</span></span></>],
                 ['화물창', <>탱크 <span className="num">{v.tanks}</span>개 · 용량 <span className="num">{v.cargoM3.toLocaleString()} ㎥</span> · 매니폴드 {v.manifold}</>],
-                ['양하 능력', <><span className="num">{v.pump.toLocaleString()} t/h</span> <span className="muted">(부대작업 포함 작업 시간 {fmtDur(v.workMin)})</span></>],
+                ['하역 속도', <><span className="num">{p.rate.toLocaleString()} t/h</span> <span className="muted">({berth.name} 기준 · 접안~이안 {fmtDur(p.etu - p.etb)})</span></>],
                 ['소유 · 관리', <>{v.owner}<br /><span className="muted">관리사 {v.manager}</span></>],
                 ['기상 공제', <>{weatherLabel[v.contract.weather]} <span className="muted">(계약 <span className="mono">{v.contract.id}</span>)</span></>],
               ]} />
@@ -185,19 +186,19 @@ export default function VesselDrawer() {
               <Details rows={[
                 ['계획', sim.label],
                 ['부두 · 접안', <>{berth.name} · ETB <span className="num">{fmt(p.etb)}</span> → ETU <span className="num">{fmt(p.etu)}</span></>],
-                ['정박 시간', <><span className="num">{fmt(d.ltStart)} ~ {fmt(d.etu)}</span> (허용 <span className="num">{v.contract.laytimeH}h</span>)</>],
+                ['정박 시간', <><span className="num">{fmt(d.ltStart)} ~ {fmt(d.hoseOff)}</span> (정박종료 <span className="num">{fmt(d.ltEnd)}</span>)</>],
                 ['체선', <b className={d.cents > 0 ? 'c-red' : 'c-green'}>{fmtDur(d.excessMin)} · <span className="num">{money(d.cents)}</span></b>],
               ]} />
             </Panel>
             <Panel code="TIME-FLOW" title="시간 흐름" pad>
-              <div className="vessel-drawer-flow" role="img" aria-label={`도착 ${fmt(v.eta)}, 접안 ${fmt(d.etb)}, 정박개시 ${fmt(d.ltStart)}, 작업 종료 ${fmt(d.etu)}, 체선 ${fmtDur(d.excessMin)}`}>
+              <div className="vessel-drawer-flow" role="img" aria-label={`도착 ${fmt(v.eta)}, 접안 ${fmt(d.etb)}, 정박개시 ${fmt(d.ltStart)}, 호스분리 ${fmt(d.hoseOff)}, 체선 ${fmtDur(d.excessMin)}`}>
                 <div className="vessel-drawer-axis" />
                 {v.eta < d.etb && <div className="vessel-drawer-segment wait" style={{ left: X(v.eta), width: W(v.eta, d.etb) }} />}
                 <div className="vessel-drawer-segment work" style={{ left: X(d.etb), width: W(d.etb, d.etu) }} />
-                <div className="vessel-drawer-segment lay" style={{ left: X(d.ltStart), width: W(d.ltStart, Math.min(allowEnd, d.etu)) }} />
-                {d.excessMin > 0 && <div className="vessel-drawer-segment dem" style={{ left: X(allowEnd), width: W(allowEnd, d.etu) }} />}
+                <div className="vessel-drawer-segment lay" style={{ left: X(d.ltStart), width: W(d.ltStart, Math.min(allowEnd, d.hoseOff)) }} />
+                {d.excessMin > 0 && <div className="vessel-drawer-segment dem" style={{ left: X(allowEnd), width: W(allowEnd, d.hoseOff) }} />}
                 <span className="vessel-drawer-tick" style={{ left: X(v.eta) }}>ETA <span className="num">{fmt(v.eta).slice(6)}</span></span>
-                <span className="vessel-drawer-tick end" style={{ left: X(d.etu) }}>작업 종료 <span className="num">{fmt(d.etu).slice(6)}</span></span>
+                <span className="vessel-drawer-tick end" style={{ left: X(d.hoseOff) }}>호스분리 <span className="num">{fmt(d.hoseOff).slice(6)}</span></span>
                 <span className="vessel-drawer-tick bottom" style={{ left: X(d.ltStart) }}>정박개시</span>
               </div>
               <p className="vessel-drawer-legend"><span>점선 대기</span> · <span className="c-blue">파랑 작업</span> · <span className="c-green">초록 허용 정박시간</span> · <span className="c-red">빨강 체선</span></p>
@@ -218,7 +219,7 @@ export default function VesselDrawer() {
             <details className="vd-fold"><summary>접안 시각 결정 · 최저안 대비 · 계약</summary>
             <Panel code="ETB-RULES" title="접안 시각 결정" pad>
               <ul className="vessel-drawer-why">
-                <li>도착(NOR) <b className="num">{fmt(v.eta)}</b>{p.ready !== null && <> · {berth.name} 앞 선박 <b>{p.prev}</b> 작업 종료 + 전환 2시간 = <b className="num">{fmt(p.ready)}</b></>} → 둘 중 늦은 <b className="num">{fmt(p.from)}</b>부터 접안 가능 여부 판정</li>
+                <li>ETA <b className="num">{fmt(v.eta)}</b> + Direction {fmtDur(p.dir)} = <b className="num">{fmt(v.eta + p.dir)}</b>{p.ready !== null && <> · {berth.name} 앞 선박 <b>{p.prev}</b> ETU + Switching {fmtDur(p.sw)} = <b className="num">{fmt(p.ready)}</b></>} → <b className="num">{fmt(p.from)}</b>부터 접안 가능 여부 판정 <span className="chip">{p.binding}</span></li>
                 {p.blockers.map((b) => <li key={`${b.rule}-${b.from}`}><span className="num">{fmt(b.from)} ~ {fmt(b.to)}</span> 접안 불가 · {RULES[b.rule].label} <span className="chip">{b.rule}</span></li>)}
                 {!p.blockers.length && <li>추가 제약 없음 · 즉시 접안</li>}
               </ul>
@@ -229,16 +230,16 @@ export default function VesselDrawer() {
                 ['접안 시각 차이', <span className={etbDiff > 0 ? 'c-amber' : etbDiff < 0 ? 'c-green' : 'muted'}>{etbDiff === 0 ? '최저안과 같음' : `최저안보다 ${fmtDur(Math.abs(etbDiff))} ${etbDiff > 0 ? '늦게 접안' : '일찍 접안'}`}</span>],
                 ['체선료 차이', <span className={feeDiff > 0 ? 'c-red' : feeDiff < 0 ? 'c-green' : 'muted'}>{feeDiff === 0 ? '최저안과 같음' : <><span className="num">{money(Math.abs(feeDiff))}</span> {feeDiff > 0 ? '증가' : '절감'}</>}</span>],
                 ['앞 선박 · 대기', <>최저안: {base.ready === null ? '앞 선박 없음' : base.prev} · {fmtDur(base.waitMin)}<br />선택안: {p.ready === null ? '앞 선박 없음' : p.prev} · {fmtDur(p.waitMin)}</>],
-                ['차이의 근거', <>{base.bid === p.bid ? `${berth.name}의 앞 선박과 접안 제약을 적용한 결과입니다.` : `${berthName(base.bid)}에서 ${berth.name}로 부두 배정을 변경한 결과입니다.`} {p.ready !== null && p.ready > v.eta && <>앞 선박 {p.prev}의 작업 종료 후 부두 전환 2시간을 기다립니다. </>}{p.blockers.length > 0 ? `${[...new Set(p.blockers.map((b) => RULES[b.rule].label))].join(' · ')} 제약을 적용합니다.` : '기상·주간·조석에 따른 추가 접안 제약은 없습니다.'}</>],
+                ['차이의 근거', <>{base.bid === p.bid ? `${berth.name}의 앞 선박과 접안 제약을 적용한 결과입니다.` : `${berthName(base.bid)}에서 ${berth.name}로 부두 배정을 변경한 결과입니다.`} {p.binding === 'ETB-SWITCHING' && <>앞 선박 {p.prev}의 ETU 뒤 Switching {fmtDur(p.sw)}을 기다립니다. </>}{p.blockers.length > 0 ? `${[...new Set(p.blockers.map((b) => RULES[b.rule].label))].join(' · ')} 제약을 적용합니다.` : '기상 부두 제약 · 야간 도선 제한에 따른 추가 접안 제약은 없습니다.'}</>],
               ]} />
             </Panel>}
             <Panel code="CONTRACT" title="적용 계약 · 규칙">
               <Details rows={[
                 ['Laytime', <><span className="num">{v.contract.laytimeH}h</span> <span className="muted">(계약 <span className="mono">{v.contract.id}</span>)</span></>],
-                ['정박시간 개시', v.contract.norTurnH ? `NOR 후 ${v.contract.norTurnH}시간 또는 접안 중 빠른 때` : 'NOR 즉시'],
+                ['정박시간 개시', <>{v.contract.laycan ? <>LayCan <span className="num">{fmt(v.contract.laycan.from)} ~ {fmt(v.contract.laycan.to)}</span> · </> : 'LayCan 없음(양하) · '}NOR 후 {v.contract.norTurnH}시간{PARAMS.afterEtb.daylightTypes.includes(v.vesselType) ? ' · Daylight 적용(일출 전 · 일몰 뒤 NOR은 07:00)' : ''} · 접안이 더 이르면 접안 시각</>],
                 ['기상 조항', d.clause.label],
-                ['작업 시간', <><span className="num">{v.ton.toLocaleString()}</span>톤 ÷ <span className="num">{v.pump.toLocaleString()}</span>톤/시간 + 부대작업 2시간 = {fmtDur(v.workMin)}</>],
-                ['계산 기준', '규칙 엔진 · LLM 사용 안 함'],
+                ['작업 시간', <>ETB + 1시간 + <span className="num">{v.ton.toLocaleString()}</span>톤 ÷ <span className="num">{p.rate.toLocaleString()}</span> t/h + 2시간 = {fmtDur(p.etu - p.etb)}</>],
+                ['계산 기준', '팀 최적화 엔진(D-MIN-optimization berth_sim) 계산식 · LLM 사용 안 함'],
               ]} />
             </Panel>
             </details>
