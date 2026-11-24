@@ -10,6 +10,7 @@ import { fmt, fmtDur, money } from '../lib/time.js'
 import { Panel, Screen, St, Stats, riskTone } from '../ui/kit.jsx'
 import { TotalChart, VesselChart } from './ReportCharts.jsx'
 import { describe } from './Compare.jsx'
+import OrderCompare from './OrderCompare.jsx'
 import './report.css'
 
 export default function Report() {
@@ -109,10 +110,10 @@ export default function Report() {
           <Button size="small" icon="print" onClick={exportPdf}>PDF</Button>
         </div>
       }>
-        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} why={why} onVessel={(simId, vid) => openVessel(simId, vid)} />}
+        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} why={why} sims={result.error ? [] : [result.fcfs, ...result.candidates]} scen={scen} onVessel={(simId, vid) => openVessel(simId, vid)} />}
         </Panel>
       </div>
-      {createPortal(<div id="print-root" className="rpt-print-root"><ReportDoc m={model} onVessel={() => {}} /></div>, document.body)}
+      {createPortal(<div id="print-root" className="rpt-print-root"><ReportDoc m={model} why={why} sims={result.error ? [] : [result.fcfs, ...result.candidates]} scen={scen} onVessel={() => {}} /></div>, document.body)}
     </Screen>
   )
 }
@@ -122,7 +123,8 @@ function VesselLink({ simId, vid, name, onVessel }) {
   return <button type="button" className="rpt-obj" title="선박 카드 열기" onClick={() => onVessel(simId, vid)}>{name}</button>
 }
 
-function ReportDoc({ m, why = [], onVessel }) {
+function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
+  const selWhy = why.find((c) => c.id === m.sel.id)
   const series = [{ id: 'FCFS', label: '기준안' }, ...m.items.map((it) => ({ id: it.id, label: it.label }))]
   return (
     <article className="rpt-doc">
@@ -139,6 +141,16 @@ function ReportDoc({ m, why = [], onVessel }) {
           <p>{m.judgment || '왼쪽 「숙련자 판단근거」에 적은 내용이 여기에 들어갑니다.'}</p>
         </div>
       </section>
+
+      {sims.length > 0 && <section>
+        <h2 className="rpt-h-plain">한눈에: 접안 순서와 차이의 이유</h2>
+        <OrderCompare sims={sims} scen={scen} focusId={m.sel.id} compact />
+        {selWhy && selWhy.diffs.length > 0 && <table className="dt rpt-why">
+          <thead><tr><th>{m.sel.label}에서 바뀐 선박</th><th>무엇이 바뀌었나</th><th>왜</th><th className="r">그 선박 체선료</th></tr></thead>
+          <tbody>{selWhy.diffs.map((d) => <tr key={d.vid}><td className="strong">{d.name}</td><td>{d.text}</td><td className="small">{d.why}</td>
+            <td className={`r num ${d.saving > 0 ? 'c-green' : d.saving < 0 ? 'c-red' : 'muted'}`}>{d.saving === 0 ? '변화 없음' : `${d.saving > 0 ? '−' : '+'}${money(Math.abs(d.saving))}`}</td></tr>)}</tbody>
+        </table>}
+      </section>}
 
       <section>
         <h2><span className="num">2</span>후보안 비교</h2>

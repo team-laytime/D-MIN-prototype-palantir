@@ -133,3 +133,4 @@
 .rpt-reasons { display: grid; gap: 6px; margin: 2px 0 6px; padding: 6px 0 0 8px; border-top: 1px dashed var(--line-2); }
 .rpt-reasons p { margin: 0; font-size: 10.5px; line-height: 1.4; color: var(--fg-2); text-align: center; word-break: keep-all; }
 .rpt-reasons p.faint { color: var(--fg-3); }
+.rpt-h-plain { margin-top: 18px; }

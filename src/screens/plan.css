@@ -185,3 +185,23 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .cmp-monitor tr.warn td { background: var(--amber-wash); }
 .pi-load { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .pi-load label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+
+/* 최종 피드백: 접안 순서 비교 (bump chart) */
+.oc { margin: 0; }
+.oc svg { width: 100%; height: auto; display: block; }
+.oc-col { cursor: pointer; }
+.oc-colbg { fill: transparent; }
+.oc-col.on .oc-colbg { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 1.5; }
+.oc-head { font: 700 14px var(--sans); fill: var(--fg); }
+.oc-sub { font: 11.5px var(--sans); fill: var(--fg-3); }
+.oc-rank { font: 11.5px var(--sans); fill: var(--fg-3); }
+.oc-chip { fill: var(--bg-1); stroke-width: 1.5; }
+.oc-chip.ch { stroke-width: 2.5; }
+.oc-chip-t { font: 11.5px var(--mono); fill: var(--fg); }
+.oc-name { font: 700 12px var(--sans); }
+.oc-delta { font: 700 11px var(--sans); }
+.oc-delta.up { fill: var(--green); }
+.oc-delta.down { fill: var(--red); }
+.oc-cap { margin: 6px 12px 10px; font-size: 11.5px; color: var(--fg-2); }
+.pi-source { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; border: 1px solid var(--line-2); background: var(--bg-2); font-size: 12px; }
+.pi-source .plan-version { margin-left: auto; }

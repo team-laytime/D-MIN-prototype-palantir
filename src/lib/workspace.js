@@ -17,7 +17,7 @@ export const NAV = [
   // 11-20 피드백: REPORT 묶음 제목이 별도 탭처럼 보임 → 계획부터 메일까지 한 묶음, 번호로 순서를 보인다.
   // 리스크 확인·확정은 후보 비교 화면에 합쳤다.
   { key: 'BERTH PLANNING', label: '접안 계획 업무', roles: ['scheduler'], items: [
-    { id: 'input', label: '시나리오 불러오기', icon: 'properties', no: 1 },
+    { id: 'input', label: '계획 조건', icon: 'properties', no: 1 },
     { id: 'compare', label: '후보 비교·확정', icon: 'comparison', no: 2 },
     { id: 'report', label: '접안계획 보고서', icon: 'document', no: 3 },
     { id: 'mail', label: '확정 통보 메일', icon: 'envelope', no: 4 },

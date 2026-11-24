@@ -11,6 +11,7 @@ import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace } from '../l
 import { useApp } from '../state/app.jsx'
 import { Panel, Screen, St, riskTone } from '../ui/kit.jsx'
 import Timeline from './Timeline.jsx'
+import OrderCompare from './OrderCompare.jsx'
 import './plan.css'
 import './decide.css'
 
@@ -164,6 +165,10 @@ export default function Compare() {
         <p>순서·부두 조합 <span className="num">{result.explored.toLocaleString()}</span>개를 같은 규칙으로 계산해 체선료가 낮은 후보 {result.candidates.length}개를 골랐습니다. 시나리오 입력에서 값을 바꾸면 이 화면이 바로 다시 계산됩니다.</p>
         <span className="plan-version mono">INPUT v{version}</span>
       </div>
+
+      <Panel code="ORDER" title="접안 순서 한눈에 비교" desc="기준안과 후보마다 몇 번째로 접안하는지" data-tour="order">
+        <OrderCompare sims={all} scen={scen} focusId={focus.id} onPick={(id) => { setAsking(false); setFocusId(id) }} />
+      </Panel>
 
       <div className="risk-layout">
         <div className="stack">

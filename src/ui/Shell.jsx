@@ -68,7 +68,7 @@ export function Shell({ children }) {
         <div className="topbar-right">
           {isScheduler && (
             <label className="scen-select" id="scen" data-tour="scen">
-              <span className="mono faint tiny">SCENARIO</span>
+              <span className="faint tiny">시연 데이터</span>
               <HTMLSelect minimal value={scenarioId} onChange={(e) => setScenarioId(e.target.value)} aria-label="시나리오"
                 options={[{ value: 'S1', label: 'S1 기상 악화일 집중' }, { value: 'S2', label: 'S2 평시' }, { value: 'S3', label: 'S3 대형선 지연' }]} />
             </label>

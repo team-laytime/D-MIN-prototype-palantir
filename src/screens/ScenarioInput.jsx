@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Button, Callout, HTMLSelect, Icon, InputGroup, NumericInput, Switch } from '@blueprintjs/core'
+import { Button, Callout, Icon, InputGroup, NumericInput, Switch } from '@blueprintjs/core'
 import { compatibleBerths } from '../lib/engine.js'
 import { WEATHER_CLAUSE } from '../lib/scenarios.js'
 import { NOW, at, fmt, fmtDur, fromInput, money, toInput } from '../lib/time.js'
@@ -8,8 +7,7 @@ import { Panel, Screen, Stats, St } from '../ui/kit.jsx'
 import './plan.css'
 
 export default function ScenarioInput() {
-  const { scenInput: scen, scen: calc, editScen, version, result, go, scenarioId, setScenarioId } = useApp()
-  const [pick, setPick] = useState(scenarioId)
+  const { scenInput: scen, scen: calc, editScen, version, result, go } = useApp()
   const params = scen.params
   const weather = scen.env.weather
   const berthById = Object.fromEntries(scen.berths.map((berth) => [berth.id, berth]))
@@ -53,24 +51,19 @@ export default function ScenarioInput() {
   return (
     <Screen
       tab="input"
-      title="시나리오 불러오기"
+      title="계획 조건"
       step={1}
       bodyClass="plan-input plan-stack"
       actions={<Button intent="primary" endIcon="arrow-right" disabled={!canCompare} onClick={() => go('compare')}>후보 비교</Button>}
     >
-      {/* 11-23 피드백: 시나리오는 입력하는 게 아니라 DB(2025년 합성 데이터)에서 기준 시점을 골라 불러온다. */}
-      <Panel code="LOAD" title="불러오기" pad actions={<span className="plan-version mono">INPUT v{version}</span>}>
-        <div className="pi-load">
-          <label><span>데이터</span><HTMLSelect size="small" value="db2025" options={[{ value: 'db2025', label: '2025년 1년치 운영 합성 데이터 (DB, 가상)' }]} /></label>
-          <label><span>기준 시점</span><HTMLSelect size="small" value={pick} onChange={(e) => setPick(e.target.value)} options={[
-            { value: 'S1', label: `2026-11-14 08:00 · 기상 악화 예보일, 6척 집중` },
-            { value: 'S2', label: `2026-11-14 08:00 · 평시 (기상 이상 없음)` },
-            { value: 'S3', label: `2026-11-14 08:00 · 대형선 지연 + 조석 제약` },
-          ]} /></label>
-          <Button intent="primary" icon="import" disabled={pick === scenarioId} onClick={() => setScenarioId(pick)}>불러오기</Button>
-          <span className="small muted">불러온 시점: <b className="num">2026-{fmt(NOW).replace('/', '-')}</b> · {scen.summary} · 선박 {scen.vessels.length}척, 부두 {scen.berths.length}곳</span>
-        </div>
-      </Panel>
+      {/* 최종 피드백: 「불러오기」는 개발자 테스트 성격이라 운영 메뉴에서 뺐다. 운영에서는 서버가 정해진 시각에 지금 데이터를 모으고,
+          시연 데이터 전환은 상단 「시연 데이터」에서만 한다. */}
+      <div className="pi-source">
+        <Icon icon="database" size={14} />
+        <span>기준 데이터 <b className="num">2026-11-14 06:00</b> 자동 수집 (입항 신고 ETA, 기상 예보, 탱크 재고) · 지금 <b className="num">{fmt(NOW)}</b></span>
+        <span className="muted small">{scen.summary} · 선박 {scen.vessels.length}척, 부두 {scen.berths.length}곳</span>
+        <span className="plan-version mono">INPUT v{version}</span>
+      </div>
       <Stats items={[
         { label: '대기 선박', value: <><span>{scen.vessels.length}</span><span className="plan-stat-unit">척</span></>, sub: '도착 예정 · 계약 조건 확인' },
         { label: '부두', value: <><span>{scen.berths.length}</span><span className="plan-stat-unit">곳</span></>, sub: '제품·제원별 접안 가능 부두' },

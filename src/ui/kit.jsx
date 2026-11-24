@@ -33,7 +33,7 @@ export function Stats({ items, className = '' }) {
   )
 }
 
-const PLAN_STEPS = ['시나리오 불러오기', '후보 비교·확정', '보고서', '통보 메일']
+const PLAN_STEPS = ['계획 조건', '후보 비교·확정', '보고서', '통보 메일']
 /** 계획 흐름 단계. now = 1..5 */
 export function Steps({ now }) {
   return (
