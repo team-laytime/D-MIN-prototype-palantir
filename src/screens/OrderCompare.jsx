@@ -1,6 +1,6 @@
 // 접안 순서 비교 (최종 피드백: 후보마다 접안 순서가 어떻게 다른지 한눈에)
-// 선 하나 = 선박 한 척. 칸 = 기준안과 후보. 선이 꺾이면 그 후보에서 순서가 바뀐 것.
-// 점 안에는 부두와 접안 시각. 기준안보다 순서가 바뀐 구간은 굵게, 그대로인 구간은 흐리게.
+// 선 하나 = 선박 한 척. 칸 = 후보 3개, 맨 왼쪽이 최저 체선료 후보(비교 기준). 선이 꺾이면 그 후보에서 순서가 바뀐 것.
+// 점 안에는 부두와 접안 시각. 최저안보다 순서가 바뀐 구간은 굵게, 그대로인 구간은 흐리게.
 import { fmt } from '../lib/time.js'
 
 const COLORS = ['var(--accent)', 'var(--amber)', 'var(--violet)', 'var(--green)', 'var(--blue)', 'var(--red)']
@@ -17,12 +17,12 @@ export default function OrderCompare({ sims, scen, focusId, onPick, compact = fa
   const orders = sims.map(orderOf)
   const base = orders[0]
   const n = vessels.length
-  const W = 1200, left = 250, right = 240, top = compact ? 56 : 64, rowH = compact ? 44 : 52
+  const W = 1200, left = 250, right = 240, top = compact ? 66 : 70, rowH = compact ? 44 : 52
   const colX = (i) => left + (sims.length === 1 ? 0 : i * (W - left - right) / (sims.length - 1))
   const rowY = (r) => top + (r - 1) * rowH
   const H = top + (n - 1) * rowH + 40
   const chipW = 128, chipH = 26
-  const label = (sim) => (sim.id === 'FCFS' ? '기준안 (도착순)' : sim.label)
+  const label = (sim, i) => (i === 0 ? `${sim.label} (최저)` : sim.label)
   const moved = (vid, i) => orders[i][vid].rank !== base[vid].rank
 
   return (
@@ -31,8 +31,8 @@ export default function OrderCompare({ sims, scen, focusId, onPick, compact = fa
         {sims.map((sim, i) => (
           <g key={sim.id} className={`oc-col ${sim.id === focusId ? 'on' : ''}`} onClick={() => onPick?.(sim.id)}>
             <rect x={colX(i) - chipW / 2 - 14} y={8} width={chipW + 28} height={H - 12} rx="6" className="oc-colbg" />
-            <text x={colX(i)} y={28} textAnchor="middle" className="oc-head">{label(sim)}</text>
-            <text x={colX(i)} y={46} textAnchor="middle" className="oc-sub">{i === 0 ? '비교 기준' : `${vessels.filter((v) => moved(v.id, i)).length}척 순서 바뀜`}</text>
+            <text x={colX(i)} y={28} textAnchor="middle" className="oc-head">{label(sim, i)}</text>
+            <text x={colX(i)} y={46} textAnchor="middle" className="oc-sub">{i === 0 ? (compact ? '기본 선택' : '비교 기준, 기본 선택') : `${vessels.filter((v) => moved(v.id, i)).length}척 순서 바뀜`}</text>
           </g>
         ))}
         {Array.from({ length: n }, (_, k) => (
@@ -61,12 +61,12 @@ export default function OrderCompare({ sims, scen, focusId, onPick, compact = fa
                 </g>
               )
             })}
-            <text x={colX(0) - chipW / 2 - 8} y={rowY(base[v.id].rank) + 4} textAnchor="end" className="oc-name" style={{ fill: color[v.id] }}>{name[v.id]}</text>
-            <text x={colX(sims.length - 1) + chipW / 2 + 22} y={rowY(orders[sims.length - 1][v.id].rank) + 4} className="oc-name" style={{ fill: color[v.id] }}>{name[v.id]}</text>
+            <text x={colX(0) - chipW / 2 - 22} y={rowY(base[v.id].rank) + 4} textAnchor="end" className="oc-name" style={{ fill: color[v.id] }}>{name[v.id]}</text>
+            <text x={colX(sims.length - 1) + chipW / 2 + 24} y={rowY(orders[sims.length - 1][v.id].rank) + 4} className="oc-name" style={{ fill: color[v.id] }}>{name[v.id]}</text>
           </g>
         ))}
       </svg>
-      <figcaption className="oc-cap">선 하나가 선박 한 척입니다. 선이 꺾이면 그 후보에서 접안 순서가 바뀐 것이고, 굵은 선과 ▲▼는 기준안보다 몇 번째 앞뒤로 갔는지입니다. 칸 안은 부두와 접안 시각. 칸을 누르면 그 후보를 고릅니다.</figcaption>
+      <figcaption className="oc-cap">선 하나가 선박 한 척입니다. 선이 꺾이면 그 후보에서 접안 순서가 바뀐 것이고, 굵은 선과 ▲▼는 최저 체선료 후보보다 몇 번째 앞뒤로 갔는지입니다. 칸 안은 부두와 접안 시각. 칸을 누르면 그 후보를 고릅니다.</figcaption>
     </figure>
   )
 }

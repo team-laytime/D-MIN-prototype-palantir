@@ -27,7 +27,7 @@ export default function Login() {
       <div className="login-intro">
         <Brand size={22} />
         <h1>울산 CLX 액체부두<br />접안 순서 · 체선료 최적화</h1>
-        <p className="muted">도착순 기준안과 5,760가지 접안 순서·부두 배정을 비교해 체선료가 가장 낮은 후보를 고르고, 남은 리스크를 확인한 뒤 확정합니다.</p>
+        <p className="muted">5,760가지 접안 순서·부두 배정을 계산해 체선료가 낮은 후보 3개를 보여 주고(최저안이 기본 선택), 남은 리스크를 확인한 뒤 확정합니다.</p>
         <dl className="login-facts mono">
           <div><dt>BERTHS</dt><dd>SK3 · SK5 · SK6</dd></div>
           <div><dt>VESSELS</dt><dd>6 / SCENARIO</dd></div>

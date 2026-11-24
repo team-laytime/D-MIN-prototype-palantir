@@ -26,8 +26,8 @@ export function useReport() {
   // 판단근거는 사람이 쓴 문장이라 뺀다(후보 간 차액처럼 계산에 없는 금액을 적을 수 있다).
   const check = useMemo(() => {
     const allowed = new Set()
-    for (const sim of [result.fcfs, ...cands]) {
-      for (const c of [sim.total, sim.total - result.fcfs.total, result.fcfs.total - sim.total]) allowed.add(money(c))
+    for (const sim of cands) {
+      for (const c of [sim.total, sim.total - cands[0].total]) allowed.add(money(c))
       for (const p of sim.placements) allowed.add(money(p.dem.cents))
     }
     const generated = { ...model, judgment: '' }

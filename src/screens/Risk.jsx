@@ -43,7 +43,7 @@ export default function Risk() {
     <Screen tab="risk" title="리스크·확정" step={fixedHere ? 4 : 3} bodyClass="risk-page">
       <p className="risk-intro muted small">계산에 반영하지 못한 변수를 확인하고 스케줄러가 계획을 확정합니다. 확정한 일정은 이용자 화면에 전달됩니다.</p>
       <Stats items={[
-        { label: '보는 안', value: <span className="risk-prose">{cand.id === 'FCFS' ? '기준안' : cand.label}</span> },
+        { label: '보는 안', value: <span className="risk-prose">{cand.label}</span> },
         { label: '확인할 리스크', value: <>{needsCheck.length}<span className="risk-stat-unit">건</span></> },
         { label: '확인 완료', value: <>{checkedCount}<span className="risk-stat-unit">건</span></>, tone: unchecked.length ? 'amber' : 'green' },
         { label: '적용 중 계획', value: <span className="risk-prose">{current ? `${current.label} ${current.status}` : '확정 전'}</span>, tone: current ? 'accent' : undefined },
@@ -55,7 +55,7 @@ export default function Risk() {
             <SegmentedControl
               aria-label="리스크 검토 후보" size="small" intent="primary"
               value={cand.id}
-              options={all.map((s) => ({ value: s.id, label: s.id === 'FCFS' ? '기준안' : s.id }))}
+              options={all.map((s) => ({ value: s.id, label: s.id }))}
               onValueChange={(id) => { setConfirmationFor(null); setFocusId(id) }}
             />
           }>
@@ -119,7 +119,7 @@ export default function Risk() {
               <div className="risk-amount">
                 <span className="strong">{cand.label}</span>
                 <span className="risk-total num">{money(cand.total)}</span>
-                <span className="small muted">기준안 대비 <span className={`num ${cand.total < result.fcfs.total ? 'c-green' : ''}`}>{money(cand.total - result.fcfs.total)}</span></span>
+                <span className="small muted">최저안 대비 <span className="num">{cand.id === result.candidates[0].id ? '가장 낮음' : `+${money(cand.total - result.candidates[0].total)}`}</span></span>
               </div>
               <p className={`risk-check-count small ${unchecked.length ? 'c-amber' : 'c-green'}`}>
                 확인할 리스크 <span className="num">{needsCheck.length}</span>건 중 <span className="num">{checkedCount}</span>건 확인

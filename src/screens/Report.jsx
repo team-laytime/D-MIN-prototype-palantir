@@ -24,7 +24,7 @@ export default function Report() {
 
   const sel = model.sel
   // 11-20 피드백: 체선료 차이만이 아니라 그 차이가 어디서(어느 선박, 어떤 규칙) 생겼는지
-  const why = result.error ? [] : result.candidates.map((c) => ({ id: c.id, label: c.label, ...describe(c, result.fcfs, scen) }))
+  const why = result.error ? [] : result.candidates.map((c) => ({ id: c.id, label: c.label, ...describe(c, result.candidates[0], scen) }))
   // 판단근거는 입력이 끝났을 때(포커스가 빠질 때) 바뀐 경우만 한 번 기록한다.
   const loggedJudgment = useRef(judgment)
   const logJudgment = () => {
@@ -64,7 +64,7 @@ export default function Report() {
       <Stats items={[
         { label: '선택 후보', value: <span className="rpt-prose">{sel.label}</span>, sub: shownPlan ? shownPlan.status : '확정 전' },
         { label: '총 예상 체선료', value: money(sel.total), tone: 'accent' },
-        { label: '기준안 대비', value: `-${sel.savingPct}%`, tone: 'green', sub: `${money(sel.saving)} 절감` },
+        { label: '최저안 대비', value: sel.extra ? `+${sel.extraPct}%` : '최저', tone: sel.extra ? 'amber' : 'green', sub: sel.extra ? `${money(sel.extra)} 더 듦` : '세 후보 중 가장 낮음' },
         { label: '판단근거', value: <span className="rpt-prose">{model.judgment ? '작성됨' : '미작성'}</span>, tone: model.judgment ? 'green' : 'amber', sub: `${model.judgment.length}자` },
         { label: '숫자 대조', value: <span className="rpt-prose">{check.bad.length ? '실패' : '통과'}</span>, tone: check.bad.length ? 'red' : 'green', sub: `문서·메일 금액 ${check.count}개` },
       ]} />
@@ -79,7 +79,7 @@ export default function Report() {
           <div className="rpt-base">
             <b>{sel.label}</b>{shownPlan ? <St tone="ok">확정 v{shownPlan.planNo}</St> : <St tone="warn">확정 전</St>}
             <span className="num rpt-base-total">{money(sel.total)}</span>
-            <span className="small muted">기준안 대비 <span className="num c-green">-{sel.savingPct}%</span> · 체선 {sel.demVessels.length}척 · 리스크 {sel.active.length}건</span>
+            <span className="small muted">{sel.extra ? <>최저안 대비 <span className="num">+{sel.extraPct}%</span></> : <span className="c-green">최저 체선료</span>} · 체선 {sel.demVessels.length}척 · 리스크 {sel.active.length}건</span>
           </div>
           <Button size="small" icon="comparison" onClick={() => go('compare')}>{shownPlan ? '후보 비교·확정 보기' : '다른 안은 후보 비교에서 고르기'}</Button>
         </Panel>
@@ -110,10 +110,10 @@ export default function Report() {
           <Button size="small" icon="print" onClick={exportPdf}>PDF</Button>
         </div>
       }>
-        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} why={why} sims={result.error ? [] : [result.fcfs, ...result.candidates]} scen={scen} onVessel={(simId, vid) => openVessel(simId, vid)} />}
+        {view === 'raw' ? <pre className="rpt-raw">{md}</pre> : <ReportDoc m={model} why={why} sims={result.error ? [] : result.candidates} scen={scen} onVessel={(simId, vid) => openVessel(simId, vid)} />}
         </Panel>
       </div>
-      {createPortal(<div id="print-root" className="rpt-print-root"><ReportDoc m={model} why={why} sims={result.error ? [] : [result.fcfs, ...result.candidates]} scen={scen} onVessel={() => {}} /></div>, document.body)}
+      {createPortal(<div id="print-root" className="rpt-print-root"><ReportDoc m={model} why={why} sims={result.error ? [] : result.candidates} scen={scen} onVessel={() => {}} /></div>, document.body)}
     </Screen>
   )
 }
@@ -125,7 +125,7 @@ function VesselLink({ simId, vid, name, onVessel }) {
 
 function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
   const selWhy = why.find((c) => c.id === m.sel.id)
-  const series = [{ id: 'FCFS', label: '기준안' }, ...m.items.map((it) => ({ id: it.id, label: it.label }))]
+  const series = m.items.map((it) => ({ id: it.id, label: it.label }))
   return (
     <article className="rpt-doc">
       <header className="rpt-doc-head">
@@ -135,7 +135,7 @@ function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
 
       <section>
         <h2><span className="num">1</span>결론</h2>
-        <p>{m.sel.label}을 {m.confirmed ? '확정한' : '선택한'} 안으로 보고합니다. 총 예상 체선료는 <b className="num">{money(m.sel.total)}</b>이며, 도착순 기준안 <span className="num">{money(m.base.total)}</span> 대비 <b className="num c-green">{money(m.sel.saving)}</b>({m.sel.savingPct}%) 적습니다.</p>
+        <p>{m.sel.label}을 {m.confirmed ? '확정한' : '선택한'} 안으로 보고합니다. 총 예상 체선료는 <b className="num">{money(m.sel.total)}</b>이며, {m.sel.extra ? <>최저안({m.base.label}) <span className="num">{money(m.base.total)}</span>보다 <b className="num">{money(m.sel.extra)}</b>({m.sel.extraPct}%) 많습니다. 그래도 이 안을 고른 이유는 아래 판단근거에 있습니다.</> : '세 후보 중 가장 낮습니다.'}</p>
         <div className={`rpt-judgment-quote ${m.judgment ? '' : 'empty'}`}>
           <span className="rpt-quote-label tiny">숙련자 판단근거</span>
           <p>{m.judgment || '왼쪽 「숙련자 판단근거」에 적은 내용이 여기에 들어갑니다.'}</p>
@@ -155,14 +155,13 @@ function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
       <section>
         <h2><span className="num">2</span>후보안 비교</h2>
         <table className="dt rpt-table">
-          <thead><tr><th>안</th><th className="r">총 예상 체선료</th><th className="r">기준안 대비</th><th className="r">절감률</th><th className="r">변경 선박</th><th className="r">체선 발생</th><th className="r">남은 리스크</th></tr></thead>
+          <thead><tr><th>안</th><th className="r">총 예상 체선료</th><th className="r">최저안 대비</th><th className="r">최저안과 다른 선박</th><th className="r">체선 발생</th><th className="r">남은 리스크</th></tr></thead>
           <tbody>
-            {[m.base, ...m.items].map((it) => (
+            {m.items.map((it) => (
               <tr key={it.id} className={it.id === m.sel.id ? 'on' : ''}>
                 <td className="strong">{it.label}{it.id === m.sel.id && <span className="chip accent rpt-sel">선택</span>}</td>
                 <td className="r num">{money(it.total)}</td>
-                <td className={`r num ${it.id !== 'FCFS' ? 'c-green' : ''}`}>{it.id === 'FCFS' ? '-' : money(it.total - m.base.total)}</td>
-                <td className="r num">{it.id === 'FCFS' ? '-' : `${it.savingPct}%`}</td>
+                <td className={`r num ${it.extra ? '' : 'c-green'}`}>{it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'}</td>
                 <td className="r num">{it.changed.length}척</td>
                 <td className="r num">{it.demVessels.length}척</td>
                 <td className="r num">{it.active.length}건</td>
@@ -173,7 +172,7 @@ function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
         <div className="rpt-charts">
           <figure className="rpt-figure">
             <figcaption className="rpt-fig-title small strong">안별 총 예상 체선료</figcaption>
-            <TotalChart rows={[m.base, ...m.items].map((it) => ({ id: it.id, label: it.label, total: it.total }))} selId={m.sel.id} />
+            <TotalChart rows={m.items.map((it) => ({ id: it.id, label: it.label, total: it.total }))} selId={m.sel.id} />
           </figure>
           <div>
             <p className="rpt-fig-title small strong">선박별 예상 체선료</p>
@@ -193,8 +192,8 @@ function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
                 <span className="num rpt-cand-total">{money(it.total)}</span>
               </div>
               <dl className="rpt-kv small">
-                <dt>기준안 대비</dt><dd className="num c-green">{money(-it.saving)} ({it.savingPct}%)</dd>
-                <dt>변경 선박</dt><dd>{it.changed.join(', ') || '없음'}</dd>
+                <dt>최저안 대비</dt><dd className={`num ${it.extra ? '' : 'c-green'}`}>{it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'}</dd>
+                <dt>최저안과 다른 선박</dt><dd>{it.changed.join(', ') || '없음'}</dd>
                 <dt>가장 긴 대기</dt><dd>{it.longestWait.name} <span className="num">{fmtDur(it.longestWait.min)}</span></dd>
               </dl>
               <p className="rpt-sub tiny">체선 발생</p>
@@ -262,7 +261,7 @@ function ReportDoc({ m, why = [], sims = [], scen, onVessel }) {
 
       <section className="rpt-basis small muted">
         <h2>계산 기준</h2>
-        <p>체선료 = 초과 시간 ÷ 24시간 × 하루 체선료, 선박별 센트 단위 한 번 반올림(HALF_UP). 정박시간 개시·기상 공제는 선박별 계약 조항을 따릅니다. 기준안은 비교용 도착순 배치이며 현행 실적이 아닙니다.</p>
+        <p>체선료 = 초과 시간 ÷ 24시간 × 하루 체선료, 선박별 센트 단위 한 번 반올림(HALF_UP). 정박시간 개시·기상 공제는 선박별 계약 조항을 따릅니다. 후보는 체선료가 낮은 순서로 A, B, C이며 A가 기본 선택입니다.</p>
       </section>
     </article>
   )

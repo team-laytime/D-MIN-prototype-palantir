@@ -42,14 +42,15 @@ export function AppProvider({ children }) {
 
   // 6척 × 720 순서 × 8 배정 = 5,760안 전수 탐색. 시나리오가 바뀔 때만 다시 돈다.
   const result = useMemo(() => runSearch(scen), [scen])
-  const all = useMemo(() => (result.error ? [] : [result.fcfs, ...result.candidates]), [result])
+  // 11-24: 도착순 기준안은 화면에서 뺐다. 후보 3개만 보이고, 맨 앞(최저 체선료)이 기본 선택이다.
+  const all = useMemo(() => (result.error ? [] : result.candidates), [result])
 
   const [tab, setTab] = useState('home')
   const [focusId, setFocusId] = useState('A')
-  // 원본과 같이 결과가 바뀔 때만 확인한다. 기준안(FCFS)을 고른 상태는 그대로 둔다.
+  // 결과가 바뀌면 고른 후보가 남아 있는지 확인하고, 없으면 최저 체선료 후보로 돌아간다.
   useEffect(() => {
     if (result.error) return
-    setFocusId((id) => (id === 'FCFS' || result.candidates.some((c) => c.id === id) ? id : result.candidates[0]?.id ?? 'FCFS'))
+    setFocusId((id) => (result.candidates.some((c) => c.id === id) ? id : result.candidates[0]?.id ?? 'A'))
   }, [result])
 
   // 선박 카드. at = 지도 시각(지도에서 열 때만), mode = 'card' | 'evidence'
@@ -88,7 +89,7 @@ export function AppProvider({ children }) {
     const s = TOUR[i]
     setTourIdx(i)
     setDrawer(null)
-    if (s.tab === 'compare') setFocusId(result.candidates[0]?.id ?? 'FCFS')
+    if (s.tab === 'compare') setFocusId(result.candidates[0]?.id ?? 'A')
     setTab(s.tab)
     s.do?.({ result, openVessel })
   }, [result, openVessel])

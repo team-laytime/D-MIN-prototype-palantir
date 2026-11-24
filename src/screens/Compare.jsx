@@ -18,11 +18,11 @@ import './decide.css'
 const night = (etb) => { const h = Math.floor((((etb % 1440) + 1440) % 1440) / 60); return h >= 20 || h < 6 }
 const until = (m) => (m <= NOW ? '지남' : `${fmtDur(m - NOW)} 뒤`)
 
-/** 기준안(도착순)과 비교해 후보가 정확히 무엇을 바꿨는지, 장점과 단점을 문장으로 뽑는다. */
-export function describe(sim, fcfs, scen) {
+/** 최저 체선료 후보(ref)와 비교해 후보가 정확히 무엇을 바꿨는지, 장점과 단점을 문장으로 뽑는다. */
+export function describe(sim, ref, scen) {
   const v = Object.fromEntries(scen.vessels.map((x) => [x.id, x]))
   const bn = (id) => scen.berths.find((b) => b.id === id).name.replace('부두', '')
-  const base = Object.fromEntries(fcfs.placements.map((p) => [p.vid, p]))
+  const base = Object.fromEntries(ref.placements.map((p) => [p.vid, p]))
   const diffs = sim.placements.filter((p) => p.bid !== base[p.vid].bid || p.etb !== base[p.vid].etb)
     .sort((a, b) => v[a.vid].eta - v[b.vid].eta)
     .map((p) => {
@@ -37,7 +37,7 @@ export function describe(sim, fcfs, scen) {
     })
   const pros = []
   const cons = []
-  if (sim.id !== 'FCFS') {
+  if (sim.id !== ref.id) {
     const best = [...diffs].sort((a, b) => b.saving - a.saving)[0]
     if (best && best.saving > 0) pros.push(`${best.name} 체선료 ${money(best.saving)} 줄어듦`)
     const zero = sim.placements.filter((p) => p.dem.cents === 0).length
@@ -45,7 +45,9 @@ export function describe(sim, fcfs, scen) {
     const later = diffs.filter((d) => d.later)
     if (later.length) cons.push(`늦게 접안: ${later.map((d) => d.name).join(', ')}`)
   } else {
-    pros.push('도착 순서 그대로, 설명이 쉬움')
+    pros.push('세 후보 중 체선료가 가장 낮음')
+    const zero = sim.placements.filter((p) => p.dem.cents === 0).length
+    pros.push(`체선 없는 선박 ${zero}척`)
   }
   const nightN = sim.placements.filter((p) => night(p.etb)).length
   if (nightN) cons.push(`야간 접안 ${nightN}건`)
@@ -64,11 +66,13 @@ export default function Compare() {
     start: at(14, 0),
     end: Math.ceil((Math.max(at(15, 0), ...all.flatMap((sim) => sim.placements.map((p) => p.etu))) + 60) / 360) * 360,
   }), [all])
-  const cards = useMemo(() => all.map((sim) => ({ sim, ...describe(sim, result.fcfs, scen), risks: risks(sim, scen), violations: validate(sim, scen).length })), [all, result, scen])
+  const cards = useMemo(() => all.map((sim) => ({ sim, ...describe(sim, result.candidates[0], scen), risks: risks(sim, scen), violations: validate(sim, scen).length })), [all, result, scen])
 
   if (result.error) return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보 계산 불가">{result.error}</Callout></Screen>
 
-  const focus = all.find((s) => s.id === focusId) ?? result.candidates[0] ?? result.fcfs
+  const focus = all.find((s) => s.id === focusId) ?? result.candidates[0]
+  const best = result.candidates[0]
+  const vsBest = (sim) => (sim.id === best.id ? '—' : `+${money(sim.total - best.total)} (+${Math.round((sim.total - best.total) / best.total * 1000) / 10}%)`)
   const plan = activePlan()
   const fixedNow = current && current.version === version
 
@@ -166,21 +170,21 @@ export default function Compare() {
         <span className="plan-version mono">INPUT v{version}</span>
       </div>
 
-      <Panel code="ORDER" title="접안 순서 한눈에 비교" desc="기준안과 후보마다 몇 번째로 접안하는지" data-tour="order">
+      <Panel code="ORDER" title="접안 순서 한눈에 비교" desc="후보마다 몇 번째로 접안하는지 (최저 체선료 후보 기준)" data-tour="order">
         <OrderCompare sims={all} scen={scen} focusId={focus.id} onPick={(id) => { setAsking(false); setFocusId(id) }} />
       </Panel>
 
       <div className="risk-layout">
         <div className="stack">
-          <Panel code="CAND-REPORT" title="후보 비교 리포트" desc="도착순 기준안과 비교 · 열을 눌러 확정할 안을 고릅니다" data-tour="cards">
+          <Panel code="CAND-REPORT" title="후보 비교 리포트" desc="최저 체선료 후보가 기본 선택입니다. 열을 눌러 확정할 안을 바꿉니다" data-tour="cards">
             <table className="dt cmp-report">
               <thead><tr><th />{cards.map(({ sim }) => <th key={sim.id} className={sim.id === focus.id ? 'on' : ''}>
-                <button type="button" className="cmp-col" onClick={() => setFocusId(sim.id)}><span className="plan-radio" aria-hidden="true" />{sim.id === 'FCFS' ? '기준안 (도착순)' : sim.label}{sim.id === result.candidates[0]?.id && <span className="chip green">최저</span>}</button>
+                <button type="button" className="cmp-col" onClick={() => setFocusId(sim.id)}><span className="plan-radio" aria-hidden="true" />{sim.label}{sim.id === best.id && <span className="chip green">최저, 기본</span>}</button>
               </th>)}</tr></thead>
               <tbody>
                 <tr><th>총 예상 체선료</th>{cards.map(({ sim }) => <td key={sim.id} className={`num cmp-total ${sim.id === focus.id ? 'on' : ''}`}>{money(sim.total)}</td>)}</tr>
-                <tr><th>기준안 대비</th>{cards.map(({ sim }) => <td key={sim.id} className={`num ${sim.id === focus.id ? 'on' : ''} ${sim.total < result.fcfs.total ? 'c-green' : 'muted'}`}>{sim.id === 'FCFS' ? '—' : `${money(sim.total - result.fcfs.total)} (${Math.round((sim.total - result.fcfs.total) / result.fcfs.total * 1000) / 10}%)`}</td>)}</tr>
-                <tr><th>무엇이 다른지</th>{cards.map(({ sim, diffs }) => <td key={sim.id} className={sim.id === focus.id ? 'on' : ''}>{sim.id === 'FCFS' ? <span className="muted small">비교 기준</span> : <ul className="cmp-list">{diffs.map((d) => <li key={d.vid}><b>{d.name}</b> {d.text}</li>)}</ul>}</td>)}</tr>
+                <tr><th>최저안 대비</th>{cards.map(({ sim }) => <td key={sim.id} className={`num ${sim.id === focus.id ? 'on' : ''} ${sim.id === best.id ? 'c-green' : 'muted'}`}>{sim.id === best.id ? '가장 낮음' : vsBest(sim)}</td>)}</tr>
+                <tr><th>무엇이 다른지</th>{cards.map(({ sim, diffs }) => <td key={sim.id} className={sim.id === focus.id ? 'on' : ''}>{sim.id === best.id ? <span className="muted small">비교 기준 (최저 체선료)</span> : <ul className="cmp-list">{diffs.map((d) => <li key={d.vid}><b>{d.name}</b> {d.text}</li>)}</ul>}</td>)}</tr>
                 <tr><th>장점</th>{cards.map(({ sim, pros }) => <td key={sim.id} className={sim.id === focus.id ? 'on' : ''}><ul className="cmp-list pro">{pros.map((t) => <li key={t}>{t}</li>)}</ul></td>)}</tr>
                 <tr><th>단점</th>{cards.map(({ sim, cons }) => <td key={sim.id} className={sim.id === focus.id ? 'on' : ''}><ul className="cmp-list con">{cons.map((t) => <li key={t}>{t}</li>)}{!cons.length && <li className="muted">-</li>}</ul></td>)}</tr>
                 <tr><th>남는 리스크</th>{cards.map(({ sim, risks: rs, violations }) => <td key={sim.id} className={sim.id === focus.id ? 'on' : ''}><St tone={rs.some((r) => r.state === '해당') ? 'warn' : 'ok'}>해당 {rs.filter((r) => r.state === '해당').length}</St>{rs.some((r) => r.state === '판단 불가') && <> <St tone="unknown">판단 불가 {rs.filter((r) => r.state === '판단 불가').length}</St></>}{violations > 0 && <span className="c-red small"> 제약 위반 {violations}</span>}</td>)}</tr>
@@ -190,13 +194,13 @@ export default function Compare() {
 
           <Panel code="BERTH-TL" title="부두별 타임라인 (접안 순서)" desc="안마다 부두별 접안 순서 · 막대를 누르면 산출 근거" actions={<span className="num faint tiny">{fmt(range.start)} — {fmt(range.end)}</span>}>
             <div className="plan-timeline-legend">
-              <span><i className="plan-key plan-key-work" />작업</span><span><i className="plan-key plan-key-dem" />체선 발생</span><span><i className="plan-key plan-key-changed" />기준안과 달라진 선박</span><span><i className="plan-key plan-key-wait" />도착 후 대기</span><span><i className="plan-key plan-key-weather" />접안 금지</span>
+              <span><i className="plan-key plan-key-work" />작업</span><span><i className="plan-key plan-key-dem" />체선 발생</span><span><i className="plan-key plan-key-changed" />최저안과 달라진 선박</span><span><i className="plan-key plan-key-wait" />도착 후 대기</span><span><i className="plan-key plan-key-weather" />접안 금지</span>
             </div>
             <div className="plan-timelines">
               {all.map((sim, index) => (
                 <div key={sim.id} className={`plan-timeline-row ${sim.id === focus.id ? 'plan-selected' : ''}`}>
                   <button className="plan-timeline-select" onClick={() => setFocusId(sim.id)} aria-pressed={sim.id === focus.id}><span className="plan-timeline-code mono">{sim.id}</span><strong>{sim.label}</strong><span className="num">{money(sim.total)}</span></button>
-                  <Timeline sim={sim} scen={scen} range={range} changed={sim.changed} axis={index === 0} compact onPick={(vid) => openVessel(sim.id, vid, { mode: 'evidence' })} />
+                  <Timeline sim={sim} scen={scen} range={range} changed={cards[index].diffs.map((d) => d.vid)} axis={index === 0} compact onPick={(vid) => openVessel(sim.id, vid, { mode: 'evidence' })} />
                 </div>
               ))}
             </div>
@@ -210,7 +214,7 @@ export default function Compare() {
                   <article key={r.key} className={`cmp-risk ${applies ? '' : 'dim'}`}>
                     <div className="cmp-risk-time">{r.at !== undefined ? <><b className="num">{fmt(r.at)}</b><span className={r.at - NOW < 12 * 60 ? 'c-red' : 'c-amber'}>{until(r.at)}</span></> : <span className="muted small">시각 미정</span>}</div>
                     <div className="cmp-risk-body">
-                      <div className="cmp-risk-head"><span className="chip">계산 결과</span><b>{r.label}</b><St tone={riskTone(r.state)}>{r.state}</St><span className="cmp-risk-ids">{r.ids.map((id) => <span key={id} className={`chip ${id === focus.id ? 'accent' : ''}`}>{id === 'FCFS' ? '기준' : id}</span>)}</span></div>
+                      <div className="cmp-risk-head"><span className="chip">계산 결과</span><b>{r.label}</b><St tone={riskTone(r.state)}>{r.state}</St><span className="cmp-risk-ids">{r.ids.map((id) => <span key={id} className={`chip ${id === focus.id ? 'accent' : ''}`}>{id}</span>)}</span></div>
                       <p className="small">{r.evidence}</p>
                       {r.alternative !== '-' && <p className="small muted">대안: {r.alternative}</p>}
                     </div>
@@ -236,12 +240,12 @@ export default function Compare() {
         </div>
 
         <aside className="risk-sidebar stack">
-          <Panel code="PLAN-DECIDE" title="이 안으로 확정" data-tour="decide" pad actions={<SegmentedControl size="small" intent="primary" value={focus.id} options={all.map((s) => ({ value: s.id, label: s.id === 'FCFS' ? '기준' : s.id }))} onValueChange={(id) => { setAsking(false); setFocusId(id) }} />}>
+          <Panel code="PLAN-DECIDE" title="이 안으로 확정" data-tour="decide" pad actions={<SegmentedControl size="small" intent="primary" value={focus.id} options={all.map((s) => ({ value: s.id, label: s.id }))} onValueChange={(id) => { setAsking(false); setFocusId(id) }} />}>
             <div className="risk-decision stack">
               <div className="risk-amount">
-                <span className="strong">{focus.id === 'FCFS' ? '기준안 (도착순)' : focus.label}</span>
+                <span className="strong">{focus.label}</span>
                 <span className="risk-total num">{money(focus.total)}</span>
-                <span className="small muted">기준안 대비 <span className={`num ${focus.total < result.fcfs.total ? 'c-green' : ''}`}>{money(focus.total - result.fcfs.total)}</span></span>
+                <span className="small muted">최저안 대비 <span className={`num ${focus.id === best.id ? 'c-green' : ''}`}>{focus.id === best.id ? '가장 낮음 (기본 선택)' : vsBest(focus)}</span></span>
               </div>
               <ul className="cmp-decide-list small">
                 {cards.find((c) => c.sim.id === focus.id).diffs.slice(0, 4).map((d) => <li key={d.vid}><b>{d.name}</b> {d.text}</li>)}
@@ -262,7 +266,7 @@ export default function Compare() {
             </div>
           </Panel>
           {fixedNow && <Button icon="arrow-left" onClick={() => setShowCands(false)}>확정 화면으로</Button>}
-          <Panel code="VESSEL-OUT" title={`${focus.id === 'FCFS' ? '기준안' : focus.label} 선박별`} pad={false}>
+          <Panel code="VESSEL-OUT" title={`${focus.label} 선박별`} pad={false}>
             <table className="dt cmp-mini">
               <thead><tr><th>선박</th><th>부두</th><th>접안</th><th className="r">체선료</th></tr></thead>
               <tbody>{[...focus.placements].sort((a, b) => a.etb - b.etb).map((p) => <tr key={p.vid} className="click" onClick={() => openVessel(focus.id, p.vid, { mode: 'card' })}>

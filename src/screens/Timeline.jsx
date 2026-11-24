@@ -75,7 +75,7 @@ export default function Timeline({ sim, scen, range, changed = [], compact = fal
                         type="button"
                         className={`plan-timeline-bar ${placement.dem.cents > 0 ? 'plan-timeline-dem' : ''} ${isChanged ? 'plan-timeline-changed' : ''} ${activeVid === placement.vid ? 'plan-timeline-active' : ''}`}
                         style={barStyle}
-                        title={`${vessel.name} · ${fmt(placement.etb)} ~ ${fmt(placement.etu)}${isChanged ? ' · 기준안과 달라진 선박' : ''} · 산출 근거`}
+                        title={`${vessel.name} · ${fmt(placement.etb)} ~ ${fmt(placement.etu)}${isChanged ? ' · 최저안과 달라진 선박' : ''} · 산출 근거`}
                         aria-label={`${sim.label} ${vessel.name} 산출 근거, ${berth.name}, ${fmt(placement.etb)}부터 ${fmt(placement.etu)}까지`}
                         onClick={() => onPick?.(placement.vid)}
                       >

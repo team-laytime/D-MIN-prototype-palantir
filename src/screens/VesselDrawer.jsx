@@ -44,7 +44,8 @@ export default function VesselDrawer() {
   const v = liveState.v
   const p = liveState.p
   const d = p.dem
-  const base = result.fcfs.placements.find((x) => x.vid === v.id)
+  const ref = result.candidates[0] // 11-24: 비교 기준은 최저 체선료 후보
+  const base = ref.placements.find((x) => x.vid === v.id)
   const berth = scen.berths.find((b) => b.id === p.bid)
   const berthName = (id) => scen.berths.find((b) => b.id === id)?.name ?? id
   const live = drawer.at !== null
@@ -130,7 +131,7 @@ export default function VesselDrawer() {
                 ['시설 신청', <>{compatibleBerths(v, scen).map(berthName).join(', ')} <span className="muted">(접안 가능 · 항차 <span className="mono">{v.voyage}</span>)</span></>],
                 ['시설 사용', use],
                 ['접안 계획', <>{berth.name} · ETB <span className="num">{fmt(p.etb)}</span> → ETU <span className="num">{fmt(p.etu)}</span><br /><span className="muted">{sim.label}{p.waitMin > 0 && ` · 접안 전 대기 ${fmtDur(p.waitMin)}`}</span></>],
-                ['예상 체선료', <><b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{money(d.cents)}</b><br /><span className="muted">(체선 {fmtDur(d.excessMin)} · 일 {rate(v.contract.rateUsd * 100)})</span>{sim.id !== 'FCFS' && <><br /><span className="muted">도착순 기준안 <span className="num">{money(base.dem.cents)}</span></span></>}</>],
+                ['예상 체선료', <><b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{money(d.cents)}</b><br /><span className="muted">(체선 {fmtDur(d.excessMin)} · 일 {rate(v.contract.rateUsd * 100)})</span>{sim.id !== ref.id && <><br /><span className="muted">최저안({ref.label}) <span className="num">{money(base.dem.cents)}</span></span></>}</>],
               ]} />
             </Panel>
 
@@ -214,7 +215,7 @@ export default function VesselDrawer() {
                 <p className="muted small">(선박별 센트 단위 한 번 반올림 · <span className="mono">HALF_UP</span>)</p>
               </div>
             </Panel>
-            <details className="vd-fold"><summary>접안 시각 결정 · 기준안 대비 · 계약</summary>
+            <details className="vd-fold"><summary>접안 시각 결정 · 최저안 대비 · 계약</summary>
             <Panel code="ETB-RULES" title="접안 시각 결정" pad>
               <ul className="vessel-drawer-why">
                 <li>도착(NOR) <b className="num">{fmt(v.eta)}</b>{p.ready !== null && <> · {berth.name} 앞 선박 <b>{p.prev}</b> 작업 종료 + 전환 2시간 = <b className="num">{fmt(p.ready)}</b></>} → 둘 중 늦은 <b className="num">{fmt(p.from)}</b>부터 접안 가능 여부 판정</li>
@@ -222,12 +223,12 @@ export default function VesselDrawer() {
                 {!p.blockers.length && <li>추가 제약 없음 · 즉시 접안</li>}
               </ul>
             </Panel>
-            {sim.id !== 'FCFS' && <Panel code="FCFS-COMP" title="도착순 기준안 대비">
+            {sim.id !== ref.id && <Panel code="BEST-COMP" title={`최저안(${ref.label}) 대비`}>
               <Details rows={[
-                ['기준안', <>{berthName(base.bid)} · ETB <span className="num">{fmt(base.etb)}</span> → ETU <span className="num">{fmt(base.etu)}</span><br /><span className="num">{money(base.dem.cents)}</span></>],
-                ['접안 시각 차이', <span className={etbDiff > 0 ? 'c-amber' : etbDiff < 0 ? 'c-green' : 'muted'}>{etbDiff === 0 ? '도착순 기준안과 같음' : `도착순 기준안보다 ${fmtDur(Math.abs(etbDiff))} ${etbDiff > 0 ? '늦게 접안' : '일찍 접안'}`}</span>],
-                ['체선료 차이', <span className={feeDiff > 0 ? 'c-red' : feeDiff < 0 ? 'c-green' : 'muted'}>{feeDiff === 0 ? '도착순 기준안과 같음' : <><span className="num">{money(Math.abs(feeDiff))}</span> {feeDiff > 0 ? '증가' : '절감'}</>}</span>],
-                ['앞 선박 · 대기', <>기준안: {base.ready === null ? '앞 선박 없음' : base.prev} · {fmtDur(base.waitMin)}<br />선택안: {p.ready === null ? '앞 선박 없음' : p.prev} · {fmtDur(p.waitMin)}</>],
+                ['최저안', <>{berthName(base.bid)} · ETB <span className="num">{fmt(base.etb)}</span> → ETU <span className="num">{fmt(base.etu)}</span><br /><span className="num">{money(base.dem.cents)}</span></>],
+                ['접안 시각 차이', <span className={etbDiff > 0 ? 'c-amber' : etbDiff < 0 ? 'c-green' : 'muted'}>{etbDiff === 0 ? '최저안과 같음' : `최저안보다 ${fmtDur(Math.abs(etbDiff))} ${etbDiff > 0 ? '늦게 접안' : '일찍 접안'}`}</span>],
+                ['체선료 차이', <span className={feeDiff > 0 ? 'c-red' : feeDiff < 0 ? 'c-green' : 'muted'}>{feeDiff === 0 ? '최저안과 같음' : <><span className="num">{money(Math.abs(feeDiff))}</span> {feeDiff > 0 ? '증가' : '절감'}</>}</span>],
+                ['앞 선박 · 대기', <>최저안: {base.ready === null ? '앞 선박 없음' : base.prev} · {fmtDur(base.waitMin)}<br />선택안: {p.ready === null ? '앞 선박 없음' : p.prev} · {fmtDur(p.waitMin)}</>],
                 ['차이의 근거', <>{base.bid === p.bid ? `${berth.name}의 앞 선박과 접안 제약을 적용한 결과입니다.` : `${berthName(base.bid)}에서 ${berth.name}로 부두 배정을 변경한 결과입니다.`} {p.ready !== null && p.ready > v.eta && <>앞 선박 {p.prev}의 작업 종료 후 부두 전환 2시간을 기다립니다. </>}{p.blockers.length > 0 ? `${[...new Set(p.blockers.map((b) => RULES[b.rule].label))].join(' · ')} 제약을 적용합니다.` : '기상·주간·조석에 따른 추가 접안 제약은 없습니다.'}</>],
               ]} />
             </Panel>}

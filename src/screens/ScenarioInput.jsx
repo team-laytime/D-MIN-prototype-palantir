@@ -206,9 +206,7 @@ export default function ScenarioInput() {
       {canCompare && (
         <div className="plan-input-summary">
           <St tone="live">현재 입력 기준</St>
-          <span>도착순 <span className="num">{money(result.fcfs.total)}</span></span>
-          <span className="muted">→</span>
-          <span>최저 후보 <span className="num c-green">{money(result.candidates[0]?.total ?? result.fcfs.total)}</span></span>
+          <span>최저 후보 <span className="num c-green">{result.candidates[0] ? money(result.candidates[0].total) : '-'}</span></span>
           <span className="faint">수정한 조건은 후보 비교에 즉시 반영됩니다.</span>
         </div>
       )}

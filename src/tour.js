@@ -2,7 +2,7 @@
 export const TOUR = [
   {
     section: '현황 지도', tab: 'home', target: '[data-tour="plan-table"]', title: '안별 체선료',
-    body: '도착순 기준안과 후보 A·B·C의 총 예상 체선료, 기준안 대비 차이, 선택한 시각까지 쌓인 금액입니다. 행을 누르면 지도와 선박 목록이 그 안으로 바뀝니다.',
+    body: '후보 A·B·C의 총 예상 체선료, 최저안 대비 차이, 선택한 시각까지 쌓인 금액입니다. 행을 누르면 지도와 선박 목록이 그 안으로 바뀝니다.',
   },
   {
     section: '현황 지도', tab: 'home', target: '[data-tour="time-dock"]', title: '시각 이동',
@@ -27,8 +27,8 @@ export const TOUR = [
     body: '기상 악화 예보를 끄거나 시간을 바꿉니다. 만조와 일출·일몰은 대형선의 접안 가능 시간을 정합니다.',
   },
   {
-    section: '후보 비교', tab: 'compare', target: '[data-tour="cards"]', title: '기준안과 후보',
-    body: '맨 왼쪽은 도착순 기준안(비교용, 현행 실적 아님)이고 나머지는 체선료가 낮은 후보입니다.',
+    section: '후보 비교', tab: 'compare', target: '[data-tour="cards"]', title: '후보 3개',
+    body: '체선료가 낮은 순서로 후보 A, B, C이며, 맨 왼쪽 A(최저)가 기본으로 선택되어 있습니다.',
     try: '후보를 누르면 아래 표가 그 후보로 바뀝니다.',
   },
   {

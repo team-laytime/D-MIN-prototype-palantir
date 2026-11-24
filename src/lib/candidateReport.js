@@ -12,8 +12,8 @@ const pct = (part, whole) => (whole ? ((part / whole) * 100).toFixed(1) : '0.0')
  *   selId: 선택한 후보 id('A'|'B'|'C'), judgment: 숙련자 판단근거, plan: 적용 중인 확정 계획(같은 입력 버전일 때만) 또는 null
  */
 export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
-  const fcfs = result.fcfs
   const cands = result.candidates
+  const best = cands[0] // 11-24: 비교 기준은 도착순이 아니라 최저 체선료 후보
   const sel = cands.find((c) => c.id === selId) ?? cands[0]
   const vessels = Object.fromEntries(scen.vessels.map((v) => [v.id, v]))
   const berth = (id) => scen.berths.find((b) => b.id === id)
@@ -25,8 +25,8 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
     const longestWait = sim.placements.reduce((m, p) => (p.waitMin > m.waitMin ? p : m), sim.placements[0])
     return {
       id: sim.id, label: sim.label, total: sim.total,
-      saving: fcfs.total - sim.total, savingPct: pct(fcfs.total - sim.total, fcfs.total),
-      changed: sim.changed.map((id) => vessels[id].name),
+      extra: sim.total - best.total, extraPct: pct(sim.total - best.total, best.total),
+      changed: sim.placements.filter((p) => { const b = best.placements.find((x) => x.vid === p.vid); return b.bid !== p.bid || b.etb !== p.etb }).map((p) => vessels[p.vid].name),
       demVessels,
       longestWait: { name: vessels[longestWait.vid].name, min: longestWait.waitMin },
       risks: rs,
@@ -36,8 +36,8 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
       })),
     }
   }
-  const base = analyse(fcfs)
   const items = cands.map(analyse)
+  const base = items[0]
 
   // 공통 리스크: 세 후보 모두에서 '해당' 또는 '판단 불가'인 항목. 어느 안을 골라도 남는다.
   const keys = items[0]?.risks.map((r) => r.key) ?? []
@@ -52,11 +52,11 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
     .filter((k) => !common.some((c) => c.key === k) && items.some((it) => ACTIVE(it.risks.find((r) => r.key === k))))
     .map((k) => ({ key: k, label: items[0].risks.find((r) => r.key === k).label, per: items.map((it) => ({ id: it.id, label: it.label, state: it.risks.find((r) => r.key === k).state })) }))
 
-  // 차트용: 선박별 체선료(기준안 + 후보 3개).
+  // 차트용: 선박별 체선료(후보 3개).
   const vesselOrder = [...scen.vessels].sort((a, b) => a.eta - b.eta)
   const perVessel = vesselOrder.map((v) => ({
     name: v.name,
-    values: [fcfs, ...cands].map((s) => ({ id: s.id, cents: s.placements.find((p) => p.vid === v.id)?.dem.cents ?? 0 })),
+    values: cands.map((s) => ({ id: s.id, cents: s.placements.find((p) => p.vid === v.id)?.dem.cents ?? 0 })),
   }))
 
   return {
@@ -70,22 +70,24 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
 }
 
 
+const vsBest = (m) => (m.sel.extra ? `최저안(${m.base.label}) ${money(m.base.total)}보다 ${money(m.sel.extra)}(${m.sel.extraPct}%) 많습니다.` : '세 후보 중 가장 낮습니다.')
+
 export function candidateReportMarkdown(m) {
   const L = []
   L.push(`# 울산 CLX 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status} · 담당자 검토용 · 가상 데이터 · 의사결정 보조용`, '')
-  L.push('## 1. 결론', `${m.sel.label}을 ${m.confirmed ? '확정한' : '선택한'} 안으로 보고합니다. 총 예상 체선료는 ${money(m.sel.total)}이며, 도착순 기준안 ${money(m.base.total)} 대비 ${money(m.sel.saving)}(${m.sel.savingPct}%) 적습니다.`, '')
+  L.push('## 1. 결론', `${m.sel.label}을 ${m.confirmed ? '확정한' : '선택한'} 안으로 보고합니다. 총 예상 체선료는 ${money(m.sel.total)}이며, ${vsBest(m)}`, '')
   L.push('### 숙련자 판단근거', m.judgment || '(아직 작성하지 않음)', '')
-  L.push('## 2. 후보안 비교', '| 안 | 총 예상 체선료 | 기준안 대비 | 절감률 | 변경 선박 | 체선 발생 | 남은 리스크 |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: |')
-  for (const it of [m.base, ...m.items]) {
-    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${money(it.total)} | ${it.id === 'FCFS' ? '-' : money(it.total - m.base.total)} | ${it.id === 'FCFS' ? '-' : `${it.savingPct}%`} | ${it.changed.length}척 | ${it.demVessels.length}척 | ${it.active.length}건 |`)
+  L.push('## 2. 후보안 비교', '| 안 | 총 예상 체선료 | 최저안 대비 | 최저안과 다른 선박 | 체선 발생 | 남은 리스크 |', '| --- | ---: | ---: | ---: | ---: | ---: |')
+  for (const it of m.items) {
+    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.changed.length}척 | ${it.demVessels.length}척 | ${it.active.length}건 |`)
   }
-  L.push('', '### 선박별 예상 체선료', `| 선박 | ${['기준안', ...m.items.map((it) => it.label)].join(' | ')} |`, `| --- | ${m.items.map(() => '---:').concat('---:').join(' | ')} |`)
+  L.push('', '### 선박별 예상 체선료', `| 선박 | ${m.items.map((it) => it.label).join(' | ')} |`, `| --- | ${m.items.map(() => '---:').join(' | ')} |`)
   for (const row of m.perVessel) L.push(`| ${row.name} | ${row.values.map((v) => money(v.cents)).join(' | ')} |`)
   L.push('', '## 3. 후보별 분석')
   for (const it of m.items) {
     L.push('', `### ${it.label}${it.id === m.sel.id ? ' (선택)' : ''}`,
-      `- 총 예상 체선료 ${money(it.total)} · 기준안 대비 ${money(it.saving)}(${it.savingPct}%) 절감`,
-      `- 기준안과 달라진 선박: ${it.changed.join(', ') || '없음'}`,
+      `- 총 예상 체선료 ${money(it.total)} · ${it.extra ? `최저안보다 ${money(it.extra)}(${it.extraPct}%) 많음` : '세 후보 중 가장 낮음 (기본 선택)'}`,
+      `- 최저안과 다른 선박: ${it.extra ? it.changed.join(', ') || '없음' : '비교 기준'}`,
       `- 가장 긴 대기: ${it.longestWait.name} ${fmtDur(it.longestWait.min)}`)
     L.push(`- 체선 발생: ${it.demVessels.length ? it.demVessels.map((d) => `${d.name}(${d.berth}, 초과 ${fmtDur(d.excessMin)}, ${money(d.cents)})`).join(', ') : '없음'}`)
     L.push(`- 남은 리스크: ${it.active.length ? it.active.map((r) => `${r.label}(${r.state}) ${r.evidence}`).join(' / ') : '없음'}`)
@@ -101,7 +103,7 @@ export function candidateReportMarkdown(m) {
   }
   L.push('', `## 5. ${m.sel.label} 선박별 일정`, '| 선박 | 부두 | 도착 | 접안 | 작업 종료 | 예상 체선료 |', '| --- | --- | --- | --- | --- | ---: |')
   for (const s of m.sel.schedule) L.push(`| ${s.name} | ${s.berth} | ${fmt(s.eta)} | ${fmt(s.etb)} | ${fmt(s.etu)} | ${money(s.cents)} |`)
-  L.push('', '## 계산 기준', '- 체선료 = 초과 시간 ÷ 24시간 × 하루 체선료, 선박별 센트 단위 한 번 반올림(HALF_UP)', '- 정박시간 개시·기상 공제는 선박별 계약 조항을 따름', '- 기준안은 비교용 도착순 배치이며 현행 실적이 아님')
+  L.push('', '## 계산 기준', '- 체선료 = 초과 시간 ÷ 24시간 × 하루 체선료, 선박별 센트 단위 한 번 반올림(HALF_UP)', '- 정박시간 개시·기상 공제는 선박별 계약 조항을 따름', '- 후보는 체선료가 낮은 순서로 A, B, C이며 A(최저)가 기본 선택')
   return L.join('\n')
 }
 
@@ -112,7 +114,7 @@ export function candidateMailDraft(m) {
     '안녕하세요.',
     `${m.period} 울산 터미널 접안 계획으로 ${m.sel.label}을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,
     '',
-    `- 총 예상 체선료: ${money(m.sel.total)} (도착순 기준안 ${money(m.base.total)} 대비 ${money(m.sel.saving)}, ${m.sel.savingPct}% 감소)`,
+    `- 총 예상 체선료: ${money(m.sel.total)} (${m.sel.extra ? `최저안 ${m.base.label}보다 ${money(m.sel.extra)} 많음` : '세 후보 중 가장 낮음'})`,
     `- 비교한 후보: ${m.items.map((it) => `${it.label} ${money(it.total)}`).join(', ')}`,
     `- 공통 리스크: ${m.common.map((c) => c.label).join(', ') || '없음'}`,
     `- 판단근거: ${m.judgment || '(작성 전)'}`,

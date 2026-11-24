@@ -1,7 +1,7 @@
 // 보고서 차트 두 개. 색은 뜻대로: 선택한 안 = 시안, 나머지는 중립 단계로만 구분한다.
 import { money, moneyShort } from '../lib/time.js'
 
-const tone = (id, selId) => (id === selId ? 'var(--accent)' : id === 'FCFS' ? 'var(--line-3)' : 'var(--fg-3)')
+const tone = (id, selId) => (id === selId ? 'var(--accent)' : 'var(--fg-3)')
 
 /** 안별 총 예상 체선료 가로 막대. rows = [{id, label, total}] */
 export function TotalChart({ rows, selId }) {
@@ -58,7 +58,7 @@ export function VesselChart({ rows, series, selId, reasons }) {
       </svg>
       {reasons && (
         <div className="rpt-reasons" style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }} aria-label="선박별 차이의 이유">
-          {rows.map((r) => <p key={r.name} className={reasons[r.name] ? '' : 'faint'}>{reasons[r.name] ?? '기준안과 같음'}</p>)}
+          {rows.map((r) => <p key={r.name} className={reasons[r.name] ? '' : 'faint'}>{reasons[r.name] ?? '최저안과 같음'}</p>)}
         </div>
       )}
       <figcaption className="rpt-legend">
