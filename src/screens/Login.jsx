@@ -7,7 +7,7 @@ import { Brand, ThemeToggle } from '../ui/Shell.jsx'
 import './login.css'
 
 export default function Login() {
-  const { login } = useApp()
+  const { login, scen } = useApp()
   // 11-20 피드백: 역할을 고르는 카드를 없앴다. 들어온 아이디가 곧 역할이다.
   const [id, setId] = useState('')
   const [pw, setPw] = useState('')
@@ -26,13 +26,13 @@ export default function Login() {
       <div className="login-theme"><ThemeToggle /></div>
       <div className="login-intro">
         <Brand size={22} />
-        <h1>울산 CLX 액체부두<br />접안 순서 · 체선료 최적화</h1>
-        <p className="muted">5,760가지 접안 순서·부두 배정을 계산해 체선료가 낮은 후보 3개를 보여 주고(최저안이 기본 선택), 남은 리스크를 확인한 뒤 확정합니다.</p>
+        <h1>울산 SK 액체부두<br />접안 계획 · 체선료 최적화</h1>
+        <p className="muted">실제 접안 실적 데이터로 팀 최적화 엔진(CP-SAT)이 만든 접안 계획 후보 3개를 비교하고(체선료가 가장 낮은 안이 기본 선택), 남은 리스크를 확인한 뒤 확정합니다.</p>
         <dl className="login-facts mono">
-          <div><dt>BERTHS</dt><dd>SK3 · SK5 · SK6</dd></div>
-          <div><dt>VESSELS</dt><dd>6 / SCENARIO</dd></div>
-          <div><dt>SEARCH</dt><dd>720 ORDERS × 8 ASSIGNMENTS</dd></div>
-          <div><dt>DATA</dt><dd className="c-amber">가상 데이터 · 시연용</dd></div>
+          <div><dt>BERTHS</dt><dd>{scen ? `${scen.berths.length} (SK1~8, BUOY, GAS)` : '-'}</dd></div>
+          <div><dt>VESSELS</dt><dd>{scen ? `${scen.vessels.length} / ${scen.days * 24}H` : '-'}</dd></div>
+          <div><dt>ENGINE</dt><dd>CP-SAT · {scen ? scen.presets.length : 3} PRESETS</dd></div>
+          <div><dt>DATA</dt><dd className="c-amber">{scen ? `${scen.bundle} (계약은 가상)` : '불러오는 중'}</dd></div>
         </dl>
       </div>
 

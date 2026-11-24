@@ -1,94 +1,124 @@
-import { useMemo } from 'react'
-import { fmt, moneyShort } from '../lib/time.js'
-import './plan.css'
+// 부두(선석)별 간트. 줄 = 선석(부두 묶음 머리줄 포함), 막대 = 접안부터 이안까지.
+// 후보 비교와 확정 일정 모니터링에서 같이 쓴다. 시각과 금액은 엔진 결과(placements)를 그대로 그린다.
+//   sim: { id, label, placements[] }. placements는 엔진 후보(dem = {cents})와 확정 스냅숏(dem = 센트 숫자) 둘 다 받는다.
+import { Fragment, useMemo } from 'react'
+import { NOW, dayStart, fmt, hourOf, money } from '../lib/time.js'
+import './decide.css'
 
-export default function Timeline({ sim, scen, range, changed = [], compact = false, axis = true, activeVid, onPick }) {
+export const demCents = (p) => (typeof p.dem === 'number' ? p.dem : p.dem?.cents ?? 0)
+
+/**
+ * @param {object} props
+ * @param {{ placements: object[], label?: string }} props.sim
+ * @param {object} props.scen  시나리오(berths, vessels, blocks)
+ * @param {{ start: number, end: number }} props.range  보통 spanOf(sims)
+ * @param {boolean} [props.groupByPier]  부두 묶음 머리줄을 넣는다
+ * @param {Set<string>|string[]} [props.highlight]  테두리로 표시할 선박(예: 실제 계획과 부두가 다른 배)
+ * @param {string} [props.highlightLabel]  막대 설명에 붙일 말
+ * @param {string[]} [props.berthIds]  이 선석만 그린다
+ * @param {boolean} [props.now]  지금 시각 선
+ */
+export default function Timeline({ sim, scen, range, groupByPier = true, highlight, highlightLabel = '표시한 선박', berthIds, activeVid, onPick, compact = false, now = true }) {
   const span = Math.max(1, range.end - range.start)
-  const position = (time) => `${(time - range.start) / span * 100}%`
-  const interval = (start, end) => {
-    const left = Math.max(start, range.start)
-    const right = Math.min(end, range.end)
-    return right > left ? { left: position(left), width: `${(right - left) / span * 100}%` } : null
+  const pos = (t) => `${((t - range.start) / span) * 100}%`
+  const seg = (a, b) => {
+    const l = Math.max(a, range.start), r = Math.min(b, range.end)
+    return r > l ? { left: pos(l), width: `${((r - l) / span) * 100}%` } : null
   }
-  const { vessels, rows, nights, ticks } = useMemo(() => {
-    const vessels = Object.fromEntries(scen.vessels.map((vessel) => [vessel.id, vessel]))
-    const rows = scen.berths.map((berth) => ({ berth, bars: sim.placements.filter((placement) => placement.bid === berth.id) }))
-    const nights = scen.env.days.slice(0, -1).map((day, index) => ({ start: day.sunset, end: scen.env.days[index + 1].sunrise }))
-      .filter((night) => night.end > range.start && night.start < range.end)
-    const ticks = []
-    for (let time = Math.ceil(range.start / 360) * 360; time <= range.end; time += 360) {
-      const hour = ((time % 1440) + 1440) % 1440 / 60
-      ticks.push({ time, day: hour === 0, label: hour === 0 ? fmt(time).slice(0, 5) : `${String(hour).padStart(2, '0')}:00` })
-    }
-    return { vessels, rows, nights, ticks }
-  }, [sim, scen, range])
-  const weather = scen.env.weather
-  const weatherStyle = weather && interval(weather.start, weather.end)
+  const hl = useMemo(() => (highlight instanceof Set ? highlight : new Set(highlight ?? [])), [highlight])
 
-  return (
-    <div className={`plan-timeline ${compact ? 'plan-timeline-compact' : ''}`} aria-label={`${sim.label} 부두별 타임라인`}>
-      {axis && (
-        <div className="plan-timeline-axis">
-          <div className="plan-timeline-label"><span className="mono">KST</span></div>
-          <div className="plan-timeline-track">
-            {ticks.map((tick) => (
-              <span
-                key={tick.time}
-                className={`plan-timeline-tick num ${tick.day ? 'plan-day-tick' : ''} ${tick.time === range.start ? 'plan-first-tick' : ''} ${tick.time === range.end ? 'plan-last-tick' : ''}`}
-                style={{ left: position(tick.time) }}
-              >{tick.label}</span>
-            ))}
-          </div>
-        </div>
-      )}
-      {rows.map(({ berth, bars }) => {
-        const maintenance = berth.facility.maintenance
-        const maintenanceStyle = maintenance && interval(maintenance.start, maintenance.end)
-        const occupiedStyle = berth.occupiedUntil !== null && interval(range.start, berth.occupiedUntil)
-        return (
-          <div className="plan-timeline-lane" key={berth.id}>
-            <div className="plan-timeline-label">
-              <span>{berth.name}</span>
-              {!compact && <span className="faint tiny num">{(berth.maxDwt / 1000).toFixed(0)}k DWT</span>}
-            </div>
-            <div className="plan-timeline-track">
-              {nights.map((night) => <div key={night.start} className="plan-timeline-band plan-timeline-night" style={interval(night.start, night.end)} aria-hidden="true" />)}
-              {ticks.map((tick) => <span key={tick.time} className={`plan-timeline-gridline ${tick.day ? 'plan-day-line' : ''}`} style={{ left: position(tick.time) }} aria-hidden="true" />)}
-              {weatherStyle && <div className="plan-timeline-band plan-timeline-weather" style={weatherStyle} title={`${weather.label} · ${fmt(weather.start)} ~ ${fmt(weather.end)} · 접안 금지`} />}
-              {maintenanceStyle && <div className="plan-timeline-band plan-timeline-maintenance" style={maintenanceStyle} title={`${maintenance.label} · ${fmt(maintenance.start)} ~ ${fmt(maintenance.end)}`} />}
-              {occupiedStyle && (
-                <div className="plan-timeline-bar plan-timeline-occupied" style={occupiedStyle} title={`${berth.occupiedBy} 현재 접안 · ${fmt(berth.occupiedUntil)}까지`}>
-                  <span className="plan-timeline-bar-name mono">{berth.occupiedBy}</span>
-                </div>
-              )}
-              {bars.map((placement) => {
-                const vessel = vessels[placement.vid]
-                const waitStyle = interval(vessel.eta, placement.etb)
-                const barStyle = interval(placement.etb, placement.etu)
-                const isChanged = changed.includes(placement.vid)
-                return (
-                  <div className="plan-timeline-placement" key={placement.vid}>
-                    {waitStyle && <div className="plan-timeline-wait" style={waitStyle} title={`${vessel.name} 대기 ${fmt(vessel.eta)} → ${fmt(placement.etb)}`} />}
-                    {barStyle && (
-                      <button
-                        type="button"
-                        className={`plan-timeline-bar ${placement.dem.cents > 0 ? 'plan-timeline-dem' : ''} ${isChanged ? 'plan-timeline-changed' : ''} ${activeVid === placement.vid ? 'plan-timeline-active' : ''}`}
-                        style={barStyle}
-                        title={`${vessel.name} · ${fmt(placement.etb)} ~ ${fmt(placement.etu)}${isChanged ? ' · 최저안과 달라진 선박' : ''} · 산출 근거`}
-                        aria-label={`${sim.label} ${vessel.name} 산출 근거, ${berth.name}, ${fmt(placement.etb)}부터 ${fmt(placement.etu)}까지`}
-                        onClick={() => onPick?.(placement.vid)}
-                      >
-                        <span className="plan-timeline-bar-name mono">{vessel.name}</span>
-                        {placement.dem.cents > 0 && <span className="plan-timeline-bar-dem num">{moneyShort(placement.dem.cents)}</span>}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
+  const { groups, ticks, nights, vById } = useMemo(() => {
+    const vById = Object.fromEntries(scen.vessels.map((v) => [v.id, v]))
+    const byBerth = {}
+    for (const p of sim.placements) (byBerth[p.bid] ??= []).push(p)
+    const berths = scen.berths.filter((b) => !berthIds || berthIds.includes(b.id))
+    const groups = []
+    for (const b of berths) {
+      const last = groups.at(-1)
+      const row = { berth: b, bars: byBerth[b.id] ?? [] }
+      if (groupByPier && last?.pier === b.pier) last.rows.push(row)
+      else groups.push({ pier: b.pier, name: b.pierName, rows: [row] })
+    }
+    // 눈금: 6시간마다, 0시에는 날짜
+    const ticks = []
+    for (let t = dayStart(range.start); t <= range.end; t += 360) if (t >= range.start) ticks.push({ t, day: hourOf(t) === 0 })
+    // 야간(20시~다음 날 06시) 띠
+    const nights = []
+    for (let d = dayStart(range.start) - 1440; d < range.end; d += 1440) {
+      const s = seg(d + 20 * 60, d + 30 * 60)
+      if (s) nights.push({ key: d, style: s })
+    }
+    return { groups, ticks, nights, vById }
+  }, [sim, scen, range, groupByPier, berthIds]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const blocksOf = (bid) => (scen.blocks ?? []).filter((b) => !b.berths || b.berths.includes(bid))
+  const nowStyle = now && NOW >= range.start && NOW <= range.end ? { left: pos(NOW) } : null
+
+  const lane = ({ berth, bars }) => (
+    <div className="gt-lane" key={berth.id}>
+      <div className="gt-label" title={`${berth.name}, 최대 ${berth.maxDwt?.toLocaleString() ?? '-'} DWT`}>
+        <span className="gt-code mono">{berth.code}</span>
+        <span className="gt-count tiny faint num">{bars.length || ''}</span>
+      </div>
+      <div className="gt-track">
+        {nights.map((n) => <div key={n.key} className="gt-night" style={n.style} aria-hidden="true" />)}
+        {ticks.map((k) => <span key={k.t} className={`gt-grid ${k.day ? 'day' : ''}`} style={{ left: pos(k.t) }} aria-hidden="true" />)}
+        {blocksOf(berth.id).map((b, i) => {
+          const s = seg(b.start, b.end)
+          return s && <div key={i} className="gt-block" style={s} title={`${b.kind === 'WEATHER' ? '접안 금지' : '사용 불가'} ${fmt(b.start)} ~ ${fmt(b.end)}${b.source ? `, ${b.source}` : ''}`} />
+        })}
+        {bars.map((p) => {
+          const s = seg(p.etb, p.etu)
+          if (!s) return null
+          const v = vById[p.vid]
+          const name = p.name ?? v?.name ?? p.vid
+          const cents = demCents(p)
+          const cls = ['gt-bar', cents > 0 && 'dem', p.night && 'night', hl.has(p.vid) && 'hl', p.fixed && 'fixed', activeVid === p.vid && 'active'].filter(Boolean).join(' ')
+          const tip = [
+            `${name}${v ? ` (${v.product}, ${v.dir})` : ''}`,
+            berth.name,
+            `접안 ${fmt(p.etb)} ~ 이안 ${fmt(p.etu)}`,
+            p.night ? '야간 접안' : null,
+            cents > 0 ? `예상 체선료 ${money(cents)}` : '체선 없음',
+            hl.has(p.vid) ? highlightLabel : null,
+            p.fixed ? '고정한 선박' : null,
+          ].filter(Boolean).join('\n')
+          return (
+            <button type="button" key={p.vid} className={cls} style={s} title={tip} onClick={() => onPick?.(p.vid)}
+              aria-label={`${name}, ${berth.name}, ${fmt(p.etb)}부터 ${fmt(p.etu)}까지`}>
+              <span className="gt-bar-t">{v?.callSign ?? p.callSign ?? name.split(' ')[0]}</span>
+            </button>
+          )
+        })}
+        {nowStyle && <span className="gt-now" style={nowStyle} aria-hidden="true" />}
+      </div>
     </div>
   )
+
+  return (
+    <div className={`gt ${compact ? 'compact' : ''}`} aria-label={`${sim.label ?? ''} 선석별 간트`}>
+      <div className="gt-axis">
+        <div className="gt-label"><span className="mono tiny faint">KST</span></div>
+        <div className="gt-track">
+          {ticks.map((k) => <span key={k.t} className={`gt-tick num ${k.day ? 'day' : ''}`} style={{ left: pos(k.t) }}>{k.day ? fmt(k.t).slice(0, 5) : String(hourOf(k.t)).padStart(2, '0')}</span>)}
+          {nowStyle && <span className="gt-now-label tiny" style={nowStyle}>지금</span>}
+        </div>
+      </div>
+      {groups.map((g) => (
+        <Fragment key={g.rows[0].berth.id}>
+          {groupByPier && <div className="gt-pier"><span>{g.name}</span><span className="tiny faint num">{g.rows.reduce((s, r) => s + r.bars.length, 0)}척</span></div>}
+          {g.rows.map(lane)}
+        </Fragment>
+      ))}
+    </div>
+  )
+}
+
+/** 간트 범례. keys: work, dem, night, hl, fixed, block, nightBand */
+export function TimelineLegend({ hlLabel = '실제 계획과 부두가 다른 배', keys = ['work', 'dem', 'night', 'hl', 'fixed', 'nightBand', 'block'], hint = '막대를 누르면 산출 근거' }) {
+  const L = {
+    work: ['gt-key', '작업(접안~이안)'], dem: ['gt-key dem', '체선 발생'], night: ['gt-key night', '야간 접안'],
+    hl: ['gt-key hl', hlLabel], fixed: ['gt-key fixed', '고정한 배'], nightBand: ['gt-key band', '야간 20~06시'], block: ['gt-key block', '사용 불가'],
+  }
+  return <div className="gt-legend">{keys.map((k) => <span key={k}><i className={L[k][0]} />{L[k][1]}</span>)}{hint && <span className="faint">{hint}</span>}</div>
 }

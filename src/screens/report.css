@@ -115,7 +115,7 @@
 .rpt-why td { font-size: 12px; vertical-align: top; }
 
 /* 11-20 피드백: 확정 통보 메일 · 템플릿 + 태그 */
-.ml-grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: stretch; min-height: 0; }
+.ml-grid { display: grid; grid-template-columns: 290px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: stretch; min-height: 0; }
 .ml-groups { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; }
 .ml-groups button { width: 100%; display: grid; gap: 2px; padding: 8px 10px; text-align: left; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg); cursor: pointer; }
 .ml-groups button.on { border-color: var(--accent); background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
@@ -134,3 +134,45 @@
 .rpt-reasons p { margin: 0; font-size: 10.5px; line-height: 1.4; color: var(--fg-2); text-align: center; word-break: keep-all; }
 .rpt-reasons p.faint { color: var(--fg-3); }
 .rpt-h-plain { margin-top: 18px; }
+
+/* 확정 통보 메일: 부서별 (11-24 최최종) */
+.ml-dept + .ml-dept { margin-top: 6px; }
+.ml-dept-head { margin: 0 0 5px; color: var(--fg-3); letter-spacing: .02em; }
+.ml-group-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ml-attach-hint { display: inline-flex; align-items: center; gap: 4px; color: var(--fg-2); }
+.ml-tags button.used { background: var(--accent); color: #fff; }
+.ml-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.ml-file { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg); font: 12px var(--sans); cursor: pointer; }
+.ml-file:hover { border-color: var(--accent); color: var(--accent); }
+.ml-file.static { cursor: default; }
+.ml-dialog { width: 760px; }
+.ml-dialog.wide { width: min(1040px, 92vw); }
+.ml-dialog .rpt-doc { box-shadow: none; }
+.ml-sheet td, .ml-sheet th { white-space: nowrap; }
+.ml-load { display: inline-flex; align-items: center; gap: 6px; }
+.ml-grid .bp6-button { white-space: nowrap; }
+
+/* 메일 본문 표와 간트 (11-24 고도화) */
+.mlb { display: grid; gap: 8px; min-width: 0; }
+.mlb > * { min-width: 0; max-width: 100%; }
+.mlb-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mlb-table th, .mlb-table td { padding: 4px 6px; border: 1px solid var(--line-2); text-align: left; vertical-align: top; }
+.mlb-table td.num { white-space: nowrap; }
+.mlb-table th { background: var(--bg-3); color: var(--fg-2); font-weight: 500; }
+.mlb-night { margin-left: 5px; padding: 0 4px; border: 1px solid var(--amber); color: var(--amber); font-size: 10px; }
+.mlb-gantt { width: 100%; height: auto; border: 1px solid var(--line-2); background: var(--bg-1); }
+.mlb-g-night { fill: var(--fg); opacity: .06; }
+.mlb-g-grid { stroke: var(--line); stroke-width: 1; }
+.mlb-g-tick { font: 10px var(--mono); fill: var(--fg-3); }
+.mlb-g-label { font: 600 11px var(--sans); fill: var(--fg); }
+.mlb-g-bar { fill: var(--accent); opacity: .85; }
+.mlb-g-bar.night { fill: var(--amber); }
+.mlb-g-bar-t { font: 10px var(--sans); fill: #fff; }
+.mlb-g-legend { font: 9.5px var(--sans); fill: var(--fg-3); }
+.mlb-empty { margin: 0; color: var(--fg-3); font-size: 12px; }
+.ml-xlsx { display: grid; gap: 6px; }
+.ml-xlsx-bar { display: flex; align-items: center; justify-content: space-between; }
+.ml-xlsx-grid { overflow: auto; max-height: 52vh; border: 1px solid var(--line-2); }
+.ml-xlsx-tabs { display: flex; gap: 2px; border-top: 1px solid var(--line-2); }
+.ml-xlsx-tabs button { height: 26px; padding: 0 12px; border: 1px solid var(--line-2); border-top: 0; background: var(--bg-3); color: var(--fg-2); font-size: 12px; cursor: pointer; }
+.ml-xlsx-tabs button.on { background: var(--bg-1); color: var(--accent); font-weight: 600; box-shadow: inset 0 2px 0 var(--accent); }

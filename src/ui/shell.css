@@ -33,3 +33,17 @@
 .statusbar .st { color: var(--accent); }
 .statusbar-right { margin-left: auto; font-family: var(--sans); letter-spacing: 0; }
 .rail-badge { margin-left: auto; min-width: 18px; height: 16px; padding: 0 5px; border-radius: 8px; background: var(--red); color: #fff; font-size: 10px; line-height: 16px; text-align: center; }
+
+/* 11-24 최최종: 돌발 상황은 있을 때만 메일함 아래에 붙는다 */
+.rail-sub { height: 28px; padding-left: 38px; font-size: 12.5px; }
+.rail-sub.hot { color: var(--amber); }
+.rail-sub.hot .bp6-icon { color: var(--amber); }
+.rail-badge.hot { background: var(--amber); }
+
+/* 글씨 크기 (11-24) */
+.font-scale { display: inline-flex; align-items: center; gap: 2px; margin-right: 4px; }
+.font-scale .faint { margin-right: 4px; }
+.font-scale button { min-width: 26px; height: 26px; padding: 0 4px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-family: var(--sans); font-weight: 600; line-height: 1; cursor: pointer; }
+.font-scale button + button { border-left: 0; }
+.font-scale button.on { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); }
+.font-scale button:hover { color: var(--fg); }

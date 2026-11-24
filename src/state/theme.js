@@ -28,3 +28,28 @@ export const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 export const useTheme = () => useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l) }, () => theme)
 /** Blueprint 포털(드로어·팝오버)에 붙일 테마 클래스. */
 export const useDarkClass = () => (useTheme() === 'dark' ? 'bp6-dark' : '')
+
+// 11-24 글씨 크기: 선박 스케줄러는 40~50대 숙련자가 많아 큰 글씨가 필요할 수 있다.
+// 화면 글씨가 px로 고정돼 있어 화면 전체를 비율(zoom)로 키운다. 처음 값: 주소의 ?font= → 지난번 선택 → 보통.
+export const FONT_SCALES = [
+  { id: 'normal', label: '보통', zoom: 1 },
+  { id: 'large', label: '크게', zoom: 1.15 },
+  { id: 'xlarge', label: '아주 크게', zoom: 1.3 },
+]
+const FKEY = 'dmin-font'
+const fontInitial = () => {
+  const q = new URLSearchParams(location.search).get('font')
+  const saved = q ?? (() => { try { return localStorage.getItem(FKEY) } catch { return null } })()
+  return FONT_SCALES.some((f) => f.id === saved) ? saved : 'normal'
+}
+let font = fontInitial()
+const fontListeners = new Set()
+function applyFont() { document.documentElement.style.zoom = String(FONT_SCALES.find((f) => f.id === font).zoom) }
+applyFont()
+export function setFontScale(id) {
+  font = id
+  try { localStorage.setItem(FKEY, id) } catch { /* 저장 못 해도 이번 화면에는 적용 */ }
+  applyFont()
+  for (const l of fontListeners) l()
+}
+export const useFontScale = () => useSyncExternalStore((l) => { fontListeners.add(l); return () => fontListeners.delete(l) }, () => font)

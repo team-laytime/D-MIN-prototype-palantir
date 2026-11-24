@@ -1,12 +1,13 @@
-// 보고서 차트 두 개. 색은 뜻대로: 선택한 안 = 시안, 나머지는 중립 단계로만 구분한다.
+// 보고서 차트 두 개. 88척이어도 읽히도록 합계 막대와 상위 선박만 그린다.
+// 색은 뜻대로: 선택한 안 = 시안, 다른 후보 = 중립, 실제 계획 = 테두리만.
 import { money, moneyShort } from '../lib/time.js'
 
-const tone = (id, selId) => (id === selId ? 'var(--accent)' : 'var(--fg-3)')
+const fill = (id, selId) => (id === selId ? 'var(--accent)' : id === 'BASE' ? 'none' : 'var(--fg-3)')
 
-/** 안별 총 예상 체선료 가로 막대. rows = [{id, label, total}] */
+/** 안별 총 예상 체선료 가로 막대. rows = [{id, label, total, baseline?}] */
 export function TotalChart({ rows, selId }) {
   const max = Math.max(...rows.map((r) => r.total), 1)
-  const W = 640, rowH = 30, labelW = 92, valueW = 104
+  const W = 640, rowH = 28, labelW = 92, valueW = 110
   const barW = W - labelW - valueW
   return (
     <svg className="rpt-chart" viewBox={`0 0 ${W} ${rows.length * rowH + 6}`} role="img" aria-label="안별 총 예상 체선료">
@@ -15,10 +16,10 @@ export function TotalChart({ rows, selId }) {
         const w = Math.max(2, (r.total / max) * barW)
         return (
           <g key={r.id}>
-            <text x={0} y={y + 16} className="rpt-chart-label" fontWeight={r.id === selId ? 600 : 400}>{r.label}</text>
-            <rect x={labelW} y={y + 4} width={barW} height={16} fill="var(--bg-3)" />
-            <rect x={labelW} y={y + 4} width={w} height={16} fill={tone(r.id, selId)} />
-            <text x={labelW + barW + 8} y={y + 16} className="rpt-chart-value" fill={r.id === selId ? 'var(--accent)' : 'currentColor'}>{money(r.total)}</text>
+            <text x={0} y={y + 15} className="rpt-chart-label" fontWeight={r.id === selId ? 600 : 400}>{r.label}</text>
+            <rect x={labelW} y={y + 3} width={barW} height={16} fill="var(--bg-3)" />
+            <rect x={labelW} y={y + 3} width={w} height={16} fill={fill(r.id, selId)} stroke={r.baseline ? 'var(--fg-2)' : 'none'} strokeDasharray={r.baseline ? '3 2' : undefined} />
+            <text x={labelW + barW + 8} y={y + 15} className="rpt-chart-value" fill={r.id === selId ? 'var(--accent)' : 'currentColor'}>{money(r.total)}</text>
           </g>
         )
       })}
@@ -26,46 +27,37 @@ export function TotalChart({ rows, selId }) {
   )
 }
 
-/** 선박별 예상 체선료 묶음 막대. rows = [{name, values:[{id, cents}]}], series = [{id, label}] */
-export function VesselChart({ rows, series, selId, reasons }) {
+/** 선박별 예상 체선료 상위 N척, 가로 묶음 막대. rows = [{vid, name, values:[{id, cents}]}], series = [{id, label}] */
+export function VesselChart({ rows, series, selId }) {
+  if (!rows.length) return <p className="small muted">체선이 생기는 선박이 없습니다.</p>
   const max = Math.max(...rows.flatMap((r) => r.values.map((v) => v.cents)), 1)
-  const W = 640, H = 180, top = 22, bottom = 34, left = 8
-  const plotH = H - top - bottom
-  const groupW = (W - left) / rows.length
-  const barW = Math.min(18, (groupW - 16) / series.length)
+  const W = 640, labelW = 120, valueW = 64, bar = 6, gap = 1, pad = 9
+  const groupH = series.length * (bar + gap) + pad
+  const barW = W - labelW - valueW
+  const H = rows.length * groupH + 4
   return (
     <figure className="rpt-figure">
-      <svg className="rpt-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="선박별 예상 체선료">
-        <line x1={left} x2={W} y1={top + plotH} y2={top + plotH} stroke="var(--line-2)" />
+      <svg className="rpt-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="선박별 예상 체선료 상위">
         {rows.map((r, gi) => {
-          const gx = left + gi * groupW + (groupW - barW * series.length) / 2
+          const gy = gi * groupH + 2
+          const selV = r.values.find((v) => v.id === selId)
           return (
-            <g key={r.name}>
+            <g key={r.vid}>
+              <text x={0} y={gy + (series.length * (bar + gap)) / 2 + 4} className="rpt-chart-label small">{r.name}</text>
               {r.values.map((v, si) => {
-                const h = v.cents ? Math.max(2, (v.cents / max) * plotH) : 0
-                const x = gx + si * barW
-                return (
-                  <g key={v.id}>
-                    {h > 0 && <rect x={x + 1} y={top + plotH - h} width={barW - 2} height={h} fill={tone(v.id, selId)} />}
-                    {h > 0 && v.id === selId && <text x={x + barW / 2} y={top + plotH - h - 5} textAnchor="middle" className="rpt-chart-tick" fill="var(--accent)">{moneyShort(v.cents)}</text>}
-                  </g>
-                )
+                const w = v.cents ? Math.max(2, (v.cents / max) * barW) : 0
+                const y = gy + si * (bar + gap)
+                return w > 0 && <rect key={v.id} x={labelW} y={y} width={w} height={bar} fill={fill(v.id, selId)} stroke={v.id === 'BASE' ? 'var(--fg-2)' : 'none'} strokeWidth="1" />
               })}
-              <text x={left + gi * groupW + groupW / 2} y={H - 14} textAnchor="middle" className="rpt-chart-label small">{r.name}</text>
+              <text x={W - valueW + 6} y={gy + (series.length * (bar + gap)) / 2 + 4} className="rpt-chart-tick" fill="var(--accent)">{selV?.cents ? moneyShort(selV.cents) : '-'}</text>
+              <line x1={labelW} x2={W} y1={gy + groupH - pad / 2} y2={gy + groupH - pad / 2} stroke="var(--line)" />
             </g>
           )
         })}
       </svg>
-      {reasons && (
-        <div className="rpt-reasons" style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }} aria-label="선박별 차이의 이유">
-          {rows.map((r) => <p key={r.name} className={reasons[r.name] ? '' : 'faint'}>{reasons[r.name] ?? '최저안과 같음'}</p>)}
-        </div>
-      )}
       <figcaption className="rpt-legend">
-        {series.map((s) => (
-          <span key={s.id}><i style={{ background: tone(s.id, selId) }} />{s.label}</span>
-        ))}
-        <span className="faint">체선료가 없는 선박은 막대를 그리지 않습니다</span>
+        {series.map((s) => <span key={s.id}><i style={{ background: s.id === 'BASE' ? 'transparent' : fill(s.id, selId), border: s.id === 'BASE' ? '1px solid var(--fg-2)' : 0 }} />{s.label}</span>)}
+        <span className="faint">오른쪽 숫자 = 선택한 안의 그 배 체선료</span>
       </figcaption>
     </figure>
   )

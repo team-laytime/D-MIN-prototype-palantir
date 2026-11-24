@@ -1,52 +1,102 @@
-import { Button, Callout, Icon, InputGroup, NumericInput, Switch } from '@blueprintjs/core'
-import { PARAMS, compatibleBerths } from '../lib/engine.js'
-import { WEATHER_CLAUSE } from '../lib/scenarios.js'
-import { NOW, at, fmt, fmtDur, fromInput, money, toInput } from '../lib/time.js'
+// 계획 조건 (11-24 실데이터): 데이터 팀 묶음의 선박, 부두, 기상을 보여 주고 스케줄러가 고칠 수 있는 값만 연다.
+//  - 고칠 수 있는 값: 선박 ETA, 부두 사용 불가 구간(blocks), 엔진 조절값(params)
+//  - 계약 값(허용 시간, 일 체선료)은 잠금. 체선료는 화면에서 계산하지 않고 「다시 계산」으로 팀 엔진에 보낸다.
+import { useMemo, useState } from 'react'
+import { Button, Callout, HTMLSelect, Icon, InputGroup, NonIdealState, NumericInput, Spinner } from '@blueprintjs/core'
+import { BLOCK_KINDS, PARAM_FIELDS, getIn } from '../lib/scenDiff.js'
+import { fmt, fmtFull, fromInput, money, toInput } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
-import { Panel, Screen, Stats, St } from '../ui/kit.jsx'
+import { Panel, Screen } from '../ui/kit.jsx'
 import './plan.css'
 
+const WIND_LIMIT = 14 // m/s, 3~8부두와 부이의 하역 중단 기준(팀 엔진 weather.py). 1~2부두와 가스부두는 18
+const berthsText = (b, byId) => (b.berths ? b.berths.map((id) => byId[id]?.code ?? id).join(', ') : '전 부두')
+
 export default function ScenarioInput() {
-  const { scenInput: scen, scen: calc, editScen, version, result, go } = useApp()
-  const params = scen.params
-  const weather = scen.env.weather
-  const berthById = Object.fromEntries(scen.berths.map((berth) => [berth.id, berth]))
+  const { scenInput: scen, editScen, version, result, recalc, go } = useApp()
+  const [query, setQuery] = useState('')
+  const [etaDesc, setEtaDesc] = useState(false)
+
+  const berthById = useMemo(() => Object.fromEntries((scen?.berths ?? []).map((b) => [b.id, b])), [scen?.berths])
+  const vessels = useMemo(() => {
+    if (!scen) return []
+    const q = query.trim().toLowerCase()
+    const list = q
+      ? scen.vessels.filter((v) => [v.callSign, v.name, v.cargo, v.product, v.cls, v.dir].some((s) => String(s ?? '').toLowerCase().includes(q)))
+      : [...scen.vessels]
+    return list.sort((a, b) => ((a.eta ?? Infinity) - (b.eta ?? Infinity)) * (etaDesc ? -1 : 1))
+  }, [scen, query, etaDesc])
+
+  if (!scen) {
+    return (
+      <Screen tab="input" title="계획 조건" step={1} bodyClass="plan-input plan-stack">
+        {result.error && !result.loading
+          ? <Callout intent="danger" icon="error" title="데이터셋을 불러오지 못했습니다">{result.error}</Callout>
+          : <NonIdealState icon={<Spinner size={24} />} title="데이터셋을 불러오는 중입니다" />}
+      </Screen>
+    )
+  }
+
+  // ── 검증 ─────────────────────────────────────────────────────────
   const errors = []
-
-  for (const vessel of scen.vessels) {
-    if (!(vessel.contract.laytimeH > 0)) errors.push(`${vessel.name}: 허용 시간은 0보다 커야 합니다`)
-    if (!(vessel.contract.rateUsd > 0)) errors.push(`${vessel.name}: 하루 체선료는 0보다 커야 합니다`)
-    if (compatibleBerths(vessel, scen).length === 0) errors.push(`${vessel.name}: 제품·제원에 맞는 부두가 없습니다`)
+  for (const v of scen.vessels) {
+    if (v.eta == null) errors.push(`${v.name}: ETA가 비어 있습니다`)
+    if (!v.compat.length) errors.push(`${v.name}: 갈 수 있는 부두가 없습니다`)
   }
-  if (weather && weather.end <= weather.start) errors.push('기상 악화 종료 시각이 시작 시각보다 빠릅니다')
-
-  const canCompare = errors.length === 0 && !result.error
-  const setParam = (field, value) => {
-    if (!Number.isFinite(value) || value < 0 || value === params[field]) return
-    editScen((draft) => { draft.params[field] = value })
-  }
-  const setSwitching = (value) => {
-    if (!Number.isFinite(value) || value < 0 || value === scen.env.switchBufferMin) return
-    editScen((draft) => { draft.env.switchBufferMin = value })
-  }
-  const lock = <Icon icon="lock" size={10} className="faint" />
-  const setEta = (index, value) => {
-    const time = fromInput(value)
-    if (time !== null && time !== scen.vessels[index].eta) {
-      editScen((draft) => { draft.vessels[index].eta = time })
-    }
-  }
-  const setWeatherTime = (field, value) => {
-    const time = fromInput(value)
-    if (time !== null && time !== weather[field]) {
-      editScen((draft) => { draft.env.weather[field] = time })
-    }
-  }
-  const toggleWeather = (on) => editScen((draft) => {
-    draft.env.weather = on
-      ? { start: at(14, 18), end: at(15, 6), label: '강풍 주의보 (최대 풍속 17m/s)', source: '기상청 단기예보 (가상)' }
-      : null
+  scen.blocks.forEach((b, i) => {
+    if (!(b.end > b.start)) errors.push(`사용 불가 ${i + 1}번(${berthsText(b, berthById)}): 종료가 시작보다 늦어야 합니다`)
   })
+  const pv = (f) => getIn(scen.params, f.path) ?? f.def
+  if (pv(PARAM_FIELDS[0]) >= pv(PARAM_FIELDS[1])) errors.push('안전재고 하한이 상한보다 작아야 합니다')
+
+  // ── 편집 ─────────────────────────────────────────────────────────
+  const setEta = (vid, value) => {
+    const t = fromInput(value)
+    const cur = scen.vessels.find((v) => v.id === vid)
+    if (t === null || t === cur.eta) return
+    editScen((d) => { d.vessels.find((v) => v.id === vid).eta = t })
+  }
+  const setParam = (f, value) => {
+    if (!Number.isFinite(value) || value < f.min || value > f.max || value === getIn(scen.params, f.path)) return
+    editScen((d) => { const [g, k] = f.path; (d.params[g] ??= {})[k] = value })
+  }
+  const resetParam = (f) => editScen((d) => {
+    const [g, k] = f.path
+    if (!d.params[g]) return
+    delete d.params[g][k]
+    if (!Object.keys(d.params[g]).length) delete d.params[g]
+  })
+  const addBlock = () => editScen((d) => {
+    const start = Math.max(0, d.window.start)
+    d.blocks.push({ id: `blk-${Date.now()}`, berths: [d.berths[0].id], start, end: start + 6 * 60, kind: 'CONSTRUCTION', source: '스케줄러 입력' })
+  })
+  const editBlock = (i, fn) => editScen((d) => fn(d.blocks[i]))
+  const removeBlock = (i) => editScen((d) => { d.blocks.splice(i, 1) })
+  const setBlockTime = (i, field, value) => {
+    const t = fromInput(value)
+    if (t !== null && t !== scen.blocks[i][field]) editBlock(i, (b) => { b[field] = t })
+  }
+
+  // 돌발 상황(메일)에서 들어온 구간
+  const incBlocks = scen.blocks.filter((b) => b.incId)
+  const blocksOf = (bid) => scen.blocks.filter((b) => !b.berths || b.berths.includes(bid))
+
+  // 부두를 부두(pier)별로 묶는다
+  const piers = []
+  for (const b of scen.berths) {
+    const g = piers.at(-1)
+    if (g && g.pier === b.pier) g.list.push(b)
+    else piers.push({ pier: b.pier, name: b.pierName, list: [b] })
+  }
+
+  // 기상: 계획 기간 안 관측(부이) 풍속
+  const wind = scen.wind.filter((w) => w.t >= scen.window.start && w.t <= scen.window.end)
+  const maxWind = wind.reduce((m, w) => (w.ms > (m?.ms ?? -1) ? w : m), null)
+
+  const canRecalc = result.stale && !result.running && errors.length === 0
+  const lock = <Icon icon="lock" size={10} className="faint" />
+  const best = result.candidates[0]
+  const calcState = result.running ? 'run' : result.calcError ? 'bad' : result.stale ? 'warn' : 'ok'
 
   return (
     <Screen
@@ -54,160 +104,214 @@ export default function ScenarioInput() {
       title="계획 조건"
       step={1}
       bodyClass="plan-input plan-stack"
-      actions={<Button intent="primary" endIcon="arrow-right" disabled={!canCompare} onClick={() => go('compare')}>후보 비교</Button>}
+      actions={<>
+        <Button intent={result.stale ? 'warning' : 'none'} icon={result.running ? <Spinner size={14} /> : 'refresh'} disabled={!canRecalc} onClick={() => recalc()}>
+          {result.running ? '엔진 계산 중, 약 1분' : '다시 계산'}
+        </Button>
+        <Button intent="primary" endIcon="arrow-right" disabled={!result.candidates.length} onClick={() => go('compare')}>후보 비교</Button>
+      </>}
     >
-      {/* 최종 피드백: 「불러오기」는 개발자 테스트 성격이라 운영 메뉴에서 뺐다. 운영에서는 서버가 정해진 시각에 지금 데이터를 모으고,
-          시연 데이터 전환은 상단 「시연 데이터」에서만 한다. */}
       <div className="pi-source">
         <Icon icon="database" size={14} />
-        <span>기준 데이터 <b className="num">2026-11-14 06:00</b> 자동 수집 (입항 신고 ETA, 기상 예보, 탱크 재고) · 지금 <b className="num">{fmt(NOW)}</b></span>
-        <span className="muted small">{scen.summary} · 선박 {scen.vessels.length}척, 부두 {scen.berths.length}곳</span>
+        <span>{scen.summary}</span>
+        <span className="muted small">묶음 <span className="mono">{scen.bundle}</span>, 기준 시각 <b className="num">{fmtFull(0)}</b>, 선박 {scen.vessels.length}척, 부두 {scen.berths.length}곳</span>
         <span className="plan-version mono">INPUT v{version}</span>
       </div>
-      <Stats items={[
-        { label: '대기 선박', value: <><span>{scen.vessels.length}</span><span className="plan-stat-unit">척</span></>, sub: '도착 예정 · 계약 조건 확인' },
-        { label: '부두', value: <><span>{scen.berths.length}</span><span className="plan-stat-unit">곳</span></>, sub: '제품·제원별 접안 가능 부두' },
-        { label: '기상 악화', value: <span className="plan-stat-text">{weather ? '예보 있음' : '없음'}</span>, tone: weather ? 'amber' : undefined, sub: weather ? `${fmt(weather.start)} ~ ${fmt(weather.end)}` : '계산 기간 내 예보 없음' },
-        { label: '입력 오류', value: <><span>{errors.length}</span><span className="plan-stat-unit">건</span></>, tone: errors.length ? 'red' : 'green', sub: errors.length ? '조건 수정 후 후보를 비교합니다' : '선박·계약 조건 검증 통과' },
-      ]} />
 
-      <Panel code="PARAM-IN" title="스케줄러 조절값" desc="스케줄러가 바꿀 수 있는 값만 · 바꾸면 후보를 바로 다시 계산" pad>
-        <div className="pi-params">
-          <label><span>교대 여유 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={scen.env.switchBufferMin} min={0} stepSize={10} onValueChange={setSwitching} /><small>분 · 부두별 Switching(앞 선박 ETU → 다음 접안)에 더하는 계획 여유</small></label>
-          <label><span>안전재고 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={params.safetyStockPct} min={0} max={50} onValueChange={(v) => setParam('safetyStockPct', v)} /><small>% · 탱크 여유에서 빼 둘 비율 (나프타 여유 {calc.tanks[0].ullageTon.toLocaleString()}t로 계산)</small></label>
-          <label><span>기상 여유 <i className="req">*</i></span><NumericInput size="small" buttonPosition="none" className="plan-number" value={params.weatherMarginH} min={0} max={12} onValueChange={(v) => setParam('weatherMarginH', v)} /><small>시간 · 접안 금지 구간 앞뒤로 더 비움{calc.env.weather ? ` (계산 구간 ${fmt(calc.env.weather.start)}~${fmt(calc.env.weather.end).slice(6)})` : ''}</small></label>
+      <div className={`pi-calc ${calcState}`} data-tour="recalc">
+        {calcState === 'run' ? <><Spinner size={14} /><b>엔진 계산 중, 약 1분</b><span className="muted">후보 {scen.presets.length}개를 팀 엔진(CP-SAT)으로 동시에 계산합니다.</span></>
+          : calcState === 'bad' ? <><Icon icon="error" size={14} /><b>다시 계산하지 못했습니다</b><span>{result.calcError}</span></>
+            : calcState === 'warn' ? <><Icon icon="warning-sign" size={14} /><b>계획 조건이 바뀌었습니다</b><span>지금 후보는 바뀌기 전 조건으로 계산한 것입니다. 「다시 계산」을 눌러야 반영됩니다.</span></>
+              : <><Icon icon="tick-circle" size={14} /><b>후보가 지금 조건으로 계산되어 있습니다</b><span className="muted">계산 시각 {result.calcAt ?? '-'}{best ? `, 최저 후보 ${best.label} ${money(best.total)}` : ''}</span></>}
+        {(calcState === 'warn' || calcState === 'bad') && (
+          <Button size="small" intent="warning" icon="refresh" disabled={!canRecalc} onClick={() => recalc()}>다시 계산</Button>
+        )}
+      </div>
+
+      {incBlocks.length > 0 && (
+        <div className="pi-inc-strip">
+          <Icon icon="warning-sign" size={14} />
+          <b>돌발 상황 {new Set(incBlocks.map((b) => b.incId)).size}건이 부두 사용 불가로 들어와 있음</b>
+          <span>{incBlocks.map((b) => `${berthsText(b, berthById)} ${fmt(b.start)}~${fmt(b.end)} ${BLOCK_KINDS[b.kind] ?? b.kind}`).join(', ')}</span>
+          <span className="muted small">아래 「부두 사용 불가」에서 고칠 수 있습니다.</span>
+          <Button size="small" variant="minimal" icon="inbox" onClick={() => go('inbox')}>메일 보기</Button>
         </div>
+      )}
+
+      {errors.length > 0 && (
+        <Callout intent="danger" icon="error" title={`입력 오류 ${errors.length}건, 고쳐야 다시 계산할 수 있습니다`} className="plan-errors">
+          <ul>{errors.map((e) => <li key={e}>{e}</li>)}</ul>
+        </Callout>
+      )}
+
+      <Panel code="PARAM-IN" title="엔진 조절값" desc="손대지 않으면 엔진 기본값, 여기 넣은 값은 모든 후보에 똑같이 들어갑니다" pad>
+        <div className="pi-params">
+          {PARAM_FIELDS.map((f) => {
+            const set = getIn(scen.params, f.path)
+            return (
+              <label key={f.path.join('.')}>
+                <span>{f.label}</span>
+                <NumericInput size="small" buttonPosition="none" className="plan-number" value={set ?? f.def} min={f.min} max={f.max} stepSize={f.step} minorStepSize={null}
+                  onValueChange={(v) => setParam(f, v)} aria-label={f.label} />
+                <small>{f.unit}, {f.note}{set != null
+                  ? <> <button type="button" className="pi-reset" onClick={() => resetParam(f)}>기본값 {f.def}{f.unit}로</button></>
+                  : <span className="faint"> (기본값)</span>}</small>
+              </label>
+            )
+          })}
+        </div>
+        <p className="tiny muted pi-param-note">후보마다 프리셋이 따로 있습니다: {scen.presets.map((p) => `${p.label}${p.desc ? `(${p.desc})` : ''}`).join(', ')}. 여기 넣은 값이 프리셋 값보다 우선합니다.</p>
       </Panel>
 
       <Panel
         code="VESSEL-IN"
-        title="선박·계약 조건"
-        desc="도착 예정만 고칠 수 있음 · 계약 조건은 계약서 값으로 잠금 · * 필수 입력"
+        title="선박"
+        desc={`계획 기간 선박 ${scen.vessels.length}척, ETA만 고칠 수 있고 계약 값은 잠금`}
         data-tour="inputs"
-        actions={<St tone={errors.length ? 'bad' : 'ok'}>{errors.length ? `입력 오류 ${errors.length}건` : '검증 통과'}</St>}
+        actions={<InputGroup size="small" leftIcon="search" placeholder="호출부호, 화물" value={query} onChange={(e) => setQuery(e.target.value)} className="pi-filter" aria-label="선박 거르기" />}
       >
-        {errors.length > 0 && (
-          <Callout intent="danger" icon="error" title="입력 조건을 확인하십시오" className="plan-errors">
-            <ul>{errors.map((error) => <li key={error}>{error}</li>)}</ul>
-          </Callout>
-        )}
-        {result.error && <Callout intent="danger" icon="warning-sign" title="후보 계산 불가" className="plan-errors">{result.error}</Callout>}
-        <table className="dt plan-input-table">
-          <caption className="plan-sr-only">선박별 제원과 수정 가능한 계약·도착 조건</caption>
-          <thead>
-            <tr>
-              <th>선박</th><th>화물</th><th className="r">DWT</th><th className="r">흘수</th><th className="r">작업 시간</th>
-              <th>도착 예정(NOR) <i className="req">*</i></th><th className="r">{lock} 허용(h)</th><th className="r">{lock} 일 체선료($)</th>
-              <th className="r">{lock} 개시(h)</th><th>{lock} 기상 조항</th><th>가능 부두</th>
-            </tr>
-          </thead>
-          <tbody>
-            {scen.vessels.map((vessel, index) => (
-              <tr key={vessel.id}>
-                <td>
-                  <span className="plan-vessel-name mono">{vessel.name}</span>
-                  <div className="faint tiny mono">{vessel.contract.id}</div>
-                </td>
-                <td className="plan-nowrap">
-                  {vessel.product} <span className="muted">{vessel.dir}</span>
-                  <div className="faint tiny"><span className="num">{vessel.ton.toLocaleString()}</span>톤</div>
-                </td>
-                <td className="num r">{vessel.dwt.toLocaleString()}</td>
-                <td className="num r">{vessel.draft}m</td>
-                <td className="r plan-nowrap">{fmtDur(vessel.workMin)}</td>
-                <td>
-                  <InputGroup
-                    type="datetime-local"
-                    size="small"
-                    className="plan-datetime"
-                    aria-label={`${vessel.name} 도착 예정(NOR)`}
-                    value={toInput(vessel.eta)}
-                    onChange={(event) => setEta(index, event.target.value)}
-                  />
-                </td>
-                <td className="num r pi-locked">{vessel.contract.laytimeH}</td>
-                <td className="num r pi-locked">{vessel.contract.rateUsd.toLocaleString()}</td>
-                <td className="num r pi-locked">{vessel.contract.norTurnH}</td>
-                <td className="pi-locked small">{WEATHER_CLAUSE[vessel.contract.weather].label}</td>
-                <td>
-                  <div className="plan-berth-chips">
-                    {compatibleBerths(vessel, scen).map((id) => <span className="chip" key={id}>{berthById[id].name.replace(' 부두', '')}</span>)}
-                  </div>
-                </td>
+        <div className="pi-scroll">
+          <table className="dt pi-vessel-table">
+            <caption className="plan-sr-only">선박별 제원, 수정 가능한 ETA, 잠긴 계약 값</caption>
+            <thead>
+              <tr>
+                <th>선박</th><th>화물</th><th className="r">DWT</th><th className="r">흘수</th>
+                <th><button type="button" className="pi-sort" onClick={() => setEtaDesc((x) => !x)} aria-label="ETA 순서 바꾸기">ETA <Icon icon={etaDesc ? 'caret-up' : 'caret-down'} size={11} /></button></th>
+                <th className="r">{lock} 허용 h</th><th className="r">{lock} 일 체선료 $</th><th>갈 수 있는 부두</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {vessels.map((v) => {
+                const fixed = scen.fixes.find((f) => f.vid === v.id)
+                const codes = v.compat.map((id) => berthById[id]?.code ?? id)
+                return (
+                  <tr key={v.id}>
+                    <td className="plan-nowrap">
+                      <span className="plan-vessel-name mono" title={v.id}>{v.name}</span>
+                      {fixed && <span className="chip accent pi-fix" title={`${berthById[fixed.bid]?.name ?? fixed.bid} ${fmt(fixed.etb)} 고정`}>고정</span>}
+                      <div className="faint tiny">{v.cls}</div>
+                    </td>
+                    <td className="plan-nowrap">{v.product} <span className="muted">{v.dir}</span> <span className="num faint">{v.ton.toLocaleString()} t</span></td>
+                    <td className="num r">{v.dwt.toLocaleString()}</td>
+                    <td className="num r">{v.draft}m</td>
+                    <td>
+                      <InputGroup type="datetime-local" size="small" className="plan-datetime" aria-label={`${v.name} ETA`}
+                        intent={v.eta == null ? 'danger' : undefined} value={v.eta == null ? '' : toInput(v.eta)} onChange={(e) => setEta(v.id, e.target.value)} />
+                    </td>
+                    <td className="num r pi-locked">{v.contract.laytimeH}</td>
+                    <td className="num r pi-locked">{v.contract.rateUsd.toLocaleString()}</td>
+                    <td className="pi-compat" title={codes.join(', ')}>
+                      <span className="mono">{codes.slice(0, 6).join(' ')}</span>{codes.length > 6 && <span className="faint"> 외 {codes.length - 6}</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+              {!vessels.length && <tr><td colSpan={8} className="muted">「{query}」에 맞는 선박이 없습니다.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </Panel>
 
       <div className="plan-input-bottom">
-        <Panel code="BERTH-IN" title="부두" desc="접안 제원·현재 접안·설비 점검">
-          <table className="dt plan-berth-table">
-            <thead>
-              <tr><th>부두</th><th className="r">최대 DWT</th><th className="r">최대 흘수</th><th>접안 가능 제품</th><th>현재 접안</th><th>설비 점검</th></tr>
-            </thead>
-            <tbody>
-              {scen.berths.map((berth) => (
-                <tr key={berth.id}>
-                  <td className="plan-nowrap"><strong>{berth.name}</strong><div className="faint tiny">Switching {PARAMS.shifting[berth.shiftGroup][0]}h · Direction {PARAMS.shifting[berth.shiftGroup][1]}h</div></td>
-                  <td className="num r">{berth.maxDwt.toLocaleString()}</td>
-                  <td className="num r">{berth.maxDraft}m</td>
-                  <td className="small muted">{berth.products.join(', ')}</td>
-                  <td>
-                    {berth.occupiedBy
-                      ? <><span className="mono tiny">{berth.occupiedBy}</span><div className="num faint tiny">~ {fmt(berth.occupiedUntil)}</div></>
-                      : <span className="faint small">비어 있음</span>}
-                  </td>
-                  <td>
-                    {berth.facility.maintenance
-                      ? <><span className="small">{berth.facility.maintenance.label}</span><div className="num faint tiny">{fmt(berth.facility.maintenance.start)} ~ {fmt(berth.facility.maintenance.end).slice(6)}</div></>
-                      : !berth.facility.known
-                        ? <St tone="unknown">미입력</St>
-                        : <span className="faint small">없음</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Panel>
-
-        <Panel code="ENV-IN" title="기상·일출몰" desc="공공데이터포털 형식 · 가상 값" data-tour="env" pad>
-          <div className="plan-weather-switch">
-            <Switch checked={!!weather} onChange={(event) => toggleWeather(event.target.checked)} label="기상 악화 예보" />
-            <St tone={weather ? 'warn' : 'ok'}>{weather ? '종료 + Direction까지 전 부두 접안 금지' : '기상 악화 없음'}</St>
+        <Panel code="BERTH-IN" title="부두" desc={`SK 울산 부두 ${scen.berths.length}곳, 제원과 취급 제품`}>
+          <div className="pi-scroll">
+            <table className="dt pi-berth-table">
+              <thead>
+                <tr><th>부두</th><th className="r">최대 DWT</th><th className="r">최대 흘수</th><th className="r">최대 LOA</th><th>취급 제품</th><th>사용 불가</th></tr>
+              </thead>
+              <tbody>
+                {piers.flatMap((g) => [
+                  <tr key={`p-${g.pier}`} className="pi-pier-row"><td colSpan={6}>{g.name} <span className="faint">{g.list.length}곳</span></td></tr>,
+                  ...g.list.map((b) => {
+                    const bl = blocksOf(b.id)
+                    return (
+                      <tr key={b.id}>
+                        <td className="plan-nowrap"><span className="mono">{b.code}</span> <span className="faint tiny">{b.size}</span></td>
+                        <td className="num r">{b.maxDwt?.toLocaleString() ?? '-'}</td>
+                        <td className="num r">{b.maxDraft ?? '-'}m</td>
+                        <td className="num r">{b.maxLoa ?? '-'}m</td>
+                        <td className="small muted pi-products">{b.products.join(', ') || '-'}</td>
+                        <td className="small">{bl.length ? <span className="c-amber">{bl.map((x) => `${fmt(x.start)}~${fmt(x.end)}`).join(', ')}</span> : <span className="faint">없음</span>}</td>
+                      </tr>
+                    )
+                  }),
+                ])}
+              </tbody>
+            </table>
           </div>
-          {weather && (
-            <div className="plan-weather">
-              <div className="plan-weather-times">
-                <label>시작<InputGroup type="datetime-local" size="small" aria-label="기상 악화 시작" value={toInput(weather.start)} onChange={(event) => setWeatherTime('start', event.target.value)} /></label>
-                <label>종료<InputGroup type="datetime-local" size="small" aria-label="기상 악화 종료" intent={weather.end <= weather.start ? 'danger' : undefined} value={toInput(weather.end)} onChange={(event) => setWeatherTime('end', event.target.value)} /></label>
-              </div>
-              <p className="tiny muted">{weather.label} · {weather.source}</p>
-            </div>
-          )}
-          <dl className="plan-env-list small">
-            <dt>일출 / 일몰</dt>
-            <dd className="plan-time-list">{scen.env.days.slice(1, 4).map((day) => <span className="num" key={day.day}>{fmt(day.sunrise)} / {fmt(day.sunset).slice(6)}</span>)}</dd>
-            <dt>접안 규칙</dt>
-            <dd>
-              ETB = max(ETA + Direction, 앞 선박 ETU + Switching) · 야간 도선 제한(GRT 7.5만 톤 이상, 또는 3만 톤 이상 수입선 · 흘수 10.5m 이상): 02~08시 접안 불가, Last POB(일몰 − 1.5~2시간) 뒤 도착은 다음 날 08시 ·
-              기상 부두 제약 종료 + Direction 뒤 접안 · 조석은 계산에 넣지 않음
-            </dd>
-            <dt>탱크</dt>
-            <dd>{scen.tanks.map((tank) => <span key={tank.product}>{tank.product} 여유 <span className="num">{tank.ullageTon.toLocaleString()}</span>톤 </span>)}</dd>
-            <dt>긴급 출하</dt>
-            <dd>{scen.urgent.map((urgent) => <span key={urgent.vid}><span className="mono">{scen.vessels.find((vessel) => vessel.id === urgent.vid).name}</span> <span className="num">{fmt(urgent.deadline)}</span>까지 </span>)}</dd>
-          </dl>
         </Panel>
-      </div>
 
-      {canCompare && (
-        <div className="plan-input-summary">
-          <St tone="live">현재 입력 기준</St>
-          <span>최저 후보 <span className="num c-green">{result.candidates[0] ? money(result.candidates[0].total) : '-'}</span></span>
-          <span className="faint">수정한 조건은 후보 비교에 즉시 반영됩니다.</span>
+        <div className="plan-stack">
+          <Panel code="BLOCK-IN" title="부두 사용 불가" desc="공사, 설비, 기상으로 못 쓰는 구간, 다시 계산할 때 엔진에 보냅니다"
+            actions={<Button size="small" icon="add" onClick={addBlock}>구간 추가</Button>}>
+            {scen.blocks.length === 0 ? <p className="small muted pi-empty">등록된 구간이 없습니다.</p> : (
+              <table className="dt pi-block-table">
+                <thead><tr><th>부두</th><th>시작</th><th>종료</th><th>종류</th><th /></tr></thead>
+                <tbody>
+                  {scen.blocks.map((b, i) => {
+                    const val = b.berths ? b.berths.join(',') : 'ALL'
+                    const multi = b.berths && b.berths.length > 1
+                    return (
+                      <tr key={b.id ?? b.incId ?? i} className={b.incId ? 'pi-inc-row' : ''}>
+                        <td>
+                          <HTMLSelect value={val} aria-label={`사용 불가 ${i + 1}번 부두`}
+                            onChange={(e) => editBlock(i, (x) => { x.berths = e.target.value === 'ALL' ? null : e.target.value.split(',') })}>
+                            <option value="ALL">전 부두</option>
+                            {multi && <option value={val}>{berthsText(b, berthById)}</option>}
+                            {scen.berths.map((x) => <option key={x.id} value={x.id}>{x.code}</option>)}
+                          </HTMLSelect>
+                          {b.source && <div className="faint tiny">{b.source}</div>}
+                        </td>
+                        <td><InputGroup type="datetime-local" size="small" className="plan-datetime" aria-label={`사용 불가 ${i + 1}번 시작`} value={toInput(b.start)} onChange={(e) => setBlockTime(i, 'start', e.target.value)} /></td>
+                        <td><InputGroup type="datetime-local" size="small" className="plan-datetime" aria-label={`사용 불가 ${i + 1}번 종료`} intent={b.end > b.start ? undefined : 'danger'} value={toInput(b.end)} onChange={(e) => setBlockTime(i, 'end', e.target.value)} /></td>
+                        <td>
+                          <HTMLSelect value={b.kind} aria-label={`사용 불가 ${i + 1}번 종류`} onChange={(e) => editBlock(i, (x) => { x.kind = e.target.value })}>
+                            {Object.entries(BLOCK_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                          </HTMLSelect>
+                        </td>
+                        <td className="r"><Button size="small" variant="minimal" icon="trash" aria-label={`사용 불가 ${i + 1}번 지우기`} onClick={() => removeBlock(i)} /></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </Panel>
+
+          <Panel code="WIND-IN" title="풍속" desc="기상 관측(부이), 1시간 간격, 계획 기간" data-tour="env" pad>
+            <WindChart wind={wind} win={scen.window} />
+            <p className="tiny muted pi-wind-note">
+              {maxWind ? <>최대 <b className={`num ${maxWind.ms >= WIND_LIMIT ? 'c-red' : ''}`}>{maxWind.ms} m/s</b> ({fmt(maxWind.t)}). </> : '계획 기간 관측값이 없습니다. '}
+              엔진 기상 기준: 3~8부두와 부이는 {WIND_LIMIT} m/s, 1~2부두와 가스부두는 18 m/s 이상이면 하역을 멈춰 작업 완료가 늦어집니다(접안 불가는 20~21 m/s).
+              체선료의 기상 공제는 풍속이 아니라 「부두 사용 불가」의 기상 구간에만 적용됩니다.
+              {wind.some((w) => w.thunder || w.typhoon) && ' 뇌우나 태풍 표시가 있는 시간은 빨간 점입니다.'}
+            </p>
+          </Panel>
         </div>
-      )}
+      </div>
     </Screen>
+  )
+}
+
+/** 계획 기간 풍속 선 그래프. 14 m/s 점선이 멈춤 기준이다. */
+function WindChart({ wind, win }) {
+  if (!wind.length) return <p className="small muted">관측값 없음</p>
+  const W = 600, H = 120, L = 24, R = 6, T = 8, B = 18
+  const top = Math.max(WIND_LIMIT + 2, ...wind.map((w) => w.ms))
+  const x = (t) => L + ((t - win.start) / Math.max(1, win.end - win.start)) * (W - L - R)
+  const y = (ms) => T + (1 - ms / top) * (H - T - B)
+  const path = wind.map((w, i) => `${i ? 'L' : 'M'}${x(w.t).toFixed(1)},${y(w.ms).toFixed(1)}`).join(' ')
+  // KST 0시 눈금 (기준 T = 09:00 KST이므로 0시는 T + 15시간 + 24시간 × n)
+  const days = []
+  for (let t = win.start + (((15 * 60 - win.start) % 1440) + 1440) % 1440; t <= win.end; t += 1440) days.push(t)
+  return (
+    <svg className="pi-wind" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`풍속 그래프, 최대 ${Math.max(...wind.map((w) => w.ms))} m/s`}>
+      {[0, 5, 10].map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="pi-wind-grid" /><text x={L - 4} y={y(v) + 3} className="pi-wind-tick" textAnchor="end">{v}</text></g>)}
+      {days.map((t) => <g key={t}><line x1={x(t)} x2={x(t)} y1={T} y2={H - B} className="pi-wind-grid" /><text x={x(t) + 3} y={H - 5} className="pi-wind-tick">{fmt(t).slice(0, 5)}</text></g>)}
+      <line x1={L} x2={W - R} y1={y(WIND_LIMIT)} y2={y(WIND_LIMIT)} className="pi-wind-limit" />
+      <text x={W - R} y={y(WIND_LIMIT) - 3} className="pi-wind-tick limit" textAnchor="end">{WIND_LIMIT} m/s</text>
+      <path d={path} className="pi-wind-line" />
+      {wind.filter((w) => w.thunder || w.typhoon).map((w) => <circle key={w.t} cx={x(w.t)} cy={y(w.ms)} r={2.5} className="pi-wind-alert" />)}
+    </svg>
   )
 }

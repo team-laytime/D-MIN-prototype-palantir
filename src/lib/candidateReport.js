@@ -1,127 +1,161 @@
-// 후보안 비교 보고서. 화면(React)과 마크다운 내려받기가 같은 모델을 쓴다.
-// 금액은 엔진 계산값(센트)을 그대로 쓰고, 문장 속 금액은 화면에서 계산 결과와 대조한다.
-import { risks } from './engine.js'
-import { fmt, fmtDur, money } from './time.js'
+// 후보안 비교 보고서 (11-24 실데이터). 화면(ReportDoc), 마크다운, 메일 초안이 같은 모델을 쓴다.
+// 금액은 엔진 계산값(센트)을 그대로 쓰고, 문서 속 금액은 useReport의 대조로 엔진 값에서 나왔는지 확인한다.
+// 화면에서 체선료를 다시 계산하지 않는다. 차액(후보끼리, 실제 계획 대비)만 뺄셈으로 보인다.
+import { changedVs, risksOf } from './plan.js'
+import { fmt, fmtDur, fmtFull, money } from './time.js'
 import { reportPeriod } from './report.js'
 
-const ACTIVE = (r) => r.state !== '해당 없음'
-const pct = (part, whole) => (whole ? ((part / whole) * 100).toFixed(1) : '0.0')
+const HIT = (r) => r.state === '해당'
+const pct1 = (part, whole) => (whole ? ((part / whole) * 100).toFixed(1) : '0.0')
+/** -66.0 → '−66.0%' */
+export const signedPct = (a, b) => {
+  if (!b) return '-'
+  const p = (((a - b) / b) * 100).toFixed(1)
+  return `${p > 0 ? '+' : p < 0 ? '−' : ''}${Math.abs(p).toFixed(1)}%`
+}
+export const engineText = (sim) => (sim.status === 'OPTIMAL' || sim.proven ? '최적 증명' : '제한 시간 안의 최선')
+const deltaText = (min) => (min === 0 ? '접안 시각 같음' : `접안 ${fmtDur(Math.abs(min))} ${min < 0 ? '앞당김' : '늦춤'}`)
+const effectText = (b, p) => {
+  if (b.dem.cents > 0 && p.dem.cents === 0) return '체선 없어짐'
+  if (b.dem.cents === 0 && p.dem.cents > 0) return `체선 새로 생김 (초과 ${fmtDur(p.dem.excessMin)})`
+  if (b.dem.cents === 0 && p.dem.cents === 0) return '체선 없음'
+  return `초과 ${fmtDur(b.dem.excessMin)} → ${fmtDur(p.dem.excessMin)}`
+}
+export const TOP_N = 15
 
 /**
  * @param {{ result, scen, selId, judgment, plan }} args
- *   selId: 선택한 후보 id('A'|'B'|'C'), judgment: 숙련자 판단근거, plan: 적용 중인 확정 계획(같은 입력 버전일 때만) 또는 null
+ *   selId: 선택한 후보 id, judgment: 판단근거, plan: 적용 중인 확정 계획(같은 계획 조건 버전일 때만) 또는 null
  */
 export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
   const cands = result.candidates
-  const best = cands[0] // 11-24: 비교 기준은 도착순이 아니라 최저 체선료 후보
-  const sel = cands.find((c) => c.id === selId) ?? cands[0]
+  const best = cands[0]
+  const sel = cands.find((c) => c.id === selId) ?? best
+  const base = result.baseline
   const vessels = Object.fromEntries(scen.vessels.map((v) => [v.id, v]))
-  const berth = (id) => scen.berths.find((b) => b.id === id)
+  const berths = Object.fromEntries(scen.berths.map((b) => [b.id, b]))
+  const vname = (vid) => vessels[vid]?.name ?? vid
+  const bname = (bid) => berths[bid]?.name ?? bid
+  const bcode = (bid) => { const b = berths[bid]; return !b ? bid : /^\d+$/.test(b.code) ? `${b.code}부두` : b.code }
 
-  const analyse = (sim) => {
-    const rs = risks(sim, scen)
-    const demVessels = sim.placements.filter((p) => p.dem.cents > 0).sort((a, b) => b.dem.cents - a.dem.cents)
-      .map((p) => ({ vid: p.vid, name: vessels[p.vid].name, berth: berth(p.bid).name, excessMin: p.dem.excessMin, cents: p.dem.cents, rateUsd: vessels[p.vid].contract.rateUsd }))
-    const longestWait = sim.placements.reduce((m, p) => (p.waitMin > m.waitMin ? p : m), sim.placements[0])
+  const items = cands.map((sim) => {
+    const rs = risksOf(sim, scen)
     return {
-      id: sim.id, label: sim.label, total: sim.total,
-      extra: sim.total - best.total, extraPct: pct(sim.total - best.total, best.total),
-      changed: sim.placements.filter((p) => { const b = best.placements.find((x) => x.vid === p.vid); return b.bid !== p.bid || b.etb !== p.etb }).map((p) => vessels[p.vid].name),
-      demVessels,
-      longestWait: { name: vessels[longestWait.vid].name, min: longestWait.waitMin },
-      risks: rs,
-      active: rs.filter(ACTIVE),
-      schedule: [...sim.placements].sort((a, b) => a.etb - b.etb).map((p) => ({
-        vid: p.vid, name: vessels[p.vid].name, berth: berth(p.bid).name, eta: vessels[p.vid].eta, etb: p.etb, etu: p.etu, cents: p.dem.cents,
-      })),
+      id: sim.id, label: sim.label, preset: sim.preset, total: sim.total,
+      extra: sim.total - best.total, extraPct: pct1(sim.total - best.total, best.total),
+      vsBase: base ? { saved: base.total - sim.total, pct: signedPct(sim.total, base.total) } : null,
+      moves: sim.moves, changedVsBest: sim.id === best.id ? 0 : changedVs(sim, best).length,
+      dem: sim.placements.filter((p) => p.dem.cents > 0).length,
+      night: sim.placements.filter((p) => p.night).length,
+      tank: sim.tankViolation.length,
+      engine: engineText(sim), status: sim.status, solveSec: sim.solveSec, notes: sim.notes,
+      risks: rs, active: rs.filter(HIT),
     }
-  }
-  const items = cands.map(analyse)
-  const base = items[0]
+  })
+  const selItem = items.find((it) => it.id === sel.id)
 
-  // 공통 리스크: 세 후보 모두에서 '해당' 또는 '판단 불가'인 항목. 어느 안을 골라도 남는다.
-  const keys = items[0]?.risks.map((r) => r.key) ?? []
-  const common = keys
-    .filter((k) => items.every((it) => ACTIVE(it.risks.find((r) => r.key === k))))
-    .map((k) => {
-      const per = items.map((it) => ({ id: it.id, label: it.label, risk: it.risks.find((r) => r.key === k) }))
-      return { key: k, label: per[0].risk.label, per, alternative: per[0].risk.alternative, caution: per[0].risk.caution }
-    })
-  // 후보마다 갈리는 리스크: 일부 후보에서만 남는다. 선택 이유를 설명할 때 쓰는 차이.
-  const differing = keys
-    .filter((k) => !common.some((c) => c.key === k) && items.some((it) => ACTIVE(it.risks.find((r) => r.key === k))))
-    .map((k) => ({ key: k, label: items[0].risks.find((r) => r.key === k).label, per: items.map((it) => ({ id: it.id, label: it.label, state: it.risks.find((r) => r.key === k).state })) }))
-
-  // 차트용: 선박별 체선료(후보 3개).
-  const vesselOrder = [...scen.vessels].sort((a, b) => a.eta - b.eta)
-  const perVessel = vesselOrder.map((v) => ({
-    name: v.name,
-    values: cands.map((s) => ({ id: s.id, cents: s.placements.find((p) => p.vid === v.id)?.dem.cents ?? 0 })),
+  // 선박별 체선료 상위 (선택한 안)
+  const baseById = base ? Object.fromEntries(base.placements.map((p) => [p.vid, p])) : {}
+  const top = [...sel.placements].filter((p) => p.dem.cents > 0).sort((a, b) => b.dem.cents - a.dem.cents).slice(0, TOP_N).map((p) => ({
+    vid: p.vid, name: vname(p.vid), product: vessels[p.vid]?.product, dir: vessels[p.vid]?.dir, berth: bname(p.bid), etb: p.etb,
+    excessMin: p.dem.excessMin, weatherMin: p.dem.weatherMin, cents: p.dem.cents, baseCents: baseById[p.vid]?.dem.cents ?? null,
   }))
+  const demCount = sel.placements.filter((p) => p.dem.cents > 0).length
+
+  // 실제 계획 대비 바뀐 선박 중 체선료가 달라진 배 (차이 큰 순)
+  const changes = base ? changedVs(sel, base) : []
+  const changed = changes.filter((c) => c.saving !== 0).sort((a, b) => Math.abs(b.saving) - Math.abs(a.saving)).slice(0, TOP_N).map((c) => ({
+    vid: c.p.vid, name: vname(c.p.vid),
+    what: `${c.berthChanged ? `부두 ${bcode(c.b.bid)} → ${bcode(c.p.bid)}, ` : `${bcode(c.p.bid)} 그대로, `}${deltaText(c.etbDelta)}`,
+    effect: effectText(c.b, c.p), baseCents: c.b.dem.cents, cents: c.p.dem.cents, saving: c.saving,
+  }))
+  const changeSummary = { total: changes.length, berth: changes.filter((c) => c.berthChanged).length, money: changes.filter((c) => c.saving !== 0).length }
+
+  // 리스크: 세 후보 모두 '해당'이면 공통, 일부만 '해당'이면 갈림
+  const keys = items[0]?.risks.map((r) => r.key) ?? []
+  const stateOf = (it, k) => it.risks.find((r) => r.key === k)
+  const common = keys.filter((k) => items.every((it) => HIT(stateOf(it, k)))).map((k) => ({
+    key: k, label: stateOf(items[0], k).label, alternative: stateOf(selItem, k).alternative,
+    per: items.map((it) => ({ id: it.id, label: it.label, evidence: stateOf(it, k).evidence })),
+  }))
+  const differing = keys.filter((k) => !common.some((c) => c.key === k) && items.some((it) => HIT(stateOf(it, k)))).map((k) => ({
+    key: k, label: stateOf(items[0], k).label, per: items.map((it) => ({ id: it.id, label: it.label, state: stateOf(it, k).state })),
+  }))
+
+  // 차트: 안별 합계(실제 계획 포함), 체선료 상위 선박(실제 계획과 후보들)
+  const totals = [...(base ? [{ id: 'BASE', label: '실제 계획', total: base.total, baseline: true }] : []), ...items.map((it) => ({ id: it.id, label: it.label, total: it.total }))]
+  const series = [...(base ? [{ id: 'BASE', label: '실제 계획' }] : []), ...items.map((it) => ({ id: it.id, label: it.label }))]
+  const sources = [...(base ? [{ id: 'BASE', placements: base.placements }] : []), ...cands]
+  const centsOf = (src, vid) => src.placements.find((p) => p.vid === vid)?.dem.cents ?? 0
+  const vids = [...new Set(sources.flatMap((s) => s.placements.filter((p) => p.dem.cents > 0).map((p) => p.vid)))]
+    .map((vid) => ({ vid, max: Math.max(...sources.map((s) => centsOf(s, vid))) }))
+    .sort((a, b) => b.max - a.max).slice(0, 10)
+  const perVessel = vids.map(({ vid }) => ({ vid, name: vname(vid), values: sources.map((s) => ({ id: s.id, cents: centsOf(s, vid) })) }))
 
   return {
     period: reportPeriod(sel),
     status: plan ? `확정 v${plan.planNo}` : '검토 중',
     confirmed: Boolean(plan),
-    sel: items.find((it) => it.id === sel.id),
+    sel: selItem, best: items[0], baseTotal: base?.total ?? null,
     judgment: (judgment ?? '').trim(),
-    base, items, common, differing, perVessel,
+    items, top, demCount, changed, changeSummary, common, differing, totals, series, perVessel,
+    basis: {
+      dataset: scen.name, bundle: scen.bundle, source: scen.summary, builtAt: scen.builtAt, calcAt: result.calcAt,
+      start: fmtFull(scen.window.start), end: fmtFull(scen.window.end), vessels: scen.vessels.length, berths: scen.berths.length,
+      presets: items.map((it) => `${it.label} ${it.preset?.label ?? ''}: ${it.preset?.desc ?? ''}`),
+    },
   }
 }
 
-
-const vsBest = (m) => (m.sel.extra ? `최저안(${m.base.label}) ${money(m.base.total)}보다 ${money(m.sel.extra)}(${m.sel.extraPct}%) 많습니다.` : '세 후보 중 가장 낮습니다.')
+const vsBest = (m) => (m.sel.extra ? `최저안(${m.best.label}) ${money(m.best.total)}보다 ${money(m.sel.extra)}(${m.sel.extraPct}%) 많습니다.` : '세 후보 중 가장 낮습니다.')
+const vsBaseLine = (m) => (m.baseTotal !== null && m.sel.vsBase ? `실제 계획 ${money(m.baseTotal)} 대비 ${m.sel.vsBase.pct}입니다.` : '')
 
 export function candidateReportMarkdown(m) {
   const L = []
-  L.push(`# 울산 CLX 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status} · 담당자 검토용 · 가상 데이터 · 의사결정 보조용`, '')
-  L.push('## 1. 결론', `${m.sel.label}을 ${m.confirmed ? '확정한' : '선택한'} 안으로 보고합니다. 총 예상 체선료는 ${money(m.sel.total)}이며, ${vsBest(m)}`, '')
-  L.push('### 숙련자 판단근거', m.judgment || '(아직 작성하지 않음)', '')
-  L.push('## 2. 후보안 비교', '| 안 | 총 예상 체선료 | 최저안 대비 | 최저안과 다른 선박 | 체선 발생 | 남은 리스크 |', '| --- | ---: | ---: | ---: | ---: | ---: |')
+  L.push(`# 울산 SK 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용, 계약 조건은 가상 값이라 금액은 비교용`, '')
+  L.push('## 1. 결론', `${m.confirmed ? '확정한' : '선택한'} 안은 ${m.sel.label}(${m.sel.preset?.label ?? '-'})입니다. 총 예상 체선료는 ${money(m.sel.total)}이며, ${vsBest(m)} ${vsBaseLine(m)}`, '')
+  L.push('### 판단근거', m.judgment || '(아직 작성하지 않음)', '')
+  L.push('## 2. 후보 비교', '| 안 | 무엇을 바꾼 안 | 총 예상 체선료 | 최저안 대비 | 실제 계획 대비 | 부두가 다른 배 | 체선 | 야간 접안 | 남은 리스크 | 엔진 |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |')
   for (const it of m.items) {
-    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.changed.length}척 | ${it.demVessels.length}척 | ${it.active.length}건 |`)
+    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${it.preset?.label ?? '-'} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.vsBase ? it.vsBase.pct : '-'} | ${it.moves ?? '-'}척 | ${it.dem}척 | ${it.night}척 | ${it.active.length}건 | ${it.engine}, ${it.solveSec ?? '-'}초 |`)
   }
-  L.push('', '### 선박별 예상 체선료', `| 선박 | ${m.items.map((it) => it.label).join(' | ')} |`, `| --- | ${m.items.map(() => '---:').join(' | ')} |`)
-  for (const row of m.perVessel) L.push(`| ${row.name} | ${row.values.map((v) => money(v.cents)).join(' | ')} |`)
-  L.push('', '## 3. 후보별 분석')
-  for (const it of m.items) {
-    L.push('', `### ${it.label}${it.id === m.sel.id ? ' (선택)' : ''}`,
-      `- 총 예상 체선료 ${money(it.total)} · ${it.extra ? `최저안보다 ${money(it.extra)}(${it.extraPct}%) 많음` : '세 후보 중 가장 낮음 (기본 선택)'}`,
-      `- 최저안과 다른 선박: ${it.extra ? it.changed.join(', ') || '없음' : '비교 기준'}`,
-      `- 가장 긴 대기: ${it.longestWait.name} ${fmtDur(it.longestWait.min)}`)
-    L.push(`- 체선 발생: ${it.demVessels.length ? it.demVessels.map((d) => `${d.name}(${d.berth}, 초과 ${fmtDur(d.excessMin)}, ${money(d.cents)})`).join(', ') : '없음'}`)
-    L.push(`- 남은 리스크: ${it.active.length ? it.active.map((r) => `${r.label}(${r.state}) ${r.evidence}`).join(' / ') : '없음'}`)
-  }
-  L.push('', '## 4. 공통 리스크', '어느 후보를 골라도 남는 리스크입니다.')
+  if (m.baseTotal !== null) L.push('', `실제 계획(실제 부두, 실제 접안 시각)의 예상 체선료는 ${money(m.baseTotal)}입니다.`)
+  L.push('', `## 3. ${m.sel.label} 선박별 체선료 상위`, `체선이 생기는 선박 ${m.demCount}척 중 큰 순서 ${m.top.length}척`, '', '| 선박 | 화물 | 선석 | 접안 | 초과 시간 | 기상 공제 | 체선료 | 실제 계획 체선료 |', '| --- | --- | --- | --- | ---: | ---: | ---: | ---: |')
+  for (const r of m.top) L.push(`| ${r.name} | ${r.product}, ${r.dir} | ${r.berth} | ${fmt(r.etb)} | ${fmtDur(r.excessMin)} | ${fmtDur(r.weatherMin)} | ${money(r.cents)} | ${r.baseCents === null ? '-' : money(r.baseCents)} |`)
+  if (!m.top.length) L.push('| 체선 없음 | | | | | | | |')
+  L.push('', '## 4. 실제 계획 대비 바뀐 선박', `바뀐 배 ${m.changeSummary.total}척(부두가 바뀐 배 ${m.changeSummary.berth}척), 그중 체선료가 달라진 배 ${m.changeSummary.money}척. 차이 큰 순서 ${m.changed.length}척`, '', '| 선박 | 바뀐 것 | 효과 | 실제 계획 | 이 안 | 차이 |', '| --- | --- | --- | ---: | ---: | ---: |')
+  for (const c of m.changed) L.push(`| ${c.name} | ${c.what} | ${c.effect} | ${money(c.baseCents)} | ${money(c.cents)} | ${c.saving > 0 ? '−' : '+'}${money(Math.abs(c.saving))} |`)
+  L.push('', '## 5. 남은 리스크', '### 공통 (어느 안을 골라도 남음)')
   if (!m.common.length) L.push('- 없음')
-  for (const c of m.common) {
-    L.push(`- ${c.label}: ${c.per.map((p) => `${p.label} ${p.risk.state}`).join(' · ')}. 대안: ${c.alternative}${c.caution !== '-' ? ` 주의: ${c.caution}` : ''}`)
-  }
+  for (const c of m.common) L.push(`- ${c.label}: ${c.per.find((p) => p.id === m.sel.id)?.evidence ?? ''}. 대응: ${c.alternative}`)
   if (m.differing.length) {
-    L.push('', '### 후보마다 갈리는 리스크')
-    for (const d of m.differing) L.push(`- ${d.label}: ${d.per.map((p) => `${p.label} ${p.state}`).join(' · ')}`)
+    L.push('', '### 후보마다 갈림')
+    for (const d of m.differing) L.push(`- ${d.label}: ${d.per.map((p) => `${p.label} ${p.state}`).join(', ')}`)
   }
-  L.push('', `## 5. ${m.sel.label} 선박별 일정`, '| 선박 | 부두 | 도착 | 접안 | 작업 종료 | 예상 체선료 |', '| --- | --- | --- | --- | --- | ---: |')
-  for (const s of m.sel.schedule) L.push(`| ${s.name} | ${s.berth} | ${fmt(s.eta)} | ${fmt(s.etb)} | ${fmt(s.etu)} | ${money(s.cents)} |`)
-  L.push('', '## 계산 기준', '- 체선료 = 초과 시간 ÷ 24시간 × 하루 체선료, 선박별 센트 단위 한 번 반올림(HALF_UP)', '- 정박시간 개시·기상 공제는 선박별 계약 조항을 따름', '- 후보는 체선료가 낮은 순서로 A, B, C이며 A(최저)가 기본 선택')
+  L.push('', '## 계산 기준',
+    `- 엔진: 팀 엔진 berth_sim (CP-SAT). 후보마다 파라미터 묶음이 다름: ${m.basis.presets.join(' / ')}`,
+    `- 데이터: ${m.basis.dataset}${m.basis.bundle ? ` (${m.basis.bundle})` : ''}, ${m.basis.vessels}척, 선석 ${m.basis.berths}곳`,
+    `- 기준 시각: ${m.basis.start} (계획 구간 끝 ${m.basis.end})`,
+    `- 계약 조건(정박시간, 체선료율)은 가상 값이라 금액은 후보끼리 비교하는 용도입니다.`,
+    '- 후보는 체선료가 낮은 순서로 A, B, C이며 A가 기본 선택입니다.')
   return L.join('\n')
 }
 
-/** 메일 초안(제목·본문). 보고서와 같은 모델에서 만든다. */
+/** 메일 초안(제목, 본문). 보고서와 같은 모델에서 만든다. */
 export function candidateMailDraft(m) {
-  const subject = `[울산 CLX] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
+  const subject = `[울산 SK 부두] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
   const body = [
     '안녕하세요.',
-    `${m.period} 울산 터미널 접안 계획으로 ${m.sel.label}을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,
+    `${m.period} 접안 계획으로 ${m.sel.label}(${m.sel.preset?.label ?? '-'})을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,
     '',
-    `- 총 예상 체선료: ${money(m.sel.total)} (${m.sel.extra ? `최저안 ${m.base.label}보다 ${money(m.sel.extra)} 많음` : '세 후보 중 가장 낮음'})`,
+    `- 총 예상 체선료: ${money(m.sel.total)} (${m.sel.extra ? `최저안 ${m.best.label}보다 ${money(m.sel.extra)} 많음` : '세 후보 중 가장 낮음'})`,
+    ...(m.baseTotal !== null && m.sel.vsBase ? [`- 실제 계획 대비: ${money(m.baseTotal)} → ${money(m.sel.total)}, ${m.sel.vsBase.pct}`] : []),
     `- 비교한 후보: ${m.items.map((it) => `${it.label} ${money(it.total)}`).join(', ')}`,
     `- 공통 리스크: ${m.common.map((c) => c.label).join(', ') || '없음'}`,
     `- 판단근거: ${m.judgment || '(작성 전)'}`,
     '',
-    '후보별 분석과 차트는 첨부 보고서를 참고해 주십시오.',
-    '',
-    '※ 가상 데이터 기반 의사결정 보조 자료이며, 담당자 검토용 초안입니다.',
+    '후보 비교, 선박별 체선료, 바뀐 선박은 첨부 보고서를 참고해 주십시오.',
+    '계약 조건은 가상 값이라 금액은 비교용입니다.',
   ].join('\n')
   return { subject, body }
 }

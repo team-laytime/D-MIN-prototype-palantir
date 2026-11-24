@@ -1,84 +1,84 @@
+// 선박 카드 (11-24 실데이터): 데이터 팀 묶음에 있는 값과 팀 엔진(CP-SAT)이 낸 시각, 체선료만 보인다.
+// 화면에서 체선료를 다시 계산하지 않는다. 산출 근거는 엔진 결과의 시각을 순서대로 풀어 쓴 것이다.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Drawer, Icon, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { useDarkClass } from '../state/theme.js'
-import { PARAMS, RULES, compatibleBerths, stateAt } from '../lib/engine.js'
-import { NAV, anchorageFor, positionOf } from '../lib/vesselState.js'
-import { fmt, fmtDur, money } from '../lib/time.js'
+import { stateAt } from '../lib/plan.js'
+import { vesselIdOf } from '../lib/dataset.js'
+import { fmt, fmtDur, fmtFull, money } from '../lib/time.js'
 import { addNote, historyOf, notesOf, removeNote, role } from '../lib/workspace.js'
 import { Panel, St } from '../ui/kit.jsx'
 import './drawer.css'
 
-const yearTime = (minutes) => `26-${fmt(minutes).replace('/', '-')}`
-const weatherLabel = { FULL: '기상체선 시간 전부 공제', HALF: '기상체선 시간 50% 공제', NONE: '공제 없음' }
-const phaseTone = { coming: 'live', waiting: 'warn', berthed: 'ok', left: 'idle' }
+const PHASE = {
+  coming: { label: '입항 전', tone: 'live' },
+  waiting: { label: '정박지 대기', tone: 'warn' },
+  berthed: { label: '접안 중', tone: 'ok' },
+  left: { label: '이안', tone: 'idle' },
+}
 
 function Details({ rows }) {
   return (
     <table className="vessel-drawer-kv">
-      <tbody>{rows.map(([label, value]) => <tr key={label}><th scope="row">{label}</th><td>{value}</td></tr>)}</tbody>
+      <tbody>{rows.filter(Boolean).map(([label, value]) => <tr key={label}><th scope="row">{label}</th><td>{value}</td></tr>)}</tbody>
     </table>
   )
 }
 
-/** 원본의 도식·계약·AIS 정보는 그대로 두고 금액 조회 권한만 useApp()에서 읽는다. */
 export default function VesselDrawer() {
-  const { drawer, drawerSim: sim, result, scen, closeDrawer, isScheduler, tour, scenarioId, wsRev } = useApp()
+  const { drawer, drawerSim: sim, result, all, scen, closeDrawer, isScheduler, tour, scenarioId } = useApp()
   const dark = useDarkClass()
   const [view, setView] = useState(drawer?.mode ?? 'card')
   const scrollRef = useRef(null)
   useEffect(() => { setView(drawer?.mode ?? 'card') }, [drawer?.simId, drawer?.vid, drawer?.mode])
   useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }) }, [view])
 
-  const liveState = useMemo(() => {
-    if (!drawer || !sim) return null
-    const placement = sim.placements.find((x) => x.vid === drawer.vid)
-    if (!placement) return null
-    const all = stateAt(sim, scen, drawer.at ?? placement.etb).sort((a, b) => a.v.eta - b.v.eta)
-    const me = all.find((s) => s.v.id === drawer.vid)
-    const waiting = all.filter((s) => s.phase === 'waiting' && anchorageFor(s.v).id === anchorageFor(me.v).id)
-    return { ...me, spot: Math.max(0, waiting.findIndex((s) => s.v.id === drawer.vid)) }
-  }, [drawer?.vid, drawer?.at, sim, scen])
+  const me = useMemo(() => {
+    if (!drawer || !sim || !scen) return null
+    const p = sim.placements.find((x) => x.vid === drawer.vid)
+    if (!p) return null
+    return stateAt(sim, scen, drawer.at ?? p.etb).find((s) => s.v.id === drawer.vid) ?? null
+  }, [drawer?.vid, drawer?.at, sim, scen]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 데이터에 비어 있던 계약 칸(통지 시간, 기상 공제 비율)은 화면 모델이 기본값을 채우므로 원본 요청에서 다시 본다.
+  const raw = useMemo(() => (drawer && scen ? scen.request.vessels.find((x) => vesselIdOf(x) === drawer.vid) ?? null : null), [drawer?.vid, scen]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!drawer || !sim || !liveState) return null
-  const v = liveState.v
-  const p = liveState.p
+  if (!drawer || !sim || !me) return null
+  const { v, p } = me
   const d = p.dem
-  const ref = result.candidates[0] // 11-24: 비교 기준은 최저 체선료 후보
-  const base = ref.placements.find((x) => x.vid === v.id)
-  const berth = scen.berths.find((b) => b.id === p.bid)
-  const berthName = (id) => scen.berths.find((b) => b.id === id)?.name ?? id
-  const live = drawer.at !== null
-  const t = drawer.at ?? p.etb
-  const nav = NAV[liveState.phase]
-  const pos = positionOf(liveState, scen, liveState.spot)
-  const rate = (cents) => isScheduler ? <span className="num">{money(cents)}</span> : '비공개'
-  const where = liveState.phase === 'coming' ? '입항 전 (항해)'
-    : liveState.phase === 'waiting' ? `${anchorageFor(v).label} 대기`
-      : liveState.phase === 'berthed' ? `${berth.name} 계류` : '출항'
-  const use = liveState.phase === 'berthed' ? `${berth.name} 사용 중 (${fmt(p.etb)} ~)`
-    : liveState.phase === 'left' ? `${berth.name} 사용 끝 (${fmt(p.etu)} 작업 종료)` : '-'
-  const etaGap = v.aisEtaDiff
-  const etaDrift = Math.abs(etaGap) >= 120
-  const untilEta = live && liveState.phase === 'coming' ? v.eta - t : null
-  const gapText = etaGap === 0 ? '계획과 같음' : `계획보다 ${fmtDur(Math.abs(etaGap))} ${etaGap > 0 ? '늦음' : '빠름'}`
+  const berthOf = (id) => scen.berths.find((b) => b.id === id)
+  const bname = (id) => berthOf(id)?.name ?? id
+  const berth = berthOf(p.bid)
+  const live = drawer.at !== null && drawer.at !== undefined
+  const t = live ? drawer.at : p.etb
+  const amt = (cents) => (isScheduler ? <span className="num">{money(cents)}</span> : '비공개')
+  const rateText = isScheduler ? <span className="num">${v.contract.rateUsd.toLocaleString('en-US')}/일</span> : '비공개'
   const tourActive = tour.index !== null
-  const etbDiff = p.etb - base.etb
-  const feeDiff = d.cents - base.dem.cents
+
+  // 비교: 최저 체선료 후보, 실제 계획(실제 부두, 실제 접안)
+  const best = all[0]
+  const bestP = best && best.id !== sim.id ? best.placements.find((x) => x.vid === v.id) : null
+  const baseP = result.baseline?.placements.find((x) => x.vid === v.id) ?? null
+  const actual = baseP ? { bid: baseP.bid, etb: baseP.etb, etu: baseP.etu, cents: baseP.dem.cents } : v.actual ? { ...v.actual, cents: null } : null
+
+  const eta = p.eta ?? v.eta
+  const rate = v.rates[p.bid]
   const steps = [
-    { rule: 'ETANR', k: 'ETANR (NOR)', f: v.nrTender != null ? `N/R Tender ${fmt(v.nrTender)}` : `N/R Tender 없음 → ETA ${fmt(v.eta)}`, val: fmt(d.etanr), numeric: true },
-    { rule: p.binding, k: '접안 (ETB)', f: `${p.binding === 'ETB-SWITCHING' ? `앞 선박 ETU + Switching ${fmtDur(p.sw)}` : `ETA + Direction ${fmtDur(p.dir)}`} = ${fmt(p.from)}${p.blockers.length ? ` → ${p.blockers.map((b) => RULES[b.rule].label).join(' · ')} → ${fmt(d.etb)}` : ''}`, val: fmt(d.etb), numeric: true },
-    { rule: 'WORK-FINISH', k: '작업완료', f: <>ETB + 1시간 + {v.ton.toLocaleString()}톤 ÷ {p.rate.toLocaleString()} t/h ({fmtDur(p.pumpMin)})</>, val: fmt(p.finish), numeric: true },
-    { rule: 'HOSE-OFF', k: '호스분리', f: `작업완료 + 30분 (ETU는 작업완료 + 2시간 = ${fmt(d.etu)})`, val: fmt(d.hoseOff), numeric: true },
-    { rule: d.ltStartRule, k: '정박개시', f: d.ltReason, val: fmt(d.ltStart), numeric: true },
-    { rule: 'LT-END', k: '정박종료', f: `정박개시 + Laytime ${fmtDur(d.allowMin)}${d.crudeHalf ? ' (원유선 · CFR 아님 50%)' : ''}`, val: fmt(d.ltEnd), numeric: true },
-    { rule: d.clause.rule, k: '기상체선', f: d.wxOverlap ? `정박개시 ~ 호스분리 중 기상 제약 ${fmtDur(d.wxOverlap)} × ${d.clause.ratio * 100}%` : '정박개시 ~ 호스분리 중 기상 제약 없음', val: d.wxDeduct ? `− ${fmtDur(d.wxDeduct)}` : '0' },
-    { rule: '-', k: '체선 시간', f: '호스분리 − 정박종료 − 기상 공제 (0 미만은 0)', val: fmtDur(d.excessMin) },
-    { rule: 'DEM-PRORATA', k: '체선료', f: <>{fmtDur(d.excessMin)} ÷ 24시간 × {rate(d.rateCents)}/일</>, val: money(d.cents), numeric: true, strong: true },
+    { k: '도착 (ETA)', at: eta, f: '선박이 울산항에 도착하는 예정 시각입니다. 입항 신고 값입니다.' },
+    { k: 'NOR 제출', at: v.nor, f: v.nor == null ? 'NOR 제출 시각 자료가 없습니다.' : '선장이 하역 준비가 끝났다고 알린 시각입니다.' },
+    { k: '정박시간 개시', at: p.ls, f: '이 시각부터 허용 시간을 셉니다. 엔진이 NOR, LayCan, 계약 조건으로 정한 값입니다.' },
+    { k: '접안', at: p.etb, f: `${berth?.name ?? p.bid}에 배를 댑니다. ${p.waitMin > 0 ? `도착 뒤 정박지에서 ${fmtDur(p.waitMin)} 기다렸습니다.` : '도착 뒤 기다리지 않았습니다.'}${p.night ? ' 야간 접안입니다.' : ''}${p.fixed ? ' 스케줄러가 고정한 자리입니다.' : ''}` },
+    { k: '작업 시작', at: p.ws, f: '접안 뒤 호스를 연결하고 하역을 시작합니다.' },
+    { k: '작업 완료', at: p.wf, f: `${v.product} ${v.ton.toLocaleString()} t ${v.dir} 작업이 끝납니다. 작업 ${fmtDur(p.wf - p.ws)}${rate ? `, 이 부두 하역 속도 ${Math.round(rate).toLocaleString()} t/h` : ''}.` },
+    { k: '호스 분리', at: p.hose, f: '하역 호스를 뗍니다. 정박시간은 여기서 멈춥니다.' },
+    { k: '정박시간 종료', at: p.le, f: `정박시간 개시에서 허용 시간 ${v.contract.laytimeH}시간이 지난 시각입니다. 호스 분리가 이보다 늦으면 그만큼 체선입니다.` },
+    { k: '이안', at: p.etu, f: '부두를 떠납니다. 이 뒤로 다음 선박이 이 부두를 쓸 수 있습니다.' },
   ]
-  const allowEnd = d.ltEnd + d.wxDeduct
-  const t0 = Math.min(v.eta, d.ltStart) - 120
-  const t1 = Math.max(d.etu, allowEnd) + 120
+
+  // 시간 흐름 막대: 엔진 시각만 쓴다
+  const marks = [eta, v.nor, p.ls, p.etb, p.hose, p.le, p.etu].filter((x) => x != null)
+  const t0 = Math.min(...marks) - 120
+  const t1 = Math.max(...marks) + 120
   const X = (m) => `${(2 + ((m - t0) / (t1 - t0)) * 96).toFixed(2)}%`
   const W = (a, b) => `${Math.max(0.4, ((b - a) / (t1 - t0)) * 96).toFixed(2)}%`
 
@@ -91,163 +91,127 @@ export default function VesselDrawer() {
     >
       <section className="vessel-drawer-root" data-tour="drawer" data-mode={view} role="dialog" aria-modal={!tourActive} aria-labelledby="vessel-drawer-title">
         <header className="vessel-drawer-head">
-          <Icon icon="star-empty" size={15} className="muted" />
+          <Icon icon="cargo-ship" size={15} className="muted" />
           <div>
-            <h2 id="vessel-drawer-title">{v.name}{view === 'evidence' && <span> — 체선료 산출 근거</span>}</h2>
-            <span className="vessel-drawer-ident"><span className="mono">{v.id} / {v.imo}</span><span className="muted">{sim.label}</span></span>
+            <h2 id="vessel-drawer-title">{v.name}{view === 'evidence' && <span>체선료 산출 근거</span>}</h2>
+            <span className="vessel-drawer-ident"><span className="mono">{v.id}</span><span className="muted">{sim.label}</span></span>
           </div>
           <Button icon="cross" variant="minimal" aria-label="닫기" onClick={closeDrawer} />
         </header>
         <nav className="vessel-drawer-tabs" aria-label="선박 카드 보기">
-          {[['card', '선박 정보'], ['evidence', '산출 근거'], ['notes', `메모 ${notesOf(scenarioId, v.id).length}`], ['history', `변경 이력 ${historyOf(scenarioId, v.id).length}`]].map(([id, label]) => (
+          {[['card', '제원'], ['contract', '계약'], ['evidence', '산출 근거'], ['notes', `메모 ${notesOf(scenarioId, v.id).length}`], ['history', `변경 이력 ${historyOf(scenarioId, v.id).length}`]].map(([id, label]) => (
             <button key={id} type="button" className={view === id ? 'on' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>{label}</button>
           ))}
         </nav>
 
         <div className="vessel-drawer-scroll" ref={scrollRef}>
           {view === 'card' ? <>
-            {/* 11-20 피드백: 다 읽지 않아도 되게 핵심 네 줄을 맨 위에, 나머지는 접어 둔다. */}
             <div className="vd-key">
-              <div className="vd-key-row"><span>상태</span><b>{live ? <St tone={phaseTone[liveState.phase]}>{nav.label}</St> : '계획'} <span className="vd-key-sub">{where}</span></b></div>
-              <div className="vd-key-row"><span>접안</span><b>{berth.name} · <span className="num">{fmt(p.etb)}</span>{live && p.etb > t && <span className="vd-key-sub"> ({fmtDur(p.etb - t)} 뒤)</span>}</b></div>
-              <div className="vd-key-row"><span>작업 종료</span><b className="num">{fmt(p.etu)}</b></div>
-              {isScheduler && <div className="vd-key-row"><span>예상 체선</span><b className={d.cents > 0 ? 'c-red' : 'c-green'}>{d.cents > 0 ? <>{fmtDur(d.excessMin)} · <span className="num">{money(d.cents)}</span></> : '없음 (허용 시간 안)'}</b>
+              {live && <div className="vd-key-row"><span>상태</span><b><St tone={PHASE[me.phase].tone}>{PHASE[me.phase].label}</St> <span className="vd-key-sub num">{fmt(t)} 기준</span></b></div>}
+              <div className="vd-key-row"><span>접안</span><b>{berth?.name ?? p.bid}, <span className="num">{fmt(p.etb)}</span>{live && p.etb > t && <span className="vd-key-sub"> ({fmtDur(p.etb - t)} 뒤)</span>}</b></div>
+              <div className="vd-key-row"><span>이안</span><b className="num">{fmt(p.etu)}</b></div>
+              {isScheduler && <div className="vd-key-row"><span>예상 체선</span><b className={d.cents > 0 ? 'c-red' : 'c-green'}>{d.cents > 0 ? <>{fmtDur(d.excessMin)}, <span className="num">{money(d.cents)}</span></> : '없음 (허용 시간 안)'}</b>
                 <Button size="small" variant="minimal" endIcon="arrow-right" text="근거" onClick={() => setView('evidence')} /></div>}
             </div>
-            {etaDrift && <p className="vd-warn">AIS ETA가 계획보다 {fmtDur(Math.abs(etaGap))} {etaGap > 0 ? '늦음' : '빠름'} · 접안 계획을 다시 계산해야 합니다</p>}
-            <p className="vessel-drawer-time">{live ? '기준 시각' : '계획 기준'} : <span className="num">2026-{fmt(t).replace('/', '-')}</span> · {sim.label}</p>
 
-            <details className="vd-fold" open><summary>선박 정보</summary>
-            <Panel code="VESSEL-ID" title="선박 정보">
+            <Panel code="VESSEL-SPEC" title="제원">
               <Details rows={[
-                ['국적', v.flag],
-                ['선박명', <>{v.name} <span className="muted">(가상 선명)</span></>],
-                ['MMSI', <span className="num">{v.mmsi}</span>],
-                ['IMO · 호출부호', <span className="mono">{v.imo} · {v.callSign}</span>],
-                ['선박 타입', v.type],
-                ['선박 위치', <span className="num">{pos[0].toFixed(5)}, {pos[1].toFixed(5)}</span>],
-                ['DWT · 흘수', <span className="num">{v.dwt.toLocaleString()} t · {v.draft} m</span>],
-                ['화물', <>{v.dir} · {v.product} · <span className="num">{v.ton.toLocaleString()} t</span></>],
-                ['계약', <><span className="mono">{v.contract.id}</span> · 허용 <span className="num">{v.contract.laytimeH}h</span> · 일 {rate(v.contract.rateUsd * 100)}</>],
-                ['시설 신청', <>{compatibleBerths(v, scen).map(berthName).join(', ')} <span className="muted">(접안 가능 · 항차 <span className="mono">{v.voyage}</span>)</span></>],
-                ['시설 사용', use],
-                ['접안 계획', <>{berth.name} · ETB <span className="num">{fmt(p.etb)}</span> → ETU <span className="num">{fmt(p.etu)}</span><br /><span className="muted">{sim.label}{p.waitMin > 0 && ` · 접안 전 대기 ${fmtDur(p.waitMin)}`}</span></>],
-                ['예상 체선료', <><b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{money(d.cents)}</b><br /><span className="muted">(체선 {fmtDur(d.excessMin)} · 일 {rate(v.contract.rateUsd * 100)})</span>{sim.id !== ref.id && <><br /><span className="muted">최저안({ref.label}) <span className="num">{money(base.dem.cents)}</span></span></>}</>],
+                ['호출부호', <span className="mono">{v.callSign}</span>],
+                ['항차', <span className="num">{v.voyage}</span>],
+                ['선종', <>{v.vtype}{v.cls ? <span className="muted">, {v.cls}</span> : null}</>],
+                ['DWT, GRT', <span className="num">{v.dwt?.toLocaleString() ?? '-'} t, {v.grt?.toLocaleString() ?? '-'}</span>],
+                ['흘수, LOA', <span className="num">{v.draft ?? '-'} m, {v.loa ?? '-'} m</span>],
+                ['화물', <>{v.product} <span className="mono faint">{v.cargo}</span>, {v.dir}, <span className="num">{v.ton.toLocaleString()} t</span></>],
+                v.material && ['자재 코드', <span className="mono">{v.material}</span>],
+                v.workHours != null && ['작업 시간(자료)', <span className="num">{v.workHours} h</span>],
               ]} />
             </Panel>
 
-            </details>
-            <details className="vd-fold"><summary>항해 · AIS ETA</summary>
-            <div className="vessel-drawer-route">
-              <div><span>출발지</span><b>{v.prevPort}</b></div>
-              <Icon icon="arrow-right" size={18} className="muted" />
-              <div><span>목적지</span><b>ULSAN, KOREA</b></div>
-            </div>
-            <div className="vessel-drawer-navigation">
-              <div><span>Status</span><b>{live ? <St tone={phaseTone[liveState.phase]}>{nav.status}</St> : '-'}</b></div>
-              <div><span>Speed</span><b className="num">{live ? `${nav.sog.toFixed(1)}kn` : '-'}</b></div>
-              <div><span>Course</span><b className="num">{live ? `${nav.cog}°` : '-'}</b></div>
-            </div>
-
-            <Panel code="AIS-ETA" title="입항 · ETA" desc="AIS 항해 정보 · 선장 입력">
-              <Details rows={[
-                ['목적지', <>{v.aisDest} <span className="muted">(AIS 신고값)</span></>],
-                ['계획 ETA', <><span className="num">{yearTime(v.eta)}</span><br /><span className="muted">(대리점 통보 · 계산에 쓰는 값)</span></>],
-                ['AIS ETA', <><span className="num">{yearTime(v.eta + etaGap)}</span><br /><span className={etaDrift ? 'c-red strong' : 'muted'}>{gapText}</span>{etaDrift && <><br /><span className="c-red">2시간 넘게 달라 접안 계획을 다시 계산해야 합니다 <span className="mono">(N-002)</span></span></>}</>],
-                ...(untilEta !== null ? [['도착까지', <>{untilEta > 0 ? fmtDur(untilEta) : '도착 시각 경과'}{untilEta > 0 && <> · 약 <span className="num">{Math.round(untilEta / 60 * nav.sog)}nm</span> <span className="muted">(<span className="num">{nav.sog.toFixed(1)}kn</span> 기준)</span></>}</>]] : []),
-              ]} />
+            <Panel code="BERTH-FIT" title="갈 수 있는 부두" desc="부두별 하역 속도는 데이터 팀 묶음 값">
+              <table className="dt vd-rates">
+                <thead><tr><th>부두</th><th className="r">하역 속도</th><th /></tr></thead>
+                <tbody>{v.compat.map((id) => (
+                  <tr key={id} className={id === p.bid ? 'on' : ''}>
+                    <td>{bname(id)}</td>
+                    <td className="num r">{v.rates[id] ? `${Math.round(v.rates[id]).toLocaleString()} t/h` : '-'}</td>
+                    <td className="small muted">{id === p.bid ? '이 계획' : actual?.bid === id ? '실제 계획' : ''}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
             </Panel>
 
-            </details>
-            <details className="vd-fold"><summary>선박 제원 · 소유</summary>
-            <Panel code="VESSEL-SPEC" title="선박 제원" desc="AIS 정적 정보 · 선박 원부 · 대리점 자료">
+            <Panel code="PLAN" title="접안 계획">
               <Details rows={[
-                ['선종', <>{v.type} <span className="muted">· {v.flag} 선적 · <span className="num">{v.built}</span>년 건조 (선령 <span className="num">{2026 - v.built}</span>년)</span></>],
-                ['선급', v.cls],
-                ['톤수', <>총톤수(GT) <span className="num">{v.grt.toLocaleString()}</span> · 순톤수(NT) <span className="num">{v.nt.toLocaleString()}</span> · DWT <span className="num">{v.dwt.toLocaleString()} t</span></>],
-                ['치수', <>길이(LOA) <span className="num">{v.loa} m</span> · 폭 <span className="num">{v.beam} m</span> · 형심 <span className="num">{v.depth} m</span> · 흘수 <span className="num">{v.draft} m</span></>],
-                ['기관 · 속력', <>{v.engine} <span className="muted">· 서비스 속력 <span className="num">{v.speedKn}kn</span></span></>],
-                ['화물창', <>탱크 <span className="num">{v.tanks}</span>개 · 용량 <span className="num">{v.cargoM3.toLocaleString()} ㎥</span> · 매니폴드 {v.manifold}</>],
-                ['하역 속도', <><span className="num">{p.rate.toLocaleString()} t/h</span> <span className="muted">({berth.name} 기준 · 접안~이안 {fmtDur(p.etu - p.etb)})</span></>],
-                ['소유 · 관리', <>{v.owner}<br /><span className="muted">관리사 {v.manager}</span></>],
-                ['기상 공제', <>{weatherLabel[v.contract.weather]} <span className="muted">(계약 <span className="mono">{v.contract.id}</span>)</span></>],
+                [sim.label, <>{berth?.name ?? p.bid}, 접안 <span className="num">{fmt(p.etb)}</span> → 이안 <span className="num">{fmt(p.etu)}</span>{p.waitMin > 0 && <><br /><span className="muted">정박지 대기 {fmtDur(p.waitMin)}</span></>}{isScheduler && <><br />체선료 {amt(d.cents)}</>}</>],
+                actual && ['실제 계획', <>{bname(actual.bid)}, 접안 <span className="num">{fmt(actual.etb)}</span> → 이안 <span className="num">{fmt(actual.etu)}</span>{isScheduler && actual.cents != null && <><br />체선료 {amt(actual.cents)}</>}</>],
               ]} />
             </Panel>
-            </details>
-            <p className="vessel-drawer-note">선명 · MMSI · IMO · 소유사는 모두 가상입니다. 실제 솔루션에서는 AIS(위치·ETA·길이·폭), 울산항만공사 공공 API(항차·입출항), 대리점 자료(톤수·탱크·소유)에서 채웁니다.</p>
+          </> : view === 'contract' ? <>
+            <Panel code="CONTRACT" title="계약 조건" desc="계약 값은 가상(데이터 팀 묶음), 계획 조건에서 고칠 수 없음">
+              <Details rows={[
+                ['허용 시간', <span className="num">{v.contract.laytimeH} h</span>],
+                ['일 체선료', rateText],
+                ['NOR 제출', v.nor != null ? <span className="num">{fmtFull(v.nor)}</span> : <span className="muted">자료 없음</span>],
+                ['LayCan', v.laycan ? <><span className="num">{fmt(v.laycan.from)} ~ {fmt(v.laycan.to)}</span>{v.laycan.case && <span className="muted"> ({v.laycan.case})</span>}</> : <span className="muted">없음</span>],
+                ['NOR 뒤 개시', raw?.notice_hours != null ? <span className="num">{raw.notice_hours} h</span> : <span className="muted">자료 없음, 엔진 기본값으로 계산</span>],
+                ['기상 공제', raw?.weather_deduct_pct != null ? <span className="num">{raw.weather_deduct_pct}%</span> : <span className="muted">자료 없음, 엔진 기본값으로 계산</span>],
+                ['CFR', v.contract.cfr ? '예' : '아니오'],
+              ]} />
+            </Panel>
           </> : view === 'evidence' ? <>
             <div className="vd-conclusion">
               <span className="tiny muted">결론</span>
-              <b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{money(d.cents)}</b>
-              <p className="small">허용 <span className="num">{v.contract.laytimeH}</span>시간 중 산입 {fmtDur(d.countedMin)}{d.wxDeduct ? ` (기상 공제 ${fmtDur(d.wxDeduct)})` : ''} → {d.excessMin > 0 ? <>체선 <b>{fmtDur(d.excessMin)}</b> × 일 {rate(d.rateCents)}</> : '허용 시간 안에 작업 종료'}</p>
-              {p.blockers.length > 0 && <p className="small muted">접안이 늦어진 이유: {[...new Set(p.blockers.map((b) => RULES[b.rule].label))].join(', ')}</p>}
+              <b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{isScheduler ? money(d.cents) : d.cents > 0 ? '체선 있음' : '체선 없음'}</b>
+              <p className="small">{d.excessMin > 0
+                ? <>호스 분리가 정박시간 종료보다 늦어 체선 <b>{fmtDur(d.excessMin)}</b>이 생겼습니다.</>
+                : '허용 시간 안에 호스를 뗐습니다.'}{d.weatherMin > 0 && ` 기상 구간이 정박시간과 ${fmtDur(d.weatherMin)} 겹쳐, 계약 공제율만큼 체선 시간에서 뺐습니다.`}</p>
             </div>
-            <Panel code="LAYTIME" title="체선료 산출 근거">
-              <Details rows={[
-                ['계획', sim.label],
-                ['부두 · 접안', <>{berth.name} · ETB <span className="num">{fmt(p.etb)}</span> → ETU <span className="num">{fmt(p.etu)}</span></>],
-                ['정박 시간', <><span className="num">{fmt(d.ltStart)} ~ {fmt(d.hoseOff)}</span> (정박종료 <span className="num">{fmt(d.ltEnd)}</span>)</>],
-                ['체선', <b className={d.cents > 0 ? 'c-red' : 'c-green'}>{fmtDur(d.excessMin)} · <span className="num">{money(d.cents)}</span></b>],
-              ]} />
-            </Panel>
+
             <Panel code="TIME-FLOW" title="시간 흐름" pad>
-              <div className="vessel-drawer-flow" role="img" aria-label={`도착 ${fmt(v.eta)}, 접안 ${fmt(d.etb)}, 정박개시 ${fmt(d.ltStart)}, 호스분리 ${fmt(d.hoseOff)}, 체선 ${fmtDur(d.excessMin)}`}>
+              <div className="vessel-drawer-flow" role="img" aria-label={`도착 ${fmt(eta)}, 접안 ${fmt(p.etb)}, 정박시간 개시 ${fmt(p.ls)}, 호스 분리 ${fmt(p.hose)}, 체선 ${fmtDur(d.excessMin)}`}>
                 <div className="vessel-drawer-axis" />
-                {v.eta < d.etb && <div className="vessel-drawer-segment wait" style={{ left: X(v.eta), width: W(v.eta, d.etb) }} />}
-                <div className="vessel-drawer-segment work" style={{ left: X(d.etb), width: W(d.etb, d.etu) }} />
-                <div className="vessel-drawer-segment lay" style={{ left: X(d.ltStart), width: W(d.ltStart, Math.min(allowEnd, d.hoseOff)) }} />
-                {d.excessMin > 0 && <div className="vessel-drawer-segment dem" style={{ left: X(allowEnd), width: W(allowEnd, d.hoseOff) }} />}
-                <span className="vessel-drawer-tick" style={{ left: X(v.eta) }}>ETA <span className="num">{fmt(v.eta).slice(6)}</span></span>
-                <span className="vessel-drawer-tick end" style={{ left: X(d.hoseOff) }}>호스분리 <span className="num">{fmt(d.hoseOff).slice(6)}</span></span>
-                <span className="vessel-drawer-tick bottom" style={{ left: X(d.ltStart) }}>정박개시</span>
+                {eta < p.etb && <div className="vessel-drawer-segment wait" style={{ left: X(eta), width: W(eta, p.etb) }} />}
+                <div className="vessel-drawer-segment work" style={{ left: X(p.etb), width: W(p.etb, p.etu) }} />
+                <div className="vessel-drawer-segment lay" style={{ left: X(p.ls), width: W(p.ls, Math.min(p.le, p.hose)) }} />
+                {d.excessMin > 0 && <div className="vessel-drawer-segment dem" style={{ left: X(p.le), width: W(p.le, p.hose) }} />}
+                <span className="vessel-drawer-tick" style={{ left: X(eta) }}>ETA <span className="num">{fmt(eta).slice(6)}</span></span>
+                <span className="vessel-drawer-tick end" style={{ left: X(p.hose) }}>호스 분리 <span className="num">{fmt(p.hose).slice(6)}</span></span>
+                <span className="vessel-drawer-tick bottom" style={{ left: X(p.ls) }}>정박시간 개시</span>
               </div>
-              <p className="vessel-drawer-legend"><span>점선 대기</span> · <span className="c-blue">파랑 작업</span> · <span className="c-green">초록 허용 정박시간</span> · <span className="c-red">빨강 체선</span></p>
+              <p className="vessel-drawer-legend"><span>점선 대기</span>, <span className="c-blue">파랑 접안~이안</span>, <span className="c-green">초록 허용 시간 안</span>, <span className="c-red">빨강 체선</span></p>
             </Panel>
-            <Panel code="CALC-STEPS" title="산출 순서" desc="규칙 ID = 규칙 표 번호">
+
+            <Panel code="CALC-STEPS" title="엔진 시각 순서" desc="모든 시각과 금액은 팀 엔진(CP-SAT) 결과">
               <ol className="vessel-drawer-calc">
-                {steps.map((s, i) => <li key={s.k} className={s.strong ? 'total' : ''}>
-                  <div className="vessel-drawer-step-head"><span className="vessel-drawer-step-no num">{i + 1}</span><b>{s.k}</b><span className="chip">{s.rule}</span><strong className={`${s.numeric ? 'num' : ''} ${s.strong ? d.cents > 0 ? 'c-red' : 'c-green' : ''}`}>{s.val}</strong></div>
+                {steps.map((s, i) => <li key={s.k}>
+                  <div className="vessel-drawer-step-head"><span className="vessel-drawer-step-no num">{i + 1}</span><b>{s.k}</b><strong className="num">{s.at == null ? '-' : fmt(s.at)}</strong></div>
                   <p>{s.f}</p>
                 </li>)}
               </ol>
-              <div className="vessel-drawer-formula">
-                <p>체선료 = 체선 시간 {fmtDur(d.excessMin)} × 일 체선료 {rate(d.rateCents)} ÷ 24</p>
-                <b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>= {money(d.cents)}</b>
-                <p className="muted small">(선박별 센트 단위 한 번 반올림 · <span className="mono">HALF_UP</span>)</p>
-              </div>
-            </Panel>
-            <details className="vd-fold"><summary>접안 시각 결정 · 최저안 대비 · 계약</summary>
-            <Panel code="ETB-RULES" title="접안 시각 결정" pad>
-              <ul className="vessel-drawer-why">
-                <li>ETA <b className="num">{fmt(v.eta)}</b> + Direction {fmtDur(p.dir)} = <b className="num">{fmt(v.eta + p.dir)}</b>{p.ready !== null && <> · {berth.name} 앞 선박 <b>{p.prev}</b> ETU + Switching {fmtDur(p.sw)} = <b className="num">{fmt(p.ready)}</b></>} → <b className="num">{fmt(p.from)}</b>부터 접안 가능 여부 판정 <span className="chip">{p.binding}</span></li>
-                {p.blockers.map((b) => <li key={`${b.rule}-${b.from}`}><span className="num">{fmt(b.from)} ~ {fmt(b.to)}</span> 접안 불가 · {RULES[b.rule].label} <span className="chip">{b.rule}</span></li>)}
-                {!p.blockers.length && <li>추가 제약 없음 · 즉시 접안</li>}
-              </ul>
-            </Panel>
-            {sim.id !== ref.id && <Panel code="BEST-COMP" title={`최저안(${ref.label}) 대비`}>
               <Details rows={[
-                ['최저안', <>{berthName(base.bid)} · ETB <span className="num">{fmt(base.etb)}</span> → ETU <span className="num">{fmt(base.etu)}</span><br /><span className="num">{money(base.dem.cents)}</span></>],
-                ['접안 시각 차이', <span className={etbDiff > 0 ? 'c-amber' : etbDiff < 0 ? 'c-green' : 'muted'}>{etbDiff === 0 ? '최저안과 같음' : `최저안보다 ${fmtDur(Math.abs(etbDiff))} ${etbDiff > 0 ? '늦게 접안' : '일찍 접안'}`}</span>],
-                ['체선료 차이', <span className={feeDiff > 0 ? 'c-red' : feeDiff < 0 ? 'c-green' : 'muted'}>{feeDiff === 0 ? '최저안과 같음' : <><span className="num">{money(Math.abs(feeDiff))}</span> {feeDiff > 0 ? '증가' : '절감'}</>}</span>],
-                ['앞 선박 · 대기', <>최저안: {base.ready === null ? '앞 선박 없음' : base.prev} · {fmtDur(base.waitMin)}<br />선택안: {p.ready === null ? '앞 선박 없음' : p.prev} · {fmtDur(p.waitMin)}</>],
-                ['차이의 근거', <>{base.bid === p.bid ? `${berth.name}의 앞 선박과 접안 제약을 적용한 결과입니다.` : `${berthName(base.bid)}에서 ${berth.name}로 부두 배정을 변경한 결과입니다.`} {p.binding === 'ETB-SWITCHING' && <>앞 선박 {p.prev}의 ETU 뒤 Switching {fmtDur(p.sw)}을 기다립니다. </>}{p.blockers.length > 0 ? `${[...new Set(p.blockers.map((b) => RULES[b.rule].label))].join(' · ')} 제약을 적용합니다.` : '기상 부두 제약 · 야간 도선 제한에 따른 추가 접안 제약은 없습니다.'}</>],
-              ]} />
-            </Panel>}
-            <Panel code="CONTRACT" title="적용 계약 · 규칙">
-              <Details rows={[
-                ['Laytime', <><span className="num">{v.contract.laytimeH}h</span> <span className="muted">(계약 <span className="mono">{v.contract.id}</span>)</span></>],
-                ['정박시간 개시', <>{v.contract.laycan ? <>LayCan <span className="num">{fmt(v.contract.laycan.from)} ~ {fmt(v.contract.laycan.to)}</span> · </> : 'LayCan 없음(양하) · '}NOR 후 {v.contract.norTurnH}시간{PARAMS.afterEtb.daylightTypes.includes(v.vesselType) ? ' · Daylight 적용(일출 전 · 일몰 뒤 NOR은 07:00)' : ''} · 접안이 더 이르면 접안 시각</>],
-                ['기상 조항', d.clause.label],
-                ['작업 시간', <>ETB + 1시간 + <span className="num">{v.ton.toLocaleString()}</span>톤 ÷ <span className="num">{p.rate.toLocaleString()}</span> t/h + 2시간 = {fmtDur(p.etu - p.etb)}</>],
-                ['계산 기준', '팀 최적화 엔진(D-MIN-optimization berth_sim) 계산식 · LLM 사용 안 함'],
+                ['체선 시간', <><b className={d.excessMin > 0 ? 'c-red' : ''}>{fmtDur(d.excessMin)}</b><br /><span className="muted">호스 분리 − 정박시간 종료 − 기상 공제, 0보다 작으면 0</span></>],
+                ['기상체선 시간', <>{d.weatherMin > 0 ? fmtDur(d.weatherMin) : '없음'}<br /><span className="muted">부두 사용 불가의 기상 구간이 정박시간 개시~호스 분리와 겹친 시간(공제 전). 여기에 계약 공제율(자료 없으면 50%)을 곱해 뺍니다</span></>],
+                ['일 체선료', rateText],
+                ['체선료', <><b className={`num ${d.cents > 0 ? 'c-red' : 'c-green'}`}>{amt(d.cents)}</b><br /><span className="muted">체선 시간 ÷ 24시간 × 일 체선료, 엔진이 센트 단위로 계산</span></>],
               ]} />
             </Panel>
-            </details>
+
+            {(bestP || actual) && (
+              <Panel code="COMPARE" title="다른 계획과 비교">
+                <Details rows={[
+                  [sim.label, <>{bname(p.bid)}, 접안 <span className="num">{fmt(p.etb)}</span>, 체선료 {amt(d.cents)}</>],
+                  bestP && [`최저안 ${best.label}`, <>{bname(bestP.bid)}, 접안 <span className="num">{fmt(bestP.etb)}</span>, 체선료 {amt(bestP.dem.cents)}
+                    <br /><span className="muted">{bestP.bid === p.bid && bestP.etb === p.etb ? '이 선박은 최저안과 같습니다.' : `${bestP.bid !== p.bid ? '부두가 다르고, ' : ''}접안이 ${bestP.etb === p.etb ? '같습니다' : `${fmtDur(Math.abs(p.etb - bestP.etb))} ${p.etb > bestP.etb ? '늦습니다' : '빠릅니다'}`}.`}</span></>],
+                  actual && ['실제 계획', <>{bname(actual.bid)}, 접안 <span className="num">{fmt(actual.etb)}</span>{actual.cents != null && <>, 체선료 {amt(actual.cents)}</>}
+                    <br /><span className="muted">실제 접안 실적을 같은 엔진 규칙으로 계산한 값</span></>],
+                ]} />
+              </Panel>
+            )}
           </> : view === 'notes'
             ? <VesselNotes scenarioId={scenarioId} vessel={v} canWrite={isScheduler} />
             : <VesselHistory scenarioId={scenarioId} vessel={v} />}
         </div>
-        <footer className="vessel-drawer-footer">출처: 시나리오 입력 · 계약 정보 · 규칙 엔진 계산 — 선박명·제원·계약값은 가상입니다.</footer>
+        <footer className="vessel-drawer-footer">출처: {scen.summary}</footer>
       </section>
     </Drawer>
   )
@@ -257,7 +221,7 @@ const PEOPLE = ['스케줄러 A', '이용자 B', '대리점 담당', 'SK 3부두
 const mentionsOf = (text) => PEOPLE.filter((p) => text.includes(`@${p}`))
 const withMentions = (text) => text.split(new RegExp(`(@(?:${PEOPLE.join('|')}))`)).map((part, i) => (part.startsWith('@') && PEOPLE.includes(part.slice(1)) ? <b key={i} className="vd-mention">{part}</b> : part))
 
-/** 선박 메모: 현장 연락·특이사항. 11-20 피드백 반영: 공유 범위·작성자(역할)·@태그 알림을 보인다. 스케줄러만 쓰고, 자기 메모만 지운다. */
+/** 선박 메모: 현장 연락, 특이사항. 공유 범위, 작성자(역할), @태그 알림을 보인다. 스케줄러만 쓰고, 자기 메모만 지운다. */
 function VesselNotes({ scenarioId, vessel, canWrite }) {
   const [text, setText] = useState('')
   const me = role()?.name
@@ -270,7 +234,7 @@ function VesselNotes({ scenarioId, vessel, canWrite }) {
   }
   const tag = (p) => setText((x) => `${x}${x && !x.endsWith(' ') ? ' ' : ''}@${p} `)
   return (
-    <Panel code="NOTES" title="메모" desc="공유: 이 선박을 보는 스케줄러 전원 · 이용자에게는 안 보임">
+    <Panel code="NOTES" title="메모" desc="공유: 이 선박을 보는 스케줄러 전원, 이용자에게는 안 보임">
       {canWrite && (
         <div className="vessel-notes-form">
           <TextArea fill rows={3} value={text} placeholder="예: @대리점 담당 NOR 제출 예정 시각 변동 없음 확인 부탁" aria-label="메모 내용"
@@ -300,22 +264,22 @@ function VesselNotes({ scenarioId, vessel, canWrite }) {
   )
 }
 
-/** 변경 이력: 이 선박의 입력(ETA·계약 조건)이 언제 누구에 의해 어떻게 바뀌었는지. */
+/** 변경 이력: 이 선박의 입력(ETA, 고정)이 언제 누구에 의해 어떻게 바뀌었는지. */
 function VesselHistory({ scenarioId, vessel }) {
   const list = [...historyOf(scenarioId, vessel.id)].reverse()
   const etaCount = list.filter((h) => h.field === 'eta').length
   return (
-    <Panel code="HISTORY" title="변경 이력" desc={`도착 예정 변경 ${etaCount}회 · 전체 ${list.length}건`}>
+    <Panel code="HISTORY" title="변경 이력" desc={`ETA 변경 ${etaCount}회, 전체 ${list.length}건`}>
       {list.length ? (
         <ol className="vessel-history">
           {list.map((h) => (
             <li key={h.id}>
-              <div className="vessel-notes-meta tiny"><b>{h.label}</b><span className="faint">{h.who} · <span className="num">{h.at}</span></span></div>
+              <div className="vessel-notes-meta tiny"><b>{h.label}</b><span className="faint">{h.who}, <span className="num">{h.at}</span></span></div>
               <p className="small"><span className="muted">{h.from}</span> <Icon icon="arrow-right" size={11} className="faint" /> <span className="c-blue strong">{h.to}</span></p>
             </li>
           ))}
         </ol>
-      ) : <p className="small muted vessel-notes-empty">이 시나리오에서 바뀐 입력이 없습니다. 시나리오 입력에서 도착 예정·계약 조건을 고치면 여기에 남습니다.</p>}
+      ) : <p className="small muted vessel-notes-empty">바뀐 입력이 없습니다. 계획 조건에서 ETA를 고치거나 선박을 고정하면 여기에 남습니다.</p>}
     </Panel>
   )
 }
