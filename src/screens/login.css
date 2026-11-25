@@ -1,22 +1,85 @@
-.login-page { position: relative; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) 440px; align-items: center; gap: 64px; padding: 0 max(64px, 8vw); background: var(--bg-0); }
-.login-theme { position: absolute; top: 12px; right: 16px; }
-.login-intro { max-width: 560px; }
-.login-intro h1 { margin: 28px 0 14px; font-size: 32px; font-weight: 600; line-height: 1.25; letter-spacing: -0.03em; }
-.login-intro > p { max-width: 46ch; font-size: 14px; line-height: 1.65; }
+/* 11-25: 로그인은 스크롤 없이 한 화면에. SK Seagate 느낌으로 밝은 바탕 + 빨강, 주황.
+   테마와 상관없이 로그인은 밝게 고정한다(색 변수를 이 화면 안에서만 덮어씀). */
+body:has(.login-page) { min-width: 0; overflow: hidden; }
+.login-page {
+  --lg-red: #ea002c; --lg-orange: #f47725; --lg-ink: #1d1d1f; --lg-sub: #6b6f76; --lg-line: #dcdfe4;
+  --fg: var(--lg-ink); --fg-2: var(--lg-sub); --accent: var(--lg-orange);
+  /* 세로 flex: 가운데 무대(카드)가 남는 높이를 다 쓰고, 푸터는 흐름 안에서 항상 맨 아래. 확대, 축소해도 같은 배치 */
+  position: relative; height: 100vh; height: 100dvh; overflow-y: auto;
+  display: flex; flex-direction: column;
+  color: var(--lg-ink);
+  /* 위쪽은 빨강→주황 띠, 아래는 연한 회색. 가운데 흰 카드 하나(일반 솔루션 로그인 문법) */
+  background:
+    radial-gradient(120% 60% at 15% 52%, rgba(255, 255, 255, 0.10) 0 40%, transparent 41%),
+    radial-gradient(120% 60% at 90% 56%, rgba(255, 255, 255, 0.08) 0 38%, transparent 39%),
+    linear-gradient(180deg, transparent 0 50%, #f3f4f6 50% 100%),
+    linear-gradient(120deg, var(--lg-red) 0%, #f2452a 45%, var(--lg-orange) 100%);
+}
+.login-stage { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; padding: 24px 24px 9vh; }
+.login-side { position: relative; flex: 0 0 auto; width: 400px; max-width: 100%; padding: 30px 30px 32px; background: #fff; border-radius: 12px; box-shadow: 0 18px 48px rgba(60, 20, 10, 0.18), 0 2px 6px rgba(0, 0, 0, 0.06); }
+.login-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.login-logo img { width: 44px; height: 44px; }
+.login-word { font-family: var(--sans); font-size: calc(22px * var(--fs)); font-weight: 800; letter-spacing: 0.04em; color: var(--lg-ink); }
+.login-side .login-card { width: 100%; background: #fff; border: 0; box-shadow: none; }
+.login-side .panel-head { height: auto; min-height: 0; padding: 0 0 10px; gap: 12px; background: transparent; border-bottom: 2px solid var(--lg-red); }
+.login-side .panel-code { color: var(--lg-red); font-size: calc(12px * var(--fs)); }
+.login-side .panel-title { color: var(--lg-ink); font-size: calc(17px * var(--fs)); font-weight: 700; }
+.login-side .panel-desc { color: var(--lg-sub); }
+.login-side .panel-body.pad { padding: 18px 0 0; }
+.login-side .bp6-form-group { margin-bottom: 14px; }
+.login-side .bp6-label { color: var(--lg-ink); font-weight: 600; }
+.login-side .bp6-input { background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); border-radius: 4px; }
+.login-side .bp6-input::placeholder { color: #9aa0a8; }
+.login-side .bp6-input:focus { box-shadow: inset 0 0 0 2px var(--lg-orange); }
+.login-side .bp6-html-select select { background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); }
+.login-side .bp6-button.bp6-intent-primary { background: linear-gradient(90deg, var(--lg-red), var(--lg-orange)); color: #fff; border: 0; border-radius: 4px; box-shadow: none; }
+.login-side .bp6-button.bp6-intent-primary:hover { filter: brightness(1.05); }
+.login-side .bp6-button:not(.bp6-intent-primary) { background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); }
+.login-side .bp6-button .bp6-icon { color: inherit; }
+.login-side .tiny, .login-side .muted { color: var(--lg-sub); }
+.login-main .bp6-label { font-size: calc(14px * var(--fs)); margin-bottom: 6px; }
+.login-main .bp6-input { height: 42px; padding: 0 12px; font-size: calc(14px * var(--fs)); }
+.login-main .bp6-button.bp6-large { min-height: 44px; font-size: calc(15px * var(--fs)); margin-top: 4px; border-radius: 4px; }
+.login-main .login-signup-btn { margin-top: 10px; }
+.bp6-dark .login-side .login-signup-btn, .login-side .login-signup-btn { background: #fff; color: var(--lg-red); box-shadow: inset 0 0 0 1px var(--lg-red); font-weight: 600; }
+.bp6-dark .login-side .login-signup-btn:hover, .login-side .login-signup-btn:hover { background: #fff4f1; }
+.login-signup { margin: 22px 0 0; text-align: center; color: var(--lg-sub); font-size: calc(15px * var(--fs)); }
+.login-signup button { color: var(--lg-red) !important; }
 .login-facts { margin: 36px 0 0; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line-2); }
 .login-facts div { padding: 10px 0; border-bottom: 1px solid var(--line); }
-.login-facts dt { font-size: 10px; letter-spacing: 0.1em; color: var(--fg-3); }
-.login-facts dd { margin: 2px 0 0; font-size: 12.5px; color: var(--fg); }
-.login-card .panel-body { overflow: visible; }
+.login-facts dt { font-size: calc(10px * var(--fs)); letter-spacing: 0.1em; color: var(--fg-3); }
+.login-facts dd { margin: 2px 0 0; font-size: calc(12.5px * var(--fs)); color: var(--fg); }
+.login-main .panel-body { overflow: visible; }
 .acct-list { display: grid; gap: 6px; margin-bottom: 16px; }
 .acct { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 9px 12px; text-align: left; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg); cursor: pointer; }
 .acct:hover { border-color: var(--line-3); }
 .acct.on { border-color: var(--accent); background: var(--accent-wash); }
 .acct-name { font-weight: 600; }
 .acct-desc { grid-column: 1; }
-.acct-id { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-size: 12px; color: var(--accent); }
+.acct-id { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-size: calc(12px * var(--fs)); color: var(--accent); }
 .login-err { margin-bottom: 12px; }
-.login-signup { margin: 14px 0 0; text-align: center; color: var(--fg-2); }
 .login-signup button { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .login-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .login-signup-form .bp6-form-group { margin-bottom: 10px; }
+/* 몸체에 bp6-dark가 붙어 있어 Blueprint 어두운 색이 이긴다 → 로그인 화면에서만 한 단계 더 구체적으로 덮어씀 */
+.bp6-dark .login-side .bp6-label, .bp6-dark .login-side .bp6-form-group label.bp6-label { color: var(--lg-ink); }
+.bp6-dark .login-side .bp6-input { background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); }
+.bp6-dark .login-side .bp6-input:focus { box-shadow: inset 0 0 0 2px var(--lg-orange); }
+.bp6-dark .login-side .bp6-html-select select { background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); }
+.bp6-dark .login-side .bp6-button:not(.bp6-intent-primary) { background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); }
+.login-side .login-card::before, .login-side .login-card::after { display: none; }
+.bp6-dark .login-side .bp6-callout { background: #fdeeee; color: #b42318; }
+.bp6-dark .login-side .bp6-callout .bp6-icon { color: #b42318; }
+.bp6-dark .login-side .bp6-callout.bp6-intent-success { background: #eaf6ef; color: #1b6b3f; }
+.bp6-dark .login-side .bp6-callout.bp6-intent-success .bp6-icon, .bp6-dark .login-side .bp6-callout .bp6-heading { color: inherit; }
+.bp6-dark .login-side .bp6-button.login-signup-btn, .login-side .bp6-button.login-signup-btn { margin-top: 10px; background: #fff; color: var(--lg-red); box-shadow: inset 0 0 0 1px var(--lg-red); font-weight: 600; }
+.bp6-dark .login-side .bp6-button.login-signup-btn:hover, .login-side .bp6-button.login-signup-btn:hover { background: #fff4f1; }
+
+/* 11-25 회원가입은 선 하나로 로그인과 떼어 놓고, 카드 아래 여백을 둔다 */
+.bp6-dark .login-side .bp6-button.login-signup-btn, .login-side .bp6-button.login-signup-btn { margin-top: 0; }
+.login-alt { height: 1px; margin: 22px 0 16px; background: var(--lg-line); }
+.login-footer { flex: 0 0 auto; padding: 14px 16px 18px; text-align: center; color: #5f6670; font-size: calc(13px * var(--fs)); letter-spacing: 0.02em; }
+
+/* 큰 화면에서는 카드를 통째로 키운다(높이도 넉넉할 때만) */
+@media (min-width: 1400px) and (min-height: 800px) { .login-side { zoom: 1.2; } }
+@media (min-width: 1800px) and (min-height: 980px) { .login-side { zoom: 1.35; } }

@@ -13,7 +13,7 @@ const DARK_PALETTE = {
 }
 const darkTanker = (empty, hull) => tankerSVG({ empty, hull }).replace(/#[\da-f]{3,6}\b/gi, (hex) => DARK_PALETTE[hex] ?? hex)
 // 라이트에서는 원본 그림 색을 그대로 쓰고, 선체 색만 상태 색으로 칠한다(SVG 속성이라 CSS 변수 대신 값).
-const HULL = { dark: { bad: '#f2555d', on: '#35c2d9', idle: '#627385' }, light: { bad: '#c42b36', on: '#0b7489', idle: '#687788' } }
+const HULL = { dark: { bad: '#f2555d', on: '#ff7043', idle: '#627385' }, light: { bad: '#c42b36', on: '#c2410c', idle: '#687788' } }
 const tanker = (dark, empty, tone) => (dark ? darkTanker(empty, HULL.dark[tone]) : tankerSVG({ empty, hull: HULL.light[tone] }))
 
 /**

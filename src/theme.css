@@ -1,7 +1,9 @@
 /* D-MIN 운영 콘솔 테마. Blueprint 다크 위에 관제실 계열 토큰을 얹는다.
-   색은 뜻이 있을 때만: 시안=선택·현재·주 동작, 호박=대기·해당·주의, 빨강=체선·위반·경보,
+   색은 뜻이 있을 때만: 주황=선택·현재·주 동작(11-25 SK 계열 빨강·주황으로 바꿈), 호박=대기·해당·주의, 빨강=체선·위반·경보,
    초록=정상·절감, 보라=판단 불가, 파랑=변경 값·링크. 나머지는 전부 회청색 중립. */
 :root {
+  /* 11-25 글씨가 작다는 피드백: CSS의 모든 글씨 크기에 곱하는 배율(레이아웃은 그대로, 글씨만 커짐) */
+  --fs: 1.2;
   --bg-0: #06090d;      /* 앱 크롬(상단 바·레일·상태 바) */
   --bg-1: #0a0f15;      /* 작업 캔버스 */
   --bg-2: #0f161e;      /* 패널 */
@@ -13,9 +15,9 @@
   --fg: #d4dde6;
   --fg-2: #93a3b4;
   --fg-3: #627385;
-  --accent: #35c2d9;
-  --accent-2: #8be6f3;
-  --accent-wash: rgba(53, 194, 217, 0.10);
+  --accent: #ff7043;
+  --accent-2: #ffab8f;
+  --accent-wash: rgba(255, 112, 67, 0.12);
   --amber: #e9a83a;
   --amber-wash: rgba(233, 168, 58, 0.12);
   --red: #f2555d;
@@ -31,10 +33,10 @@
   --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --radius: 2px;
 
-  /* Blueprint 토큰 덮어쓰기: 주 동작은 시안. */
-  --bp-intent-primary-rest: #1f8fa3;
-  --bp-intent-primary-hover: #23a2b8;
-  --bp-intent-primary-active: #1a7d8f;
+  /* Blueprint 토큰 덮어쓰기: 주 동작은 빨강에 가까운 주황. */
+  --bp-intent-primary-rest: #e4512a;
+  --bp-intent-primary-hover: #ef6138;
+  --bp-intent-primary-active: #c94420;
   --bp-intent-primary-foreground: #ffffff;
   --bp-surface-border-radius: 2px;
   /* 테마마다 다른 파생 값 */
@@ -43,7 +45,7 @@
   --dem-bg: #392128;
   --dem-bg-hover: #4b2830;
   --dem-fg: #ffadb2;
-  --select: rgba(53, 194, 217, 0.35);
+  --select: rgba(255, 112, 67, 0.35);
   --input-bg: #0a0f15;
 }
 
@@ -60,9 +62,9 @@
   --fg: #1b2129;
   --fg-2: #4a5768;
   --fg-3: #687788;
-  --accent: #0b7489;
-  --accent-2: #075a6a;
-  --accent-wash: rgba(11, 116, 137, 0.08);
+  --accent: #c2410c;
+  --accent-2: #9a3412;
+  --accent-wash: rgba(194, 65, 12, 0.08);
   --amber: #a85f00;
   --amber-wash: rgba(168, 95, 0, 0.09);
   --red: #c42b36;
@@ -73,15 +75,15 @@
   --violet-wash: rgba(91, 69, 199, 0.08);
   --blue: #1f5fc4;
   --night: rgba(27, 33, 41, 0.06);
-  --bp-intent-primary-rest: #0b7489;
-  --bp-intent-primary-hover: #0a6578;
-  --bp-intent-primary-active: #08586a;
+  --bp-intent-primary-rest: #d9481c;
+  --bp-intent-primary-hover: #c23e16;
+  --bp-intent-primary-active: #a83512;
   --map-bg: #e6ebef;
   --scrim: rgba(255, 255, 255, 0.82);
   --dem-bg: #fbe9ea;
   --dem-bg-hover: #f7dadc;
   --dem-fg: #a3202b;
-  --select: rgba(11, 116, 137, 0.2);
+  --select: rgba(194, 65, 12, 0.18);
   --input-bg: #ffffff;
 }
 
@@ -93,7 +95,7 @@ body {
   background: var(--bg-1);
   color: var(--fg);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs));
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'tnum' 1;
@@ -118,8 +120,8 @@ input, textarea, select, button { font-family: inherit; }
 .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .muted { color: var(--fg-2); }
 .faint { color: var(--fg-3); }
-.small { font-size: 12px; }
-.tiny { font-size: 11px; }
+.small { font-size: calc(12px * var(--fs)); }
+.tiny { font-size: calc(11px * var(--fs)); }
 .strong { font-weight: 600; }
 .right { text-align: right; }
 .center { text-align: center; }
@@ -136,9 +138,9 @@ input, textarea, select, button { font-family: inherit; }
 .panel::before { top: -1px; left: -1px; border-top: 1px solid var(--line-3); border-left: 1px solid var(--line-3); }
 .panel::after { bottom: -1px; right: -1px; border-bottom: 1px solid var(--line-3); border-right: 1px solid var(--line-3); }
 .panel-head { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px 0 12px; border-bottom: 1px solid var(--line); background: var(--bg-3); }
-.panel-code { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; color: var(--accent); white-space: nowrap; }
-.panel-title { font-size: 13px; font-weight: 600; color: var(--fg); white-space: nowrap; }
-.panel-desc { font-size: 11.5px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.panel-code { font-family: var(--mono); font-size: calc(10.5px * var(--fs)); letter-spacing: 0.08em; color: var(--accent); white-space: nowrap; }
+.panel-title { font-size: calc(13px * var(--fs)); font-weight: 600; color: var(--fg); white-space: nowrap; }
+.panel-desc { font-size: calc(11.5px * var(--fs)); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .panel-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .panel-body { flex: 1; min-height: 0; overflow: auto; }
 .panel-body.pad { padding: 12px; }
@@ -147,18 +149,18 @@ input, textarea, select, button { font-family: inherit; }
 .stats { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); background: var(--bg-2); }
 .stat { padding: 9px 14px 10px; min-width: 0; }
 .stat + .stat { border-left: 1px solid var(--line); }
-.stat-label { font-size: 11px; color: var(--fg-3); letter-spacing: 0.02em; white-space: nowrap; }
-.stat-value { margin-top: 2px; font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--fg); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.stat-sub { margin-top: 1px; font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-label { font-size: calc(11px * var(--fs)); color: var(--fg-3); letter-spacing: 0.02em; white-space: nowrap; }
+.stat-value { margin-top: 2px; font-family: var(--mono); font-size: calc(18px * var(--fs)); font-weight: 500; color: var(--fg); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stat-sub { margin-top: 1px; font-size: calc(11px * var(--fs)); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 데이터 표. 머리 칸은 작게, 숫자는 모노·오른쪽 정렬. */
-.dt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.dt th { position: sticky; top: 0; z-index: 1; height: 30px; padding: 0 10px; background: var(--bg-3); color: var(--fg-3); font-size: 11px; font-weight: 500; letter-spacing: 0.03em; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line-2); }
+.dt { width: 100%; border-collapse: collapse; font-size: calc(12.5px * var(--fs)); }
+.dt th { position: sticky; top: 0; z-index: 1; height: 30px; padding: 0 10px; background: var(--bg-3); color: var(--fg-3); font-size: calc(11px * var(--fs)); font-weight: 500; letter-spacing: 0.03em; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line-2); }
 .dt td { height: 32px; padding: 4px 10px; border-bottom: 1px solid var(--line); color: var(--fg); vertical-align: middle; }
 .dt tr:last-child td { border-bottom: 0; }
 .dt th.r, .dt td.r { text-align: right; }
 .dt th.c, .dt td.c { text-align: center; }
-.dt td.num, .dt td .num { font-family: var(--mono); font-size: 12px; }
+.dt td.num, .dt td .num { font-family: var(--mono); font-size: calc(12px * var(--fs)); }
 .dt tbody tr.click { cursor: pointer; }
 .dt tbody tr.click:hover td { background: var(--bg-4); }
 .dt tbody tr.on td { background: var(--accent-wash); }
@@ -175,8 +177,8 @@ input, textarea, select, button { font-family: inherit; }
 .st.live { color: var(--accent); }
 
 /* 작은 표식(부두·변경 등). */
-.chip { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border: 1px solid var(--line-2); color: var(--fg-2); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.02em; white-space: nowrap; }
-.chip.accent { border-color: rgba(53, 194, 217, 0.5); color: var(--accent); }
+.chip { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border: 1px solid var(--line-2); color: var(--fg-2); font-family: var(--mono); font-size: calc(10.5px * var(--fs)); letter-spacing: 0.02em; white-space: nowrap; }
+.chip.accent { border-color: rgba(255, 112, 67, 0.5); color: var(--accent); }
 .chip.amber { border-color: rgba(233, 168, 58, 0.5); color: var(--amber); }
 .chip.red { border-color: rgba(242, 85, 93, 0.55); color: var(--red); }
 .chip.green { border-color: rgba(60, 207, 145, 0.5); color: var(--green); }
@@ -186,12 +188,12 @@ input, textarea, select, button { font-family: inherit; }
 /* 화면 머리: 경로 + 제목 + 단계 + 동작 */
 .screen { height: 100%; display: flex; flex-direction: column; min-height: 0; }
 .screen-head { display: flex; align-items: center; gap: 16px; padding: 12px 16px 10px; border-bottom: 1px solid var(--line); background: var(--bg-1); }
-.screen-path { font-size: 11px; color: var(--fg-3); }
-.screen-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
-.screen-desc { font-size: 12px; color: var(--fg-2); }
+.screen-path { font-size: calc(11px * var(--fs)); color: var(--fg-3); }
+.screen-title { font-size: calc(17px * var(--fs)); font-weight: 600; letter-spacing: -0.01em; }
+.screen-desc { font-size: calc(12px * var(--fs)); color: var(--fg-2); }
 .screen-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 .screen-body { flex: 1; min-height: 0; overflow: auto; padding: 12px 16px 16px; }
-.steps { display: flex; align-items: center; gap: 0; font-size: 11.5px; color: var(--fg-3); }
+.steps { display: flex; align-items: center; gap: 0; font-size: calc(11.5px * var(--fs)); color: var(--fg-3); }
 .steps span { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; height: 22px; border: 1px solid var(--line); margin-right: -1px; white-space: nowrap; }
 .steps span.on { color: var(--accent); border-color: var(--accent); position: relative; z-index: 1; background: var(--accent-wash); }
 .steps span.done { color: var(--fg-2); }
@@ -215,5 +217,12 @@ input, textarea, select, button { font-family: inherit; }
 /* Leaflet */
 .leaflet-container { background: var(--map-bg); font-family: var(--sans); }
 .leaflet-control-zoom a { background: var(--bg-3) !important; color: var(--fg) !important; border-color: var(--line-2) !important; }
-.leaflet-control-attribution { background: var(--scrim) !important; color: var(--fg-3) !important; font-size: 10px; }
+.leaflet-control-attribution { background: var(--scrim) !important; color: var(--fg-3) !important; font-size: calc(10px * var(--fs)); }
 .leaflet-control-attribution a { color: var(--fg-2) !important; }
+
+/* 11-25 Blueprint 기본 부품(14px 고정)도 같은 배율로 키운다 */
+.bp6-input, .bp6-button, .bp6-html-select select, .bp6-menu, .bp6-menu-item, .bp6-tab,
+.bp6-callout, .bp6-tag, .bp6-popover-content, .bp6-tooltip .bp6-popover-content,
+.bp6-control, .bp6-form-helper-text, .bp6-dialog-body, .bp6-heading { font-size: calc(14px * var(--fs)); }
+.bp6-button.bp6-large, .bp6-large .bp6-button, .bp6-input.bp6-large { font-size: calc(16px * var(--fs)); }
+.bp6-button.bp6-small, .bp6-small .bp6-button, .bp6-tag.bp6-minimal { font-size: calc(12px * var(--fs)); }

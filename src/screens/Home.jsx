@@ -259,7 +259,7 @@ function HomeMap() {
       if (!berth) continue
       const from = placeOf[state.v.id] ?? positionOf(state, scen, 0)
       const path = state.phase === 'coming' ? [from, FAIRWAY, CHANNEL, berth.moor] : [from, CHANNEL, berth.moor]
-      const color = state.phase === 'waiting' ? '#c98a1f' : '#0b7489'
+      const color = state.phase === 'waiting' ? '#c98a1f' : '#c2410c'
       const dim = false
       const op = dim ? 0.25 : fixed ? 0.95 : 0.75
       L.polyline(path, { color: '#ffffff', weight: fixed ? 6 : 5, opacity: dim ? 0.2 : 0.85, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)

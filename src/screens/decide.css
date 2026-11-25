@@ -2,7 +2,7 @@
 .risk-page, .report-page, .verify-page, .schedule-page { display: flex; flex-direction: column; gap: 10px; }
 .risk-page > *, .report-page > *, .verify-page > *, .schedule-page > * { flex-shrink: 0; }
 .risk-intro, .report-intro, .verify-intro, .schedule-intro { line-height: 1.6; }
-.risk-prose, .report-prose, .schedule-prose { font-family: var(--sans); font-size: 16px; }
+.risk-prose, .report-prose, .schedule-prose { font-family: var(--sans); font-size: calc(16px * var(--fs)); }
 .risk-stat-unit, .verify-stat-unit, .schedule-stat-unit { margin-left: 5px; font: 12px var(--sans); }
 
 /* 리스크 검토와 확정은 한 작업면에 놓되 확정 동작은 오른쪽에 고정한다. */
@@ -10,27 +10,27 @@
 .risk-sidebar { position: sticky; top: 0; }
 .risk-item { display: grid; grid-template-columns: 90px minmax(0, 1fr) 51px; gap: 10px; padding: 11px 12px; align-items: start; border-bottom: 1px solid var(--line); }
 .risk-item:last-child { border-bottom: 0; }
-.risk-name { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
-.risk-name h3 { font-size: 12.5px; }
-.risk-evidence { font-size: 12px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
-.risk-guidance { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 3px 6px; margin: 6px 0 0; font-size: 11.5px; }
+.risk-name { display: flex; flex-direction: column; gap: 6px; font-size: calc(11px * var(--fs)); }
+.risk-name h3 { font-size: calc(12.5px * var(--fs)); }
+.risk-evidence { font-size: calc(12px * var(--fs)); line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
+.risk-guidance { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 3px 6px; margin: 6px 0 0; font-size: calc(11.5px * var(--fs)); }
 .risk-guidance dt { color: var(--fg-2); }
 .risk-guidance dd { margin: 0; color: var(--fg-2); }
-.risk-checkbox.bp6-control { margin: 1px 0 0; font-size: 11px; white-space: nowrap; }
-.risk-sensitivity td { font-size: 11.5px; }
+.risk-checkbox.bp6-control { margin: 1px 0 0; font-size: calc(11px * var(--fs)); white-space: nowrap; }
+.risk-sensitivity td { font-size: calc(11.5px * var(--fs)); }
 .risk-sensitivity td:nth-child(2) { white-space: nowrap; }
 .risk-sensitivity td.risk-increase { color: var(--amber); }
 .risk-sensitivity td.risk-decrease { color: var(--green); }
 .risk-rank { white-space: nowrap; }
 .risk-amount { display: flex; flex-direction: column; gap: 3px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-.risk-total { font-size: 26px; font-weight: 500; line-height: 1.5; }
+.risk-total { font-size: calc(26px * var(--fs)); font-weight: 500; line-height: 1.5; }
 .risk-check-count { font-weight: 500; }
 .risk-applied { display: flex; flex-direction: column; gap: 5px; }
 .risk-buttons { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .risk-buttons > .bp6-button { flex: 1; }
 .risk-reason-field { display: flex; flex-direction: column; gap: 6px; }
-.risk-reason-field label { color: var(--fg-2); font-size: 11.5px; }
-.risk-reason-field textarea { resize: vertical; min-height: 86px; font-size: 12px; line-height: 1.6; }
+.risk-reason-field label { color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
+.risk-reason-field textarea { resize: vertical; min-height: 86px; font-size: calc(12px * var(--fs)); line-height: 1.6; }
 .risk-confirmation.bp6-callout { padding: 9px 9px 9px 35px; border: 1px solid var(--amber); background: var(--amber-wash); }
 .risk-confirmation .risk-buttons { margin-top: 9px; }
 .risk-policy { padding-top: 10px; border-top: 1px solid var(--line); line-height: 1.7; }
@@ -38,40 +38,40 @@
 .risk-log li { display: flex; flex-direction: column; gap: 5px; padding: 10px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .risk-log li:first-child { padding-top: 0; }
 .risk-log li:last-child { padding-bottom: 0; border-bottom: 0; }
-.risk-log-title { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; }
+.risk-log-title { display: flex; flex-direction: column; gap: 3px; font-size: calc(11.5px * var(--fs)); }
 
 /* 검증 표는 팀 엔진 계산값과 자동 계산을 같은 행에서 바로 대조한다. */
 .verify-answers { min-width: 1220px; }
 .verify-answers th, .verify-answers td { padding-left: 8px; padding-right: 8px; }
-.verify-answers td { height: 41px; font-size: 11.5px; }
+.verify-answers td { height: 41px; font-size: calc(11.5px * var(--fs)); }
 .verify-case { min-width: 150px; max-width: 180px; word-break: keep-all; line-height: 1.45; }
 .verify-time { white-space: nowrap; }
-.verify-time .faint { display: block; font-size: 10px; }
+.verify-time .faint { display: block; font-size: calc(10px * var(--fs)); }
 .verify-clause, .verify-duration, .verify-scale, .verify-search { white-space: nowrap; }
 .verify-duration { font-variant-numeric: tabular-nums; }
-.verify-scenarios td { height: 39px; font-size: 12px; }
-.verify-notes { padding: 10px 12px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.75; }
+.verify-scenarios td { height: 39px; font-size: calc(12px * var(--fs)); }
+.verify-notes { padding: 10px 12px; border-top: 1px solid var(--line); font-size: calc(11px * var(--fs)); line-height: 1.75; }
 
 /* 이용자는 확정 스냅숏의 접안 일정만 본다. 금액·요율 요소는 두지 않는다. */
 .schedule-empty.bp6-callout { margin-top: 4px; padding: 18px 18px 18px 44px; border: 1px solid var(--line-2); border-radius: 0; background: var(--bg-2); }
-.schedule-empty .bp6-heading { font-family: var(--sans); font-size: 14px; }
+.schedule-empty .bp6-heading { font-family: var(--sans); font-size: calc(14px * var(--fs)); }
 .schedule-table td { height: 49px; white-space: nowrap; }
-.schedule-cargo { font-size: 12px; }
+.schedule-cargo { font-size: calc(12px * var(--fs)); }
 .schedule-flags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.schedule-flag.chip { font-family: var(--sans); font-size: 10.5px; }
+.schedule-flag.chip { font-family: var(--sans); font-size: calc(10.5px * var(--fs)); }
 .schedule-snapshot { padding: 0 1px; }
 
 @media (max-width: 1340px) {
   .risk-layout { grid-template-columns: minmax(0, 1fr) 305px; }
   .risk-item { grid-template-columns: 76px minmax(0, 1fr) 48px; gap: 8px; padding: 10px; }
-  .risk-total { font-size: 24px; }
+  .risk-total { font-size: calc(24px * var(--fs)); }
   .schedule-table th, .schedule-table td { padding-left: 8px; padding-right: 8px; }
 }
 
 /* 11-20 피드백: 이용자 일정 */
 .sch-bar { display: flex; align-items: center; gap: 14px; }
 .sch-days { display: flex; border: 1px solid var(--line-2); }
-.sch-days button { height: 26px; padding: 0 12px; border: 0; border-right: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg-2); font-size: 12px; cursor: pointer; }
+.sch-days button { height: 26px; padding: 0 12px; border: 0; border-right: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg-2); font-size: calc(12px * var(--fs)); cursor: pointer; }
 .sch-days button:last-child { border-right: 0; }
 .sch-days button.on { background: var(--accent-wash); color: var(--fg); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
 .sch-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
@@ -85,35 +85,35 @@
 .sch-card { display: grid; gap: 3px; padding: 8px 10px; margin-bottom: 6px; border: 1px solid var(--line-2); background: var(--bg-1); }
 .sch-card.sch-done { opacity: 0.55; }
 .sch-gantt { position: relative; display: grid; gap: 8px; padding-top: 18px; }
-.sch-gantt-axis { position: absolute; left: 100px; right: 0; top: 0; height: 16px; font-size: 11px; color: var(--fg-3); }
+.sch-gantt-axis { position: absolute; left: 100px; right: 0; top: 0; height: 16px; font-size: calc(11px * var(--fs)); color: var(--fg-3); }
 .sch-gantt-axis span { position: absolute; }
 .sch-gantt-row { display: grid; grid-template-columns: 100px 1fr; align-items: center; }
 .sch-gantt-row.mine .sch-gantt-name { color: var(--accent); font-weight: 700; }
-.sch-gantt-name { font-size: 12px; }
+.sch-gantt-name { font-size: calc(12px * var(--fs)); }
 .sch-gantt-track { position: relative; height: 34px; background: var(--bg-2); border: 1px solid var(--line); }
-.sch-bar-item { position: absolute; top: 5px; bottom: 5px; padding: 0 6px; overflow: hidden; white-space: nowrap; font-size: 11px; line-height: 22px; color: #fff; background: var(--accent); }
+.sch-bar-item { position: absolute; top: 5px; bottom: 5px; padding: 0 6px; overflow: hidden; white-space: nowrap; font-size: calc(11px * var(--fs)); line-height: 22px; color: #fff; background: var(--accent); }
 .sch-bar-item.sch-done { background: var(--fg-3); }
 .sch-bar-item.sch-on { background: var(--green); }
 .sch-now { position: absolute; top: -6px; bottom: -6px; border-left: 2px solid var(--red); }
 
 /* 11-24 실데이터: 선석별 간트 (Timeline.jsx). 줄 24개를 한 화면에 담도록 낮게 그린다. */
-.gt { --gt-lane: 22px; --gt-label: 74px; min-width: 0; user-select: none; font-size: 11px; }
+.gt { --gt-lane: 22px; --gt-label: 74px; min-width: 0; user-select: none; font-size: calc(11px * var(--fs)); }
 .gt.compact { --gt-lane: 17px; --gt-label: 60px; }
 .gt-axis, .gt-lane, .gt-pier { display: flex; }
 .gt-label { width: var(--gt-label); flex: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 8px 0 10px; color: var(--fg-2); }
-.gt-code { font-size: 11px; color: var(--fg); }
+.gt-code { font-size: calc(11px * var(--fs)); color: var(--fg); }
 .gt-track { position: relative; flex: 1; min-width: 0; }
 .gt-axis .gt-track { height: 20px; border-bottom: 1px solid var(--line-2); }
-.gt-tick { position: absolute; bottom: 3px; transform: translateX(-50%); font-size: 9.5px; color: var(--fg-3); white-space: nowrap; }
+.gt-tick { position: absolute; bottom: 3px; transform: translateX(-50%); font-size: calc(9.5px * var(--fs)); color: var(--fg-3); white-space: nowrap; }
 .gt-tick.day { color: var(--fg); font-weight: 600; transform: none; padding-left: 3px; }
-.gt-pier { height: 18px; align-items: center; gap: 8px; padding: 0 10px; background: var(--bg-3); border-bottom: 1px solid var(--line); font-size: 10.5px; font-weight: 600; color: var(--fg-2); }
+.gt-pier { height: 18px; align-items: center; gap: 8px; padding: 0 10px; background: var(--bg-3); border-bottom: 1px solid var(--line); font-size: calc(10.5px * var(--fs)); font-weight: 600; color: var(--fg-2); }
 .gt-lane .gt-track { height: var(--gt-lane); overflow: hidden; border-bottom: 1px solid var(--line); }
 .gt-night { position: absolute; top: 0; bottom: 0; background: var(--night); pointer-events: none; }
 .gt-grid { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); pointer-events: none; }
 .gt-grid.day { border-left-color: var(--line-3); }
 .gt-block { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red-wash) 0 4px, transparent 4px 8px); border-left: 1px dashed var(--red); border-right: 1px dashed var(--red); }
 .gt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 2px; padding: 0 3px; overflow: hidden; border: 1px solid var(--fg-3); border-radius: 1px; background: var(--bg-4); color: var(--fg); font: 10px var(--mono); line-height: 1; text-align: left; white-space: nowrap; cursor: pointer; }
-.gt.compact .gt-bar { top: 2px; bottom: 2px; font-size: 9px; }
+.gt.compact .gt-bar { top: 2px; bottom: 2px; font-size: calc(9px * var(--fs)); }
 .gt-bar-t { display: block; overflow: hidden; text-overflow: ellipsis; }
 .gt-bar.night { border-color: var(--amber); background: var(--amber-wash); }
 .gt-bar.dem { border-color: var(--red); background: var(--dem-bg); color: var(--dem-fg); }
@@ -123,7 +123,7 @@
 .gt-bar:focus-visible { outline: 1px solid var(--accent); outline-offset: -2px; z-index: 3; }
 .gt-now { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--red); pointer-events: none; z-index: 2; }
 .gt-now-label { position: absolute; top: 1px; padding-left: 3px; color: var(--red); font-weight: 600; }
-.gt-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 10.5px; color: var(--fg-2); }
+.gt-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: calc(10.5px * var(--fs)); color: var(--fg-2); }
 .gt-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .gt-key { display: inline-block; width: 14px; height: 9px; border: 1px solid var(--fg-3); background: var(--bg-4); }
 .gt-key.dem { border-color: var(--red); background: var(--dem-bg); }
@@ -137,20 +137,20 @@
 .cmp-stale.bp6-callout { border: 1px solid var(--amber); background: var(--amber-wash); }
 .cmp-stale .risk-buttons { margin-top: 8px; }
 .cmp-stale .risk-buttons > .bp6-button { flex: none; }
-.cmp-sub { display: block; margin-top: 2px; font-size: 11px; color: var(--fg-2); line-height: 1.45; }
+.cmp-sub { display: block; margin-top: 2px; font-size: calc(11px * var(--fs)); color: var(--fg-2); line-height: 1.45; }
 .cmp-scroll { max-height: 460px; overflow: auto; }
 .cmp-scroll.short { max-height: 360px; }
-.cmp-changed td { height: 30px; font-size: 12px; white-space: nowrap; }
+.cmp-changed td { height: 30px; font-size: calc(12px * var(--fs)); white-space: nowrap; }
 .cmp-changed td.wrap { white-space: normal; }
 .cmp-changed .arrow { color: var(--fg-3); margin: 0 4px; }
 .cmp-changed .moved { color: var(--blue); font-weight: 600; }
-.cmp-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: 11.5px; color: var(--fg-2); }
-.cmp-toolbar .bp6-control { margin: 0; font-size: 11.5px; }
+.cmp-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: calc(11.5px * var(--fs)); color: var(--fg-2); }
+.cmp-toolbar .bp6-control { margin: 0; font-size: calc(11.5px * var(--fs)); }
 .cmp-toolbar .sum { margin-left: auto; }
 .cmp-name { padding: 0; border: 0; background: none; color: var(--fg); font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
 .cmp-name:hover { color: var(--accent); text-decoration: underline; }
-.cmp-none { padding: 8px 12px; font-size: 11.5px; color: var(--fg-2); border-top: 1px solid var(--line); }
-.cmp-pier td, .cmp-pier th { height: 28px; font-size: 11.5px; white-space: nowrap; }
+.cmp-none { padding: 8px 12px; font-size: calc(11.5px * var(--fs)); color: var(--fg-2); border-top: 1px solid var(--line); }
+.cmp-pier td, .cmp-pier th { height: 28px; font-size: calc(11.5px * var(--fs)); white-space: nowrap; }
 .cmp-pier td.on, .cmp-pier th.on { background: var(--accent-wash); }
 .cmp-mon-filter { display: inline-flex; align-items: center; gap: 8px; }
 .cmp-fixed-grid .cmp-monitor td { height: 30px; white-space: nowrap; }

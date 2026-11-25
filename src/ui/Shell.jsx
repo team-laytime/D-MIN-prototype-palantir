@@ -32,14 +32,10 @@ export function FontScale() {
 }
 
 export function Brand({ size = 15 }) {
-  // 두 부두 사이에 배 한 척이 들어간 모양의 기하 표식(직접 그린 SVG).
+  // 11-25 사용자가 준 로고 이미지(public/brand/dmin-logo.png)로 바꿈
   return (
     <span className="brand" style={{ fontSize: size }}>
-      <svg width={size + 5} height={size + 5} viewBox="0 0 20 20" aria-hidden="true">
-        <rect x="1" y="2" width="3" height="16" fill="currentColor" opacity="0.55" />
-        <rect x="16" y="2" width="3" height="16" fill="currentColor" opacity="0.55" />
-        <path d="M6 8h8l-1.5 6h-5z" fill="var(--accent)" />
-      </svg>
+      <img src="/brand/dmin-logo.png" alt="" width={size + 9} height={size + 9} style={{ borderRadius: 4, background: '#fff' }} />
       <b>D-MIN</b>
     </span>
   )
