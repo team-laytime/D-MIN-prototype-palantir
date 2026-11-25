@@ -1,0 +1,41 @@
+/* 11-25 유사 과거 사례 (목업) */
+.sc .panel-body { font-size: calc(12px * var(--fs)); }
+.sc-sub { margin: 0 0 8px; color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
+.sc-now { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line-2); }
+.sc-label { color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
+.sc-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.sc-tag { padding: 1px 8px; border: 1px solid var(--line-2); color: var(--fg-3); font: 500 calc(11.5px * var(--fs))/1.6 var(--sans); white-space: nowrap; }
+.sc-tag.hit { border: 1.5px solid var(--fg); color: var(--fg); font-weight: 600; }
+.sc-hit { color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
+.sc-safety { display: flex; gap: 12px; font: calc(12px * var(--fs)) var(--mono); }
+.sc-safety b { font-family: var(--sans); }
+.sc-list { list-style: none; margin: 0; padding: 0; }
+.sc-case { display: grid; gap: 5px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.sc-title { font-size: calc(12.5px * var(--fs)); }
+.sc-case p { margin: 0; color: var(--fg-2); line-height: 1.45; }
+.sc-case p b { color: var(--fg); }
+.sc-more { margin-top: 8px; padding: 0; border: 0; background: none; color: var(--fg); font: 600 calc(12px * var(--fs)) var(--sans); text-decoration: underline; cursor: pointer; }
+.sc-more:hover { color: var(--accent); }
+.sc-dialog.bp6-dialog { width: min(640px, calc(100vw - 40px)); }
+.sc-all { padding: 4px 18px 12px; max-height: 70vh; overflow-y: auto; }
+
+/* 「반영하면?」 (후보 비교) */
+.cmp-checks-sub { margin: 6px 0 2px; padding-top: 6px; border-top: 1px dashed var(--line-2); color: var(--amber); font: 600 calc(11.5px * var(--fs)) var(--sans); }
+.sev.mail { color: var(--amber); background: var(--amber-wash); border-color: color-mix(in srgb, var(--amber) 45%, transparent); }
+.cmp-check.mail .cmp-check-t { cursor: default; }
+.cmp-check.mail .cmp-check-t:hover { background: none; }
+.cmp-wi { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 3px; font-size: calc(11px * var(--fs)); }
+.cmp-wi-c { white-space: nowrap; }
+.cmp-wi-acts { display: flex; gap: 6px; margin-top: 5px; }
+.cmp-wi-acts .bp6-button { white-space: nowrap; }
+/* 조건 변경 요청 (후보 비교 오른쪽) */
+.md-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.md-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 6px; align-items: start; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: calc(11.5px * var(--fs)); line-height: 1.4; }
+.md-list li:last-child { border-bottom: 0; }
+.md-list li .bp6-control { margin: 2px 0 0; }
+.md-list li.pick { background: var(--accent-wash); }
+.md-list li.off { opacity: .6; }
+.md-list small { display: block; margin-top: 1px; color: var(--fg-3); font-size: calc(10.5px * var(--fs)); }
+.md-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); }
+.sev.ok { color: var(--green); background: var(--green-wash); border-color: color-mix(in srgb, var(--green) 45%, transparent); }
+.md-sum { margin-bottom: 6px; }
