@@ -183,7 +183,9 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
         ton: x.ton ?? null, dwt: x.dwt ?? null, grt: x.grt ?? null, draft: x.draft ?? null, biz: x.biz ?? null, tank: x.tank ?? null, eta: x.eta ?? p.eta,
         bid: p.bid, berth: berth.label ?? berth.name ?? p.bid, berthCode: berth.code ?? p.bid, pier: berth.pier ?? null, pierName: berth.pierName ?? null,
         etb: p.etb, etu: p.etu, night: Boolean(p.night), fixed: Boolean(p.fixed), dem: p.dem?.cents ?? 0,
-        demMin: p.le != null && p.hose != null ? Math.max(0, p.hose - p.le) : null,
+        // 11-25 체선 시간은 엔진 값(demurrage_minutes). 배치 그림 · 산출 근거용으로 작업 · 정박시간 · 호스 분리 시각도 남긴다.
+        demMin: p.dem?.excessMin ?? (p.le != null && p.hose != null ? Math.max(0, p.hose - p.le) : null),
+        ws: p.ws ?? null, wf: p.wf ?? null, ls: p.ls ?? null, le: p.le ?? null, hose: p.hose ?? null, waitMin: p.waitMin ?? 0,
       }
     }),
   }
