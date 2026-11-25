@@ -1,0 +1,297 @@
+{
+  "label": "baseline",
+  "base": "http://127.0.0.1:5175/",
+  "widths": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "bodyOverflow": false,
+      "font": "\"Pretendard Variable\", Pretendard, \"Apple SD Gothic Neo\", sans-serif",
+      "logo": [
+        {
+          "src": "/brand/dmin-logo.png",
+          "loaded": true,
+          "w": 38,
+          "h": 38
+        }
+      ],
+      "visibleText": [
+        {
+          "text": "회사 메일",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "hyunwoo.kim@sk.com",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "담당 부두 · 팀",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "SK 3부두 하역 1팀",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "승인 일시",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 08:05",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "최근 로그인",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 09:20",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "bodyOverflow": false,
+      "font": "\"Pretendard Variable\", Pretendard, \"Apple SD Gothic Neo\", sans-serif",
+      "logo": [
+        {
+          "src": "/brand/dmin-logo.png",
+          "loaded": true,
+          "w": 38,
+          "h": 38
+        }
+      ],
+      "visibleText": [
+        {
+          "text": "회사 메일",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "hyunwoo.kim@sk.com",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "담당 부두 · 팀",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "SK 3부두 하역 1팀",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "승인 일시",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 08:05",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "최근 로그인",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 09:20",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "bodyOverflow": false,
+      "font": "\"Pretendard Variable\", Pretendard, \"Apple SD Gothic Neo\", sans-serif",
+      "logo": [
+        {
+          "src": "/brand/dmin-logo.png",
+          "loaded": true,
+          "w": 38,
+          "h": 38
+        }
+      ],
+      "visibleText": [
+        {
+          "text": "회사 메일",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "hyunwoo.kim@sk.com",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "담당 부두 · 팀",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "SK 3부두 하역 1팀",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "승인 일시",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 08:05",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "최근 로그인",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 09:20",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "bodyOverflow": false,
+      "font": "\"Pretendard Variable\", Pretendard, \"Apple SD Gothic Neo\", sans-serif",
+      "logo": [
+        {
+          "src": "/brand/dmin-logo.png",
+          "loaded": true,
+          "w": 38,
+          "h": 38
+        }
+      ],
+      "visibleText": [
+        {
+          "text": "회사 메일",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "hyunwoo.kim@sk.com",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "담당 부두 · 팀",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "SK 3부두 하역 1팀",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "승인 일시",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 08:05",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "최근 로그인",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 09:20",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "bodyOverflow": false,
+      "font": "\"Pretendard Variable\", Pretendard, \"Apple SD Gothic Neo\", sans-serif",
+      "logo": [
+        {
+          "src": "/brand/dmin-logo.png",
+          "loaded": true,
+          "w": 36,
+          "h": 36
+        }
+      ],
+      "visibleText": [
+        {
+          "text": "회사 메일",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "hyunwoo.kim@sk.com",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "담당 부두 · 팀",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "SK 3부두 하역 1팀",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "승인 일시",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 08:05",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        },
+        {
+          "text": "최근 로그인",
+          "size": "11px",
+          "color": "rgb(123, 130, 141)"
+        },
+        {
+          "text": "2026.11.25 09:20",
+          "size": "11px",
+          "color": "rgb(52, 59, 71)"
+        }
+      ]
+    }
+  ],
+  "time": "2026-11-25T01:00:00Z",
+  "fixtureHash": "d53ed0f15946721149751e7dfd56a445fdb10f2898ddc39f7fcf655ca2c8e01e",
+  "errors": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "url": "http://127.0.0.1:5175/favicon.ico",
+      "source": "network"
+    }
+  ],
+  "accountRecordHash": "80ef97b75981738a169444f31b9a41250058efc20d7a5a706bd36679324fcdcc",
+  "hashNote": "Account fixture equality verified against baseline source; legacy fixtureHash also included store health metadata in early captures."
+}
