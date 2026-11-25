@@ -130,7 +130,9 @@ export function buildScen(ds) {
     const rows = (req.production_plan ?? []).filter((w) => w.tank === t.tank).map((w) => ({ from: weekOf(w.week_start), rate: w.rate_t_per_h })).sort((a, b) => a.from - b.from)
     const cur = rows.filter((w) => w.from <= t0).at(-1)
     const weeks = [cur, ...rows.filter((w) => w.from > t0 && w.from < win1)].filter(Boolean)
-    return { name: t.tank, count: t.tanks, cap: t.capacity_t, start: t.initial_t, safeMin: t.safe_min_t, safeMax: t.safe_max_t, weeks }
+    // 11-25 재고 흐름 = 기존 계획(엔진 baseline, 다른 스케줄러가 미리 세워 둔 계획으로 가정)대로 갔을 때. 최적화 결과와 무관한 계획 입력이다.
+    const base = t.baseline_levels_t ? { start: toMin(t.start), step: t.step_min ?? 60, lv: t.baseline_levels_t } : null
+    return { name: t.tank, count: t.tanks, cap: t.capacity_t, start: t.initial_t, safeMin: t.safe_min_t, safeMax: t.safe_max_t, weeks, base }
   })
   // 11-25 기준 시각에 이미 접안해 작업 중인 배(계획 대상 아님): 실적 접안 < T < 실적 이안 (T에 접안하는 배는 계획 대상). 엔진도 이 기록으로 선석이 비는 시각을 잡는다.
   const berthIds = new Set(berths.map((b) => b.id))

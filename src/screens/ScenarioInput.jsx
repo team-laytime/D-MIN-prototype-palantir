@@ -188,7 +188,7 @@ export default function ScenarioInput() {
       {/* 11-25 운영 여건: 생산계획과 탱크 재고(최적화 팀 후보정 값), 관측 풍속. 모두 계획 입력이라 고치지 않는다 */}
       {piTab === 'weather' && (
         <div className="env" data-tour="env">
-          <TankPlan tanks={scen.tanks ?? []} sim={result.candidates[0]} win={scen.window} safe={[pv(fieldOf('tank.safe_min_pct')), pv(fieldOf('tank.safe_max_pct'))]}
+          <TankPlan tanks={scen.tanks ?? []} win={scen.window} safe={[pv(fieldOf('tank.safe_min_pct')), pv(fieldOf('tank.safe_max_pct'))]}
             inputs={<><ParamInput f={fieldOf('tank.safe_min_pct')} scen={scen} setParam={setParam} resetParam={resetParam} /><ParamInput f={fieldOf('tank.safe_max_pct')} scen={scen} setParam={setParam} resetParam={resetParam} /></>} />
           <div className="env-2">
             <Occupied list={scen.occupied ?? []} berthById={berthById} />
@@ -282,11 +282,10 @@ function ParamInput({ f, scen, setParam, resetParam }) {
   )
 }
 
-/** 생산계획과 탱크 재고: 탱크 묶음마다 시간별 재고 흐름(가장 싼 후보 계획대로), 안전 범위 띠, 주별 생산, 공정 투입 */
-function TankPlan({ tanks, sim, win, safe, inputs }) {
+/** 생산계획과 탱크 재고: 탱크 묶음마다 시간별 재고 흐름(기존 계획대로, 최적화 전), 안전 범위 띠, 주별 생산, 공정 투입 */
+function TankPlan({ tanks, win, safe, inputs }) {
   if (!tanks.length) return null
   const weeks = tanks[0].weeks
-  const flow = Object.fromEntries((sim?.tanks ?? []).map((t) => [t.tank, t]))
   const W = 600, H = 56
   // 시간축: 기준 시각부터 계획 창 끝까지. 0시 눈금
   const t0 = win.start, t1 = win.end
@@ -309,7 +308,7 @@ function TankPlan({ tanks, sim, win, safe, inputs }) {
             <th>탱크 묶음</th>
             <th className="r">현재</th>
             <th className="tp-axis-h">
-              <span className="tp-axis-t">재고 흐름 <small>후보 {sim?.id ?? ''} 계획대로</small></span>
+              <span className="tp-axis-t">재고 흐름 <small>기존 계획대로</small></span>
               <svg className="tp-axis" viewBox={`0 0 ${W} 14`} preserveAspectRatio="none" aria-hidden="true">
                 {days.map((t) => <line key={t} x1={x(t)} x2={x(t)} y1={8} y2={14} />)}
               </svg>
@@ -320,10 +319,10 @@ function TankPlan({ tanks, sim, win, safe, inputs }) {
         </thead>
         <tbody>
           {tanks.map((t) => {
-            const f = flow[t.name]
-            const step = f?.step_min ?? 60
-            const fs = f ? toMin(f.start) : null
-            const pts = f ? f.levels_t.map((lv, i) => [x(fs + i * step), y((lv / t.cap) * 100), (lv / t.cap) * 100]).filter(([px]) => px >= 0 && px <= W) : []
+            const f = t.base
+            const step = f?.step ?? 60
+            const fs = f?.start ?? null
+            const pts = f ? f.lv.map((lv, i) => [x(fs + i * step), y((lv / t.cap) * 100), (lv / t.cap) * 100]).filter(([px]) => px >= 0 && px <= W) : []
             const line = pts.map(([px, py], i) => `${i ? 'L' : 'M'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ')
             const minP = pts.length ? Math.min(...pts.map((p) => p[2])) : null
             const maxP = pts.length ? Math.max(...pts.map((p) => p[2])) : null
