@@ -326,3 +326,9 @@
 .ml-paper .mlb-t-pt-t { font: 700 calc(10.5px * var(--fs)) var(--sans); fill: #1b2129; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
 .ml-paper .mlb-t-pt-s { font-weight: 400; fill: #4a5768; }
 .ml-xlsx-tabs button.on { box-shadow: none; color: var(--fg); }
+
+/* 11-25 보내기 전 확인 창 */
+.ml-confirm .bp6-alert-body .bp6-icon { color: var(--accent); }
+.ml-confirm p { margin: 0; word-break: keep-all; font-size: calc(15px * var(--fs)); line-height: 1.6; }
+.ml-confirm-list { margin: 10px 0 0; padding-left: 18px; max-height: 240px; overflow-y: auto; font-size: calc(14px * var(--fs)); line-height: 1.7; }
+.ml-done .bp6-alert-body .bp6-icon { color: var(--green); }

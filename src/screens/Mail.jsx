@@ -4,7 +4,7 @@
 //  - 부서마다 템플릿, 미리보기, 첨부가 다르다. 보고서는 체선료 지불 부서에만 붙는다.
 //  - 값은 확정 스냅숏에서 읽는다. 시연판은 실제로 발송하지 않고 메일함의 「보낸메일함」에 저장한다.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Callout, HTMLSelect, Icon } from '@blueprintjs/core'
+import { Alert, Button, Callout, HTMLSelect, Icon } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { activePlan, logActivity, sendMail, useWorkspace, ws } from '../lib/workspace.js'
 import { DEPTS, TAGS, TEMPLATES, attachmentsFor, groupsFor, makeFill } from '../lib/mailGroups.js'
@@ -69,6 +69,9 @@ export default function Mail() {
   const [resetNo, setResetNo] = useState(0)
   const [copied, setCopied] = useState(false)
   const [viewing, setViewing] = useState(null) // 열어 본 첨부
+  const [asking, setAsking] = useState(null) // 보내기 전 확인 창에 띄운 받는 곳 목록
+  const [justSent, setJustSent] = useState(null) // 방금 보낸 받는 곳 id (단추에 잠깐 「보냄」)
+  const [done, setDone] = useState(null) // 보낸 뒤 완료 창에 띄울 받는 곳 목록
   const bodyApi = useRef(null)
   const groups = useMemo(() => (plan ? groupsFor(plan) : []), [plan])
   const fill = useMemo(() => (plan ? makeFill({ plan }) : () => ''), [plan])
@@ -96,7 +99,13 @@ export default function Mail() {
   const chooseTpl = (id) => { setDraft({ tpl: id, subject: TEMPLATES[id].subject, body: TEMPLATES[id].body }); setResetNo((n) => n + 1) }
   const resetDraft = () => { setDrafts((d) => { const n = { ...d }; delete n[group.id]; return n }); setResetNo((n) => n + 1) }
   const send = (g) => { const o = outOf(g); sendMail({ kind: 'notice', planNo: plan.no, groupId: g.id, toName: g.name, to: g.to, subject: o.subject, body: o.body, attachments: o.attachments.map(({ kind, name }) => ({ kind, name })) }) }
-  const sendAll = () => { for (const g of groups) if (!sentOf(g)) send(g) }
+  // 11-25 보내기 전에 꼭 묻는다: 예를 눌러야 보낸다
+  const confirmSend = () => {
+    for (const g of asking) send(g)
+    setJustSent(asking.length === 1 ? asking[0].id : 'all'); setTimeout(() => setJustSent(null), 2000)
+    setDone(asking)
+    setAsking(null)
+  }
   const copy = async () => {
     try { await navigator.clipboard.writeText(`제목: ${out.subject}\n\n${plainBody(out.body, plan)}`); setCopied(true); logActivity('메일', '메일 복사', out.subject); setTimeout(() => setCopied(false), 1500) } catch { /* 복사 실패는 화면에서 직접 선택 */ }
   }
@@ -138,7 +147,7 @@ export default function Mail() {
             })}
           </div>
           <footer className="ml-side-foot">
-            <Button fill icon="send-to" disabled={!isScheduler || sentCount === groups.length} onClick={sendAll}>안 보낸 곳 모두 보내기</Button>
+            <Button fill icon="send-to" disabled={!isScheduler || sentCount === groups.length} onClick={() => setAsking(groups.filter((g) => !sentOf(g)))}>{justSent === 'all' ? '모두 보냈습니다' : '안 보낸 곳 모두 보내기'}</Button>
           </footer>
         </aside>
 
@@ -171,7 +180,7 @@ export default function Mail() {
             <h3>미리보기</h3>
             <div className="ml-card-actions">
               <Button icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
-              <Button intent="primary" icon="send-message" disabled={!isScheduler} onClick={() => send(group)}>{sent ? '다시 보내기' : '보내기'}</Button>
+              <Button intent="primary" icon={justSent === group.id ? 'tick' : 'send-message'} disabled={!isScheduler} onClick={() => setAsking([group])}>{justSent === group.id ? '보냈습니다' : sent ? '다시 보내기' : '보내기'}</Button>
             </div>
           </header>
           <div className="ml-card-body ml-paper-wrap">
@@ -193,6 +202,18 @@ export default function Mail() {
       </div>
 
       <AttachmentDialog file={viewing} plan={plan} onClose={() => setViewing(null)} />
+      <Alert isOpen={!!asking} icon="send-message" intent="primary" className="ml-confirm"
+        confirmButtonText="예" cancelButtonText="아니오" onConfirm={confirmSend} onCancel={() => setAsking(null)} canEscapeKeyCancel>
+        {asking && (asking.length === 1
+          ? <p><b>{asking[0].name}</b>님께 진짜 보내시겠습니까?</p>
+          : <><p>아래 {asking.length}곳 담당자님들께 진짜 보내시겠습니까?</p><ul className="ml-confirm-list">{asking.map((g) => <li key={g.id}>{g.name}</li>)}</ul></>)}
+      </Alert>
+      <Alert isOpen={!!done} icon="tick-circle" intent="success" className="ml-confirm ml-done"
+        confirmButtonText="확인" onConfirm={() => setDone(null)} onClose={() => setDone(null)} canEscapeKeyCancel canOutsideClickCancel>
+        {done && (done.length === 1
+          ? <p>전송을 완료했습니다.<br /><b>{done[0].name}</b></p>
+          : <><p>전송을 완료했습니다. ({done.length}곳)</p><ul className="ml-confirm-list">{done.map((g) => <li key={g.id}>{g.name}</li>)}</ul></>)}
+      </Alert>
     </Screen>
   )
 }

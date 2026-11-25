@@ -3,7 +3,7 @@
 //  - 돌발 상황은 지금 있을 때만 분류에 보이고, 메일을 열어 「반영」 또는 「반영 안 함」으로 정한다.
 //  - 보낸메일함: 확정 통보 메일을 보낼 때마다 여기에 남는다. 메일 쓰기도 있지만 거의 쓰지 않는다.
 import { useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter, HTMLSelect, Icon, InputGroup, NonIdealState, TextArea } from '@blueprintjs/core'
+import { Alert, Button, Dialog, DialogBody, DialogFooter, HTMLSelect, Icon, InputGroup, NonIdealState, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { CHANNELS } from '../lib/inbox.js'
@@ -18,12 +18,13 @@ import './inbox.css'
 const ME = { scheduler: '스케줄러 A <scheduler@example.com>', user: '이용자 B <sk3-ops@example.com>' }
 const goLabel = (a) => (a.action.tab === 'input' ? '계획 조건에서 보기' : a.action.tab === 'compare' ? '후보 비교·확정에서 보기' : a.action.tab === 'ops' ? '확정 일정 보기' : '선박 카드 열기')
 
-function Compose({ open, onClose }) {
+function Compose({ open, onClose, onSent }) {
   const [to, setTo] = useState(GROUPS[0].id)
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  const [asking, setAsking] = useState(false) // 보내기 전 확인 창
   const g = GROUPS.find((x) => x.id === to)
-  const send = () => { sendMail({ kind: 'manual', groupId: g.id, toName: g.name, to: g.to, subject, body, attachments: [] }); setSubject(''); setBody(''); onClose() }
+  const send = () => { sendMail({ kind: 'manual', groupId: g.id, toName: g.name, to: g.to, subject, body, attachments: [] }); setSubject(''); setBody(''); setAsking(false); onClose(); onSent?.(g.name) }
   return (
     <Dialog isOpen={open} onClose={onClose} title="메일 쓰기" icon="edit" className="mb-compose">
       <DialogBody>
@@ -35,7 +36,11 @@ function Compose({ open, onClose }) {
         <TextArea fill rows={9} value={body} onChange={(e) => setBody(e.target.value)} />
         <p className="tiny muted mb-gap">확정 일정을 알릴 때는 「확정 통보 메일」에서 부서별 템플릿으로 보내십시오. 여기는 그 밖의 짧은 메일용입니다.</p>
       </DialogBody>
-      <DialogFooter actions={<><Button onClick={onClose}>취소</Button><Button intent="primary" icon="send-message" disabled={!subject.trim()} onClick={send}>보내기</Button></>} />
+      <DialogFooter actions={<><Button onClick={onClose}>취소</Button><Button intent="primary" icon="send-message" disabled={!subject.trim()} onClick={() => setAsking(true)}>보내기</Button></>} />
+      <Alert isOpen={asking} icon="send-message" intent="primary" className="ml-confirm"
+        confirmButtonText="예" cancelButtonText="아니오" onConfirm={send} onCancel={() => setAsking(false)} canEscapeKeyCancel>
+        <p><b>{g.name}</b>님께 진짜 보내시겠습니까?</p>
+      </Alert>
     </Dialog>
   )
 }
@@ -48,6 +53,7 @@ export default function Inbox() {
   const [selId, setSelId] = useState(null)
   const [composing, setComposing] = useState(false)
   const [viewing, setViewing] = useState(null) // 열어 본 첨부
+  const [doneTo, setDoneTo] = useState(null) // 메일 쓰기로 보낸 뒤 완료 창
 
   // 돌발 상황이 하나도 없으면 분류에서 뺀다. 그 분류를 보고 있었다면 전체로 돌린다.
   const channels = (isScheduler ? CHANNELS : CHANNELS.filter((c) => c.id === 'all' || c.id === 'plan'))
@@ -182,7 +188,11 @@ export default function Inbox() {
           )}
         </Panel>
       </div>
-      <Compose open={composing} onClose={() => setComposing(false)} />
+      <Compose open={composing} onClose={() => setComposing(false)} onSent={setDoneTo} />
+      <Alert isOpen={!!doneTo} icon="tick-circle" intent="success" className="ml-confirm ml-done"
+        confirmButtonText="확인" onConfirm={() => setDoneTo(null)} onClose={() => setDoneTo(null)} canEscapeKeyCancel canOutsideClickCancel>
+        <p>전송을 완료했습니다.<br /><b>{doneTo}</b></p>
+      </Alert>
       <AttachmentDialog file={viewing} plan={sel?.planNo ? ws.plans.find((x) => x.no === sel.planNo) : null} onClose={() => setViewing(null)} />
     </Screen>
   )
