@@ -3,10 +3,12 @@
 //   - 데이터셋을 불러오면 후보 3개(엔진 프리셋별 계획)가 바로 있다.
 //   - 계획 조건(ETA·부두 사용 불가·고정·파라미터)을 고치면 「다시 계산」으로 엔진 API에 보낸다(약 1분).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { buildScen, loadDataset, loadIndex, rankSims, recalc as engineRecalc } from '../lib/dataset.js'
+import { buildRequest, buildScen, fetchRisks, loadDataset, loadIndex, rankSims, recalc as engineRecalc } from '../lib/dataset.js'
 import { setTimeBase } from '../lib/time.js'
+import { applyChange } from '../lib/incidents.js'
+import { chooseB, presetsFor } from '../lib/presets.js'
 import { diffScen } from '../lib/scenDiff.js'
-import { ROLES, activePlan, canUse, groupOf, logActivity, recordChange, resetWorkspace, setRole, useWorkspace, ws } from '../lib/workspace.js'
+import { ROLES, activePlan, canUse, groupOf, logActivity, nowText, recordChange, resetWorkspace, restoreAlertStatus, setAlertStatus, setRole, useWorkspace, ws } from '../lib/workspace.js'
 import { TOUR as TOUR_ALL } from '../tour.js'
 
 const TOUR = TOUR_ALL.filter((s) => groupOf(s.tab === 'risk' ? 'compare' : s.tab)).map((s) => (s.tab === 'risk' ? { ...s, tab: 'compare' } : s))
@@ -30,7 +32,13 @@ export function AppProvider({ children }) {
   const replaceScen = useCallback((next) => { scenRef.current = next; setScenState(next) }, [])
   // 후보: 엔진 결과. version = 이 후보들을 계산한 계획 조건 버전(지금 버전과 다르면 다시 계산 필요).
   const [calc, setCalc] = useState({ sims: [], version: 0, error: null, running: false, at: null })
+  const calcRef = useRef(calc)
+  calcRef.current = calc
 
+  // 「단독 반영 시」 미리 계산 결과 (아래 '반영하면?' 부분 설명 참고)
+  const [whatIf, setWhatIf] = useState({})
+  const whatIfRef = useRef(whatIf)
+  whatIfRef.current = whatIf
   const open = useCallback(async (id) => {
     setLoadError(null)
     const ds = await loadDataset(id)
@@ -41,7 +49,20 @@ export function AppProvider({ children }) {
     setDataset(ds)
     const v = scenRef.current.version + 1
     replaceScen({ scen, version: v })
-    setCalc({ sims: rankSims(ds.results), version: v, error: null, running: false, at: ds.built_at })
+    // 데이터셋 결과는 요청을 따로 담지 않는다. 같은 계획 조건으로 다시 만들어 리스크 모델에 보낸다.
+    const sims = rankSims(ds.results.map((r) => ({ ...r, request: buildRequest(scen, r.preset) })))
+    // B 칸의 '고른 이유'는 데이터셋을 만들 때 쓴 σ로 적혀 있다. 지금 규칙으로 다시 골라 같은 안이면 이유만 새로 쓴다
+    const nb = sims[0] && sims[1] && chooseB(scen, sims[0])
+    if (nb && nb.id === sims[1].preset?.id) sims[1] = { ...sims[1], preset: { ...sims[1].preset, why: nb.why, grades: nb.grades } }
+    setCalc({ sims, version: v, error: null, running: false, at: ds.built_at })
+    // 11-25 데이터셋에 미리 계산해 둔 메일별 「단독 반영 시」 A · B · C(tools/real-data/build_whatif.mjs). 없는 메일은 화면이 백그라운드에서 만든다
+    setWhatIf(Object.fromEntries(Object.entries(ds.whatIf ?? {}).flatMap(([incId, results]) => {
+      const inc = scen.incidents.find((i) => i.id === incId)
+      if (!inc) return []
+      const d = structuredClone(scen)
+      applyChange(d, inc, true)
+      return [[`${v}:${incId}`, { state: 'done', incId, sims: rankSims(results.map((r) => ({ ...r, request: buildRequest(d, r.preset) }))) }]]
+    })))
   }, [replaceScen])
 
   useEffect(() => {
@@ -73,8 +94,9 @@ export function AppProvider({ children }) {
     setCalc((c) => ({ ...c, running: true, error: null }))
     logActivity('계산', '다시 계산 요청', s.name, `계획 조건 v${v}`)
     try {
-      const results = await engineRecalc(s, ctl.signal)
-      setCalc({ sims: rankSims(results), version: v, error: null, running: false, at: new Date().toLocaleString('ko-KR') })
+      // B는 지금 A 계획 · 계획 조건으로 다시 고른다(상황형 자리)
+      const results = await engineRecalc(s, ctl.signal, presetsFor(s, calcRef.current.sims))
+      setCalc({ sims: rankSims(results), version: v, error: null, running: false, at: nowText().slice(0, 16) })
       logActivity('계산', '다시 계산 완료', s.name, results.map((r) => `${r.preset.label} ${r.response.status}`).join(', '))
     } catch (e) {
       if (e.name === 'AbortError') return
@@ -82,16 +104,78 @@ export function AppProvider({ children }) {
     }
   }, [])
 
+  // 11-25 리스크: 후보가 바뀔 때마다 팀 리스크 모델(POST /risk/risks)로 후보마다 계산한다(약 5초). 계획과 따로 실패할 수 있다.
+  //   risks[simId] = {state: 'running'|'done'|'error', data, error}. 다시 계산하는 동안에는 직전 결과를 흐리게 보인다.
+  const [risks, setRisks] = useState({})
+  useEffect(() => {
+    if (!calc.sims.length) return
+    const ctl = new AbortController()
+    setRisks(Object.fromEntries(calc.sims.map((s) => [s.id, { state: 'running', data: null, error: null }])))
+    for (const s of calc.sims) {
+      if (!s.req) { setRisks((r) => ({ ...r, [s.id]: { state: 'error', data: null, error: '요청 원문이 없어 리스크를 계산하지 못했습니다' } })); continue }
+      fetchRisks(s.req, s.resp, ctl.signal)
+        .then((data) => setRisks((r) => ({ ...r, [s.id]: { state: 'done', data, error: null } })))
+        .catch((e) => { if (e.name !== 'AbortError') setRisks((r) => ({ ...r, [s.id]: { state: 'error', data: null, error: e.message } })) })
+    }
+    return () => ctl.abort()
+  }, [calc.sims])
+
   const result = useMemo(() => ({
     candidates: calc.sims,
     error: loadError ?? (scen ? null : '데이터셋을 불러오는 중입니다'),
     loading: !scen && !loadError,
     stale: !!scen && calc.version !== version, // 계획 조건이 후보 계산 뒤에 바뀜
     running: calc.running, calcError: calc.error, calcAt: calc.at,
-    // 11-25 실제 접안 실적(엔진 baseline)과는 화면 어디에서도 비교하지 않는다(사용자 결정). 계획 시점에는 모르는 정보다.
+    // 11-25 엔진 baseline은 "다른 스케줄러가 미리 세워 둔 기존 계획"으로 가정한다(사용자 결정).
+    //   지금은 계획 조건의 탱크 재고 흐름에만 쓰고(scen.tanks[].base), 후보안과 비교하는 화면에는 아직 넣지 않았다.
     baseline: null,
   }), [calc, scen, version, loadError])
   const all = result.candidates
+
+  // ── 11-25 「반영하면?」 미리 계산 ─────────────────────────────────────
+  //   반영 여부를 정하지 않은 조건 변경 메일마다, 지금 계획 조건 + 그 변경 하나로 후보 A · B · C를 엔진에 미리 돌려 둔다(한 단계만).
+  //   결정(decideMails)은 여러 메일을 한꺼번에: 고른 것은 반영, 나머지는 반영 안 함으로 모두 해소된다. 하나만 반영하고 미리 계산이
+  //   끝나 있으면 그 A · B · C로 바로 바꾸고, 여럿이면 다시 계산한다. 결정 뒤에는 더 나아가지 않고 「결정 되돌리기」로 전으로 돌아간다.
+  //   메일 하나씩 차례로(엔진 작업자 3개를 후보 3개가 씀). 후보가 지금 조건으로 계산돼 있을 때만 돈다.
+  //   whatIf[`${version}:${incId}`] = {state: 'running'|'done'|'error', sims[A,B,C], t0, error}
+  const pendingIncs = useMemo(() => (scen?.incidents ?? []).filter((i) => {
+    const s = ws.inbox[`inc:${scenarioIdRef.current}:${i.id}`]?.status
+    return i.change && s !== 'applied' && s !== 'dismissed'
+  }), [scen, wsRev]) // eslint-disable-line react-hooks/exhaustive-deps
+  const pendingKey = pendingIncs.map((i) => i.id).join(',') // 체크 같은 다른 기록 변경에는 미리 계산을 멈추지 않게
+  const pendingRef = useRef(pendingIncs)
+  pendingRef.current = pendingIncs
+  const whatIfKey = useCallback((incId) => `${scenRef.current.version}:${incId}`, [])
+  const [wiTick, setWiTick] = useState(0) // 엔진이 바빠(429) 못 한 미리 계산을 1분 뒤 다시 돌리는 신호
+  useEffect(() => {
+    if (!scen || calc.running || calc.version !== version || !all.length) return
+    const todo = pendingIncs.filter((i) => !whatIfRef.current[`${version}:${i.id}`])
+    if (!todo.length) return
+    const ctl = new AbortController()
+    const put = (key, patch) => setWhatIf((w) => ({ ...w, [key]: { ...w[key], ...patch } }))
+    ;(async () => {
+      for (const inc of todo) {
+        if (ctl.signal.aborted) return
+        const key = `${version}:${inc.id}`
+        put(key, { state: 'running', incId: inc.id, t0: Date.now() })
+        try {
+          const d = structuredClone(scen)
+          applyChange(d, inc, true)
+          const results = await engineRecalc(d, ctl.signal, presetsFor(d, all))
+          put(key, { state: 'done', sims: rankSims(results) })
+        } catch (e) {
+          if (e.name === 'AbortError') { setWhatIf((w) => { const n = { ...w }; delete n[key]; return n }); return }
+          if (/가득|429|Too Many/.test(e.message)) { // 엔진이 바쁨: 1분 뒤 다시
+            put(key, { state: 'queued' })
+            setTimeout(() => { setWhatIf((w) => { const n = { ...w }; delete n[key]; return n }); setWiTick((t) => t + 1) }, 60000)
+            return
+          }
+          put(key, { state: 'error', error: e.message })
+        }
+      }
+    })()
+    return () => ctl.abort()
+  }, [scen, version, calc.running, calc.version, all, pendingKey, wiTick]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tab, setTab] = useState('home')
   const [focusId, setFocusId] = useState('A')
@@ -129,12 +213,59 @@ export function AppProvider({ children }) {
   const [reportDraft, setReportDraftRaw] = useState(EMPTY_DRAFT)
   const setReportDraft = useCallback((patch) => setReportDraftRaw((d) => ({ ...d, ...patch })), [])
 
-  // 돌발 상황을 「반영」하면 부두 사용 불가 구간(blocks)으로 계획 조건에 들어간다(되돌리면 뺀다).
-  const applyIncident = useCallback((incId, on) => editScen((d) => {
-    const inc = d.incidents.find((i) => i.id === incId)
-    d.blocks = d.blocks.filter((b) => b.incId !== incId)
-    if (on && inc?.block) d.blocks.push({ ...inc.block, incId, source: `돌발 상황: ${inc.title}` })
-  }), [editScen])
+  // 받은 메일(조건 변경 요청)을 「반영」하면 그 change가 계획 조건에 들어간다(되돌리면 뺀다): ETA · 부두 사용 불가 · 고정 · 엔진 조절값
+  //   11-25 미리 계산(whatIf)이 끝나 있으면 다시 계산하지 않고 그 A · B · C로 바로 바꾼다. 바꿨으면 true
+  const applyIncident = useCallback((incId, on) => {
+    const v0 = scenRef.current.version
+    const pre = on ? whatIfRef.current[`${v0}:${incId}`] : null
+    const fresh = calcRef.current.version === v0 && !calcRef.current.running
+    editScen((d) => {
+      const inc = d.incidents.find((i) => i.id === incId)
+      if (inc) applyChange(d, inc, on)
+    })
+    if (pre?.state === 'done' && fresh) {
+      setCalc({ sims: pre.sims, version: scenRef.current.version, error: null, running: false, at: nowText().slice(0, 16) })
+      return true
+    }
+    return false
+  }, [editScen])
+
+  // ── 11-25 조건 변경 결정 (후보 비교) ─────────────────────────────────
+  //   mailDecision = {applied: [incId], dismissed: [incId], at, snap: {scen, version, calc, whatIf, statuses}} — 되돌리기용으로 결정 전 상태를 통째로 둔다
+  const [mailDecision, setMailDecision] = useState(null)
+  const mailDecisionRef = useRef(null)
+  mailDecisionRef.current = mailDecision
+  const alertIdOf = (incId) => `inc:${scenarioIdRef.current}:${incId}`
+  const decideMails = useCallback((applyIds) => {
+    const { scen: s0, version: v0 } = scenRef.current
+    const c0 = calcRef.current
+    const pend = pendingRef.current
+    if (!pend.length) return
+    const statuses = Object.fromEntries(pend.map((i) => [alertIdOf(i.id), ws.inbox[alertIdOf(i.id)] ?? null]))
+    const keep = Object.fromEntries(Object.entries(whatIfRef.current).filter(([k]) => k.startsWith(`${v0}:`)))
+    const pre = applyIds.length === 1 ? whatIfRef.current[`${v0}:${applyIds[0]}`] : null
+    const fresh = c0.version === v0 && !c0.running
+    if (applyIds.length) editScen((d) => { for (const i of d.incidents) if (applyIds.includes(i.id)) applyChange(d, i, true) })
+    for (const i of pend) setAlertStatus(alertIdOf(i.id), applyIds.includes(i.id) ? 'applied' : 'dismissed', `[${i.kind}] ${i.title}`)
+    setMailDecision({ applied: applyIds, dismissed: pend.filter((i) => !applyIds.includes(i.id)).map((i) => i.id), at: nowText(), snap: { scen: s0, version: v0, calc: c0, whatIf: keep, statuses } })
+    logActivity('입력', '조건 변경 결정', `반영 ${applyIds.length}건 · 반영 안 함 ${pend.length - applyIds.length}건`)
+    if (!applyIds.length) return
+    if (pre?.state === 'done' && fresh) setCalc({ sims: pre.sims, version: scenRef.current.version, error: null, running: false, at: nowText().slice(0, 16) })
+    else recalc()
+  }, [editScen, recalc]) // eslint-disable-line react-hooks/exhaustive-deps
+  const undoMailDecision = useCallback(() => {
+    const md = mailDecisionRef.current
+    if (!md) return
+    abortRef.current?.abort()
+    const v = scenRef.current.version + 1
+    replaceScen({ scen: md.snap.scen, version: v })
+    const c = md.snap.calc
+    setCalc({ ...c, running: false, version: c.version === md.snap.version ? v : c.version })
+    setWhatIf((w) => ({ ...w, ...Object.fromEntries(Object.values(md.snap.whatIf).map((e) => [`${v}:${e.incId}`, e])) }))
+    for (const [id, prev] of Object.entries(md.snap.statuses)) restoreAlertStatus(id, prev)
+    setMailDecision(null)
+    logActivity('입력', '조건 변경 결정 되돌림', `반영 ${md.applied.length}건 · 반영 안 함 ${md.dismissed.length}건 취소`)
+  }, [replaceScen])
 
   // 사용법 투어. 스케줄러 업무 흐름을 따라가므로 스케줄러 계정에만 있다.
   const [tourIdx, setTourIdx] = useState(null)
@@ -162,6 +293,8 @@ export function AppProvider({ children }) {
   const resetDemo = useCallback(() => {
     resetWorkspace()
     setChecks({})
+    setMailDecision(null)
+    setWhatIf({})
     setReportDraftRaw(EMPTY_DRAFT)
     setDrawer(null)
     setTourIdx(null)
@@ -176,7 +309,8 @@ export function AppProvider({ children }) {
     datasets, dataset, scenarioId, setScenarioId, scen, scenInput: scen, editScen, version, result, all, recalc,
     tab, go, focusId, setFocusId,
     drawer, drawerSim, openVessel, closeDrawer,
-    checks, setCheck, current, tour, reportDraft, setReportDraft,
+    checks, setCheck, current, tour, reportDraft, setReportDraft, risks,
+    whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision,
     mailFilter, setMailFilter, applyIncident,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
