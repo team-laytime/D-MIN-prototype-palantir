@@ -1,6 +1,6 @@
 // 후보 비교·확정 (11-24 실데이터)
 //  - 후보 3개 = 팀 엔진(CP-SAT)이 파라미터 프리셋마다 낸 계획. 체선료가 낮은 순서로 A, B, C이고 A가 기본 선택이다.
-//  - 비교 기준은 실제 계획(실제 부두, 실제 접안 시각)과 후보 A. 금액과 시각은 전부 엔진 값이고 화면에서 다시 계산하지 않는다.
+//  - 비교 기준은 후보 A(최저안)뿐이다. 실제 접안 실적과는 비교하지 않는다(11-25). 금액과 시각은 전부 엔진 값이고 화면에서 다시 계산하지 않는다.
 //  - 88척은 선석별 간트와 「바뀐 선박」 표로 본다. 표에서 배를 고정하면 계획 조건이 바뀌고, 다시 계산하면 엔진이 그 고정을 지킨다.
 //  - 확정한 뒤에는 후보 정보를 빼고 확정 일정 모니터링(지금 시각 기준)과 통보 상태만 보인다.
 import { useMemo, useState } from 'react'
@@ -34,7 +34,6 @@ export default function Compare() {
   const [reason, setReason] = useState('')
   const [asking, setAsking] = useState(false)
   const [showCands, setShowCands] = useState(false)
-  const [refKind, setRefKind] = useState('base') // 바뀐 선박 표의 비교 기준: base(실제 계획) | best(후보 A)
   const [sortKey, setSortKey] = useState('saving')
   const [onlyBerth, setOnlyBerth] = useState(false)
   const [monFilter, setMonFilter] = useState('all')
@@ -60,7 +59,6 @@ export default function Compare() {
 
   const best = all[0]
   const focus = all.find((s) => s.id === focusId) ?? best
-  const base = result.baseline
   const vById = Object.fromEntries(scen.vessels.map((v) => [v.id, v]))
   const bById = Object.fromEntries(scen.berths.map((b) => [b.id, b]))
   const vname = (vid) => vById[vid]?.name ?? vid
@@ -100,10 +98,9 @@ export default function Compare() {
           <div className="cmp-banner-mark">확정</div>
           <div>
             <h2>접안 계획 v{plan.no}, {plan.label}{plan.preset ? ` (${plan.preset.label})` : ''}</h2>
-            <p><span className="num">{plan.at}</span> {plan.who} 확정, 계획 조건 v{plan.version} 기준, {plan.placements.length}척</p>
+            <p><span className="num">{plan.at}</span> {plan.who} 확정</p>
           </div>
-          <div className="cmp-banner-total"><span className="tiny">예상 체선료</span><b className="num">{money(plan.total)}</b>
-            {plan.baselineTotal !== null && <span className="tiny muted">실제 계획 {money(plan.baselineTotal)} 대비 {pctText(plan.total, plan.baselineTotal)}</span>}</div>
+          <div className="cmp-banner-total"><span className="tiny">예상 체선료</span><b className="num">{money(plan.total)}</b></div>
         </div>
         <div className="cmp-fixed-grid">
           <div className="stack">
@@ -161,9 +158,9 @@ export default function Compare() {
   const pick = (id) => { setAsking(false); setFocusId(id) }
 
   // 바뀐 선박 표
-  const ref = refKind === 'base' ? base : best
-  const refLabel = refKind === 'base' ? '실제 계획' : best.label
-  const sameAsRef = refKind === 'best' && focus.id === best.id
+  const ref = best
+  const refLabel = best.label
+  const sameAsRef = focus.id === best.id
   const changed = sameAsRef || !ref ? [] : changedVs(focus, ref)
   const rows = changed.filter((c) => !onlyBerth || c.berthChanged).sort((a, b) => (
     sortKey === 'saving' ? b.saving - a.saving || a.p.etb - b.p.etb
@@ -181,17 +178,12 @@ export default function Compare() {
     logActivity('입력', on ? '선박 고정 해제' : '선박 고정', vname(p.vid), on ? '' : `${focus.label} 배정 ${bById[p.bid]?.name ?? p.bid} ${fmt(p.etb)}`)
   }
   const clearFixes = () => { editScen((d) => { d.fixes = [] }); logActivity('입력', '선박 고정 모두 해제', `${fixedSet.size}척`) }
-  const moved = new Set(base ? changedVs(focus, base).filter((c) => c.berthChanged).map((c) => c.p.vid) : [])
   const quiet = card.risks.filter((r) => r.state !== '해당').map((r) => r.label)
 
   const td = (sim, children, extra = '') => <td key={sim.id} className={`${extra} ${sim.id === focus.id ? 'on' : ''}`}>{children}</td>
 
   return (
     <Screen tab="compare" title="후보 비교·확정" bodyClass="plan-stack">
-      <div className="plan-intro">
-        <p>팀 엔진(CP-SAT)이 파라미터 묶음 {all.length}개로 {scen.vessels.length}척, 선석 {scen.berths.length}곳을 배정한 후보입니다. 체선료가 낮은 순서로 A, B, C이며 A가 기본 선택입니다. 계산 {result.calcAt ?? '-'}.</p>
-        <span className="plan-version mono">INPUT v{version}</span>
-      </div>
 
       {result.stale && (
         <Callout className="cmp-stale" intent="warning" icon="refresh" title="계획 조건이 바뀌었습니다. 다시 계산해야 후보가 맞습니다">
@@ -216,13 +208,6 @@ export default function Compare() {
                 <tr><th>무엇을 바꾼 안</th>{all.map((sim) => td(sim, <><b>{sim.preset?.label}</b><span className="cmp-sub">{sim.preset?.desc}</span>{sim.notes.map((n) => <span key={n} className="cmp-sub c-amber">{n}</span>)}</>))}</tr>
                 <tr><th>총 예상 체선료</th>{all.map((sim) => td(sim, money(sim.total), 'num cmp-total'))}</tr>
                 <tr><th>최저안 대비</th>{all.map((sim) => td(sim, sim.id === best.id ? '가장 낮음' : `+${money(sim.total - best.total)} (${pctText(sim.total, best.total)})`, `num ${sim.id === best.id ? 'c-green' : 'muted'}`))}</tr>
-                <tr><th>실제 계획 대비</th>{all.map((sim) => td(sim, base ? <>{money(base.total)} → {money(sim.total)}, <b className={sim.total < base.total ? 'c-green' : 'c-red'}>{pctText(sim.total, base.total)}</b></> : '-', 'num'))}</tr>
-                <tr><th>실제 계획과 부두가 다른 배</th>{all.map((sim) => td(sim, `${sim.moves ?? '-'}척`, 'num'))}</tr>
-                <tr><th>후보 A와 다른 배</th>{all.map((sim) => td(sim, sim.id === best.id ? '-' : `${cards.find((c) => c.sim.id === sim.id).vsBest}척 (부두나 접안 시각)`, 'num'))}</tr>
-                <tr><th>체선 발생</th>{all.map((sim) => td(sim, `${cards.find((c) => c.sim.id === sim.id).dem}척`, 'num'))}</tr>
-                <tr><th>야간 접안</th>{all.map((sim) => td(sim, `${cards.find((c) => c.sim.id === sim.id).night}척`, 'num'))}</tr>
-                <tr><th>탱크 범위 이탈</th>{all.map((sim) => td(sim, sim.tankViolation.length ? <span className="c-red">{sim.tankViolation.length}건</span> : '없음', 'num'))}</tr>
-                <tr><th>엔진 상태</th>{all.map((sim) => td(sim, <><St tone={sim.status === 'OPTIMAL' || sim.proven ? 'ok' : 'live'}>{engineText(sim)}</St><span className="cmp-sub num">{sim.status}, {sim.solveSec ?? '-'}초</span></>))}</tr>
                 <tr><th>남는 리스크</th>{all.map((sim) => { const c = cards.find((x) => x.sim.id === sim.id); return td(sim, <St tone={c.hit.length ? 'warn' : 'ok'}>해당 {c.hit.length}</St>) })}</tr>
               </tbody>
             </table>
@@ -230,13 +215,11 @@ export default function Compare() {
 
           <Panel code="BERTH-GANTT" title={`${focus.label} 선석별 간트`} desc={`${fmt(range.start)} ~ ${fmt(range.end)}, 부두 묶음별`} data-tour="order"
             actions={<SegmentedControl size="small" value={focus.id} options={all.map((s) => ({ value: s.id, label: s.label }))} onValueChange={pick} />}>
-            <TimelineLegend />
-            <Timeline sim={focus} scen={scen} range={range} highlight={moved} highlightLabel="실제 계획과 부두가 다름" onPick={(vid) => openVessel(focus.id, vid, { mode: 'evidence' })} />
+            <Timeline sim={focus} scen={scen} range={range} onPick={(vid) => openVessel(focus.id, vid, { mode: 'evidence' })} />
           </Panel>
 
-          <Panel code="CHANGED" title={`${focus.label}에서 바뀐 선박`} desc={`${refLabel}과 부두나 접안 시각이 다른 배`}
-            actions={<SegmentedControl size="small" value={refKind} onValueChange={setRefKind} options={[{ value: 'base', label: '실제 계획 대비' }, { value: 'best', label: `${best.label} 대비` }]} />}>
-            {sameAsRef ? <p className="cmp-none">{focus.label} 자신과 비교하고 있습니다. 다른 후보를 고르거나 실제 계획 대비로 바꾸십시오.</p> : !ref ? <p className="cmp-none">실제 계획 자료가 없습니다.</p> : <>
+          <Panel code="CHANGED" title={`${focus.label}에서 바뀐 선박`} desc={`${refLabel}과 부두나 접안 시각이 다른 배`}>
+            {sameAsRef ? <p className="cmp-none">{focus.label}은 최저안입니다. 다른 후보를 고르면 {best.label}과 다른 배가 나옵니다.</p> : <>
               <div className="cmp-toolbar">
                 <label className="cmp-mon-filter">정렬 <HTMLSelect size="small" value={sortKey} onChange={(e) => setSortKey(e.target.value)} options={[
                   { value: 'saving', label: '체선료가 많이 준 순' }, { value: 'loss', label: '체선료가 늘어난 순' }, { value: 'delta', label: '접안 시각 차이 큰 순' }, { value: 'etb', label: '접안 시각 순' },
@@ -272,7 +255,7 @@ export default function Compare() {
           </Panel>
 
           <Panel code="PIER-LOAD" title="부두별 배정" desc="부두마다 배정 척수와 그 배들의 예상 체선료 합">
-            <OrderCompare sims={all} scen={scen} baseline={base} focusId={focus.id} onPick={pick} />
+            <OrderCompare sims={all} scen={scen} focusId={focus.id} onPick={pick} />
           </Panel>
 
           <Panel code="RISK-CHECK" title={`${focus.label} 남은 리스크`} desc="확인 표시는 확정 기록에 남고, 확인하지 않은 리스크가 있으면 확정할 때 한 번 더 묻습니다" data-tour="risks">
@@ -313,17 +296,10 @@ export default function Compare() {
                 <span className="strong">{focus.label}, {focus.preset?.label}</span>
                 <span className="risk-total num">{money(focus.total)}</span>
                 <span className="small muted">최저안 대비 <span className={`num ${focus.id === best.id ? 'c-green' : ''}`}>{focus.id === best.id ? '가장 낮음 (기본 선택)' : `+${money(focus.total - best.total)}`}</span></span>
-                {base && <span className="small muted">실제 계획 {money(base.total)} 대비 <b className="num c-green">{pctText(focus.total, base.total)}</b></span>}
               </div>
-              <ul className="cmp-decide-list small">
-                <li>실제 계획과 부두가 다른 배 {focus.moves ?? '-'}척</li>
-                <li>체선 {card.dem}척, 야간 접안 {card.night}척</li>
-                <li>{engineText(focus)}, {focus.solveSec ?? '-'}초</li>
-              </ul>
               <p className={`risk-check-count small ${unchecked.length ? 'c-amber' : 'c-green'}`}>확인할 리스크 <span className="num">{focusRisks.length}</span>건 중 <span className="num">{focusRisks.length - unchecked.length}</span>건 확인</p>
-              {current && <p className="small c-amber">적용 중: {current.label} ({current.status}). 확정하면 새 버전이 됩니다.</p>}
               <div className="risk-reason-field">
-                <label htmlFor="risk-reason">판단 근거 (확정 기록과 보고서에 남음)</label>
+                <label htmlFor="risk-reason">판단 근거</label>
                 <TextArea id="risk-reason" fill rows={3} value={reason} disabled={!isScheduler} onChange={(e) => setReason(e.currentTarget.value)} placeholder="예: 체선료가 가장 낮고, 야간 접안은 도선과 줄잡이 인력을 미리 배치해 대응" />
               </div>
               {blocked && <p className="small c-amber">{result.running ? '다시 계산하는 중입니다.' : '계획 조건이 바뀌어 다시 계산한 뒤에 확정할 수 있습니다.'}</p>}
@@ -333,7 +309,6 @@ export default function Compare() {
                   <div className="risk-buttons"><Button size="small" onClick={() => setAsking(false)}>돌아가기</Button><Button size="small" intent="warning" onClick={() => fix(true)}>그래도 확정</Button></div>
                 </Callout>
               ) : <Button intent="primary" icon="endorsed" fill disabled={!isScheduler || blocked} onClick={() => fix(false)}>이 안으로 확정</Button>}
-              <p className="risk-policy tiny muted">확정하면 이용자 화면에 바로 나가고, 이 화면은 확정 일정 모니터링으로 바뀝니다. Agent는 확정하지 않습니다.</p>
             </div>
           </Panel>
           {fixedNow && <Button icon="arrow-left" onClick={() => setShowCands(false)}>확정 화면으로</Button>}

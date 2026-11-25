@@ -3,7 +3,7 @@
 .inbox-channels { margin: 0; padding: 6px 0; list-style: none; }
 .inbox-channel { width: 100%; display: flex; align-items: center; gap: 9px; height: 32px; padding: 0 12px; border: 0; background: none; color: var(--fg-2); font-size: calc(13px * var(--fs)); text-align: left; cursor: pointer; }
 .inbox-channel:hover { background: var(--bg-3); color: var(--fg); }
-.inbox-channel.on { background: var(--accent-wash); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
+.inbox-channel.on { background: var(--accent-wash); color: var(--fg); }
 .inbox-channel.on .bp6-icon { color: var(--accent); }
 .inbox-count { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--line-2); font-size: calc(10.5px * var(--fs)); text-align: center; color: var(--fg); }
 
@@ -47,7 +47,7 @@ button.mb-strip { cursor: pointer; }
 .mb-list { margin: 0; padding: 0; list-style: none; }
 .mb-row { width: 100%; display: grid; gap: 3px; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--fg-2); text-align: left; cursor: pointer; }
 .mb-row:hover { background: var(--bg-3); }
-.mb-row.on { background: var(--accent-wash); box-shadow: inset 2px 0 0 var(--accent); }
+.mb-row.on { background: var(--accent-wash); }
 .mb-row.unread .mb-from, .mb-row.unread .mb-subject { color: var(--fg); font-weight: 600; }
 .mb-row-top { display: flex; align-items: center; gap: 8px; }
 .mb-dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none; }
@@ -67,3 +67,11 @@ button.mb-strip { cursor: pointer; }
 .mb-gap { margin-top: 10px; }
 .mb-compose { width: 560px; }
 .mb-decide .block { display: block; margin-top: 2px; }
+/* 11-25 메일 보기는 확정 통보 메일 미리보기와 같은 메일 종이 */
+.mb-read { padding: 0; }
+.mb-read .ml-paper-wrap { padding: 14px; }
+.mb-read .ml-paper .ml-file.static { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 1px solid var(--p-line2); border-radius: 3px; background: var(--p-head); color: var(--p-fg); font-size: calc(12px * var(--fs)); }
+.mb-read .mb-decide, .mb-read .mb-actions { margin: 0 14px 14px; }
+.mb-row:focus, .inbox-channel:focus { outline: none; }
+.mb-row:focus-visible, .inbox-channel:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.mb-row.on .mb-from, .mb-row.on .mb-subject { color: var(--fg); font-weight: 700; }

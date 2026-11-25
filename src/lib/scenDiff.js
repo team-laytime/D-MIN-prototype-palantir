@@ -5,11 +5,18 @@ import { fmt } from './time.js'
 export const BLOCK_KINDS = { WEATHER: '기상', CONSTRUCTION: '공사', EQUIPMENT: '설비' }
 
 // 계획 조건 화면에서 고치는 엔진 조절값. def = 팀 엔진 기본값(scen.params에 없으면 이 값으로 계산된다).
+// 11-25 안전재고 상한, 하한은 운영 여건 탭, 부두 전환 여유는 부두 탭에서 고친다. 계산 제한 시간은 우리가 정하는 값이라 뺐다.
 export const PARAM_FIELDS = [
-  { path: ['tank', 'safe_min_pct'], label: '안전재고 하한', unit: '%', def: 20, min: 0, max: 100, step: 1, note: '탱크 재고가 이 비율 밑으로 내려가지 않게' },
-  { path: ['tank', 'safe_max_pct'], label: '안전재고 상한', unit: '%', def: 80, min: 0, max: 100, step: 1, note: '탱크 재고가 이 비율을 넘지 않게' },
+  { path: ['tank', 'safe_min_pct'], label: '안전재고 하한', unit: '%', def: 20, min: 20, max: 80, step: 1, note: '탱크 재고가 이 비율 밑으로 내려가지 않게' },
+  { path: ['tank', 'safe_max_pct'], label: '안전재고 상한', unit: '%', def: 80, min: 20, max: 80, step: 1, note: '탱크 재고가 이 비율을 넘지 않게' },
   { path: ['shifting', 'buffer_switch_h'], label: '부두 전환 여유', unit: 'h', def: 0, min: 0, max: 12, step: 0.5, note: '앞 선박 이안 뒤 다음 접안까지 더 비우는 시간' },
-  { path: ['solver', 'time_limit_s'], label: '계산 제한 시간', unit: 's', def: 30, min: 5, max: 300, step: 5, note: '후보 하나를 찾는 데 쓰는 최대 시간' },
+]
+// 11-25 안전재고 고정 규칙: 하한은 20% 밑으로, 상한은 80% 위로 갈 수 없다(더 안전하게 좁히는 것만 허용)
+export const TANK_RULE = { min: 20, max: 80 }
+// 11-25 계획용 풍속 기준: 엔진 weather.thresholds_ms[그룹] = [하역 중단, 접안 불가]. 예보라서 기준보다 낮춰 계획할 수 있게 한다(높이는 것은 안 됨)
+export const WIND_GROUPS = [
+  { key: '#3~7', label: '3~8부두, 부이' },
+  { key: '#1~2·GAS', label: '1~2부두, 가스부두' },
 ]
 export const getIn = (o, path) => path.reduce((x, k) => (x == null ? undefined : x[k]), o)
 
@@ -66,9 +73,12 @@ export function diffScen(prev, next) {
   const pp = flat(prev.params), np = flat(next.params)
   for (const path of new Set([...Object.keys(pp), ...Object.keys(np)])) {
     if (pp[path] === np[path]) continue
+    if (JSON.stringify(pp[path]) === JSON.stringify(np[path])) continue
     const f = PARAM_FIELDS.find((x) => x.path.join('.') === path)
-    const show = (x) => (x === undefined ? (f ? `기본값 ${f.def}${f.unit}` : '기본값') : `${x}${f?.unit ?? ''}`)
-    out.push({ key: 'env', field: `param:${path}`, label: f?.label ?? path, targetName: '엔진 조절값', from: show(pp[path]), to: show(np[path]), kind: 'param' })
+    const wg = path.startsWith('weather.thresholds_ms.') ? WIND_GROUPS.find((g) => path.endsWith(g.key)) : null
+    const show = (x) => (x === undefined ? (f ? `기본값 ${f.def}${f.unit}` : '기본값') : wg ? `${x[0]} m/s` : `${x}${f?.unit ?? ''}`)
+    const label = wg ? `계획용 풍속 기준 (${wg.label})` : f?.label ?? path
+    out.push({ key: 'env', field: `param:${path}`, label, targetName: '계획 조건', from: show(pp[path]), to: show(np[path]), kind: 'param' })
   }
   return out
 }

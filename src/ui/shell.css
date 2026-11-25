@@ -47,3 +47,7 @@
 .font-scale button + button { border-left: 0; }
 .font-scale button.on { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); }
 .font-scale button:hover { color: var(--fg); }
+/* 11-25 운영 현황은 창을 줄일 수 있게 했다 → 상단 바 글자가 중간에 꺾이지 않게, 좁으면 부제목을 숨긴다 */
+.topbar, .topbar * { white-space: nowrap; }
+@media (max-width: 1200px) { .topbar-sub { display: none; } }
+.statusbar { justify-content: center; } .statusbar-credit { color: var(--fg-3); font-size: calc(11px * var(--fs)); letter-spacing: 0.02em; }

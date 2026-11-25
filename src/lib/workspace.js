@@ -158,19 +158,24 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
   const plan = {
     no: ws.plans.length + 1, candId: cand.id, label: cand.label, total: cand.total, reason, uncheckedRisks,
     preset: cand.preset ? { id: cand.preset.id, label: cand.preset.label, desc: cand.preset.desc } : null,
-    baselineTotal: cand.baseline?.total ?? null, moves: cand.moves ?? null,
+    baselineTotal: null, moves: cand.moves ?? null,
     status: cand.status, proven: Boolean(cand.proven), solveSec: cand.solveSec ?? null,
     scenName: scen.name, bundle: scen.bundle ?? null,
     at: nowText(), who: role().name, version, cancelled: false,
     tanks: structuredClone(cand.tanks ?? []),
+    // 11-25 메일 템플릿용: 생산계획(탱크 묶음별 주별 t/h), 부두 사용 불가 구간, 야간 도선 규칙
+    production: (scen.tanks ?? []).map((t) => ({ name: t.name, weeks: t.weeks })),
+    blocks: structuredClone(scen.blocks ?? []),
+    nightPilot: scen.nightPilot ?? null,
     placements: [...cand.placements].sort((a, c) => a.etb - c.etb).map((p) => {
       const x = v[p.vid] ?? {}
       const berth = b[p.bid] ?? {}
       return {
         vid: p.vid, name: x.name ?? p.vid, callSign: x.callSign ?? null, product: x.product ?? '-', cargo: x.cargo ?? null, dir: x.dir ?? '-', in: Boolean(x.in),
-        ton: x.ton ?? null, dwt: x.dwt ?? null, eta: x.eta ?? p.eta,
-        bid: p.bid, berth: berth.name ?? p.bid, berthCode: berth.code ?? p.bid, pier: berth.pier ?? null, pierName: berth.pierName ?? null,
+        ton: x.ton ?? null, dwt: x.dwt ?? null, grt: x.grt ?? null, draft: x.draft ?? null, biz: x.biz ?? null, tank: x.tank ?? null, eta: x.eta ?? p.eta,
+        bid: p.bid, berth: berth.label ?? berth.name ?? p.bid, berthCode: berth.code ?? p.bid, pier: berth.pier ?? null, pierName: berth.pierName ?? null,
         etb: p.etb, etu: p.etu, night: Boolean(p.night), fixed: Boolean(p.fixed), dem: p.dem?.cents ?? 0,
+        demMin: p.le != null && p.hose != null ? Math.max(0, p.hose - p.le) : null,
       }
     }),
   }

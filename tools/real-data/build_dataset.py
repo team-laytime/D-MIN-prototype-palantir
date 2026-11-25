@@ -4,11 +4,22 @@
 엔진(berth_sim.api.service.solve)을 후보 프리셋마다 한 번씩 돌려 결과를 함께 담는다.
 화면은 이 파일 하나로 시작하고, 계획 조건을 고치면 같은 요청을 엔진 API(/engine/plans)로 다시 보낸다.
 
+시연 데이터 흐름 (팀 INTEGRATION.md 13장, 11-25 이 흐름으로 바꿈):
+  D-MIN-dataset → 1년 묶음(optimizer_2025-01-01)
+  → 최적화 팀 후보정 scripts/make_tank_plan.py (탱크 수, 1년 생산계획, 연초 재고, 탱크보다 큰 물량 32척 축소)
+  → 기준 시각 T만 골라 엔진 요청(berth_prep request, 생산계획 · 탱크 설정 포함) → 엔진
+  생산계획은 1/1 재고에서 T까지 실적으로 재고를 이어 세므로 반드시 1년 묶음에 붙인다(7일 묶음은 이어 셀 실적이 없음).
+
+준비 (묶음 사본에 후보정, 원본 묶음은 그대로):
+  cp -R optimizer_2025-01-01 optimizer_2025-01-01_tank
+  (엔진 저장소) .venv/bin/python scripts/make_tank_plan.py --bundle <optimizer_2025-01-01_tank>
+
 실행 (엔진 저장소의 파이썬 환경, Python 3.11~3.12 + ortools):
   python tools/real-data/build_dataset.py \
     --engine ../D-MIN-prototype/D-MIN-optimization \
-    --bundle ../D-MIN-prototype/optimizer_data_2025/optimizer_2025-11-09 \
+    --bundle ../D-MIN-prototype/optimizer_data_2025/optimizer_2025-01-01_tank \
     --start "2025-11-09 09:00" --days 3 --id real-2025-11-09
+  제한 시간 60초, workers 8은 팀 권장값(탱크 반영 계획은 코어가 모자라면 60초 안에 못 찾음).
 
 출력: public/data/<id>.json, public/data/index.json  (비공개 데이터라 저장소에 올리지 않는다 · .gitignore)
 """
@@ -43,7 +54,8 @@ def main():
     ap.add_argument('--bundle', required=True)
     ap.add_argument('--start', required=True)
     ap.add_argument('--days', type=int, default=3)
-    ap.add_argument('--time-limit', type=int, default=30)
+    ap.add_argument('--time-limit', type=int, default=60)
+    ap.add_argument('--workers', type=int, default=8)
     ap.add_argument('--id', required=True)
     ap.add_argument('--label')
     a = ap.parse_args()
@@ -59,7 +71,7 @@ def main():
     t0 = datetime.strptime(a.start, '%Y-%m-%d %H:%M').replace(tzinfo=timezone(timedelta(hours=9)))
     lo, hi = t0 - timedelta(days=2), t0 + timedelta(days=a.days + 7)
     req['weather'] = [w for w in req.get('weather') or [] if lo <= datetime.fromisoformat(w['time'].replace('Z', '+00:00')) <= hi]
-    common = {'horizon': {'days': a.days}, 'solver': {'time_limit_s': a.time_limit}}
+    common = {'horizon': {'days': a.days}, 'solver': {'time_limit_s': a.time_limit, 'workers': a.workers}}
     req['params'] = common
 
     from berth_sim.api import service  # noqa: E402
@@ -76,7 +88,7 @@ def main():
     meta = json.loads((bundle / 'dummy' / 'meta.json').read_text())
     ds = {
         'id': a.id,
-        'label': a.label or f'{a.start[:10]} 기준 {a.days * 24}시간',
+        'label': a.label or f'{a.start} 현재, {a.days * 24}시간 계획',
         'bundle': bundle.name,
         'start': a.start,
         'days': a.days,

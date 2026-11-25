@@ -3,7 +3,7 @@
 .risk-page > *, .report-page > *, .verify-page > *, .schedule-page > * { flex-shrink: 0; }
 .risk-intro, .report-intro, .verify-intro, .schedule-intro { line-height: 1.6; }
 .risk-prose, .report-prose, .schedule-prose { font-family: var(--sans); font-size: calc(16px * var(--fs)); }
-.risk-stat-unit, .verify-stat-unit, .schedule-stat-unit { margin-left: 5px; font: 12px var(--sans); }
+.risk-stat-unit, .verify-stat-unit, .schedule-stat-unit { margin-left: 5px; font: calc(12px * var(--fs)) var(--sans); }
 
 /* 리스크 검토와 확정은 한 작업면에 놓되 확정 동작은 오른쪽에 고정한다. */
 .risk-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; align-items: start; gap: 10px; }
@@ -112,7 +112,7 @@
 .gt-grid { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); pointer-events: none; }
 .gt-grid.day { border-left-color: var(--line-3); }
 .gt-block { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red-wash) 0 4px, transparent 4px 8px); border-left: 1px dashed var(--red); border-right: 1px dashed var(--red); }
-.gt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 2px; padding: 0 3px; overflow: hidden; border: 1px solid var(--fg-3); border-radius: 1px; background: var(--bg-4); color: var(--fg); font: 10px var(--mono); line-height: 1; text-align: left; white-space: nowrap; cursor: pointer; }
+.gt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 2px; padding: 0 3px; overflow: hidden; border: 1px solid var(--fg-3); border-radius: 1px; background: var(--bg-4); color: var(--fg); font: calc(10px * var(--fs)) var(--mono); line-height: 1; text-align: left; white-space: nowrap; cursor: pointer; }
 .gt.compact .gt-bar { top: 2px; bottom: 2px; font-size: calc(9px * var(--fs)); }
 .gt-bar-t { display: block; overflow: hidden; text-overflow: ellipsis; }
 .gt-bar.night { border-color: var(--amber); background: var(--amber-wash); }
@@ -160,3 +160,25 @@
 .cmp-mini th:nth-child(2), .cmp-mini td:nth-child(2) { width: 84px; }
 .cmp-mini th:nth-child(3), .cmp-mini td:nth-child(3) { width: 96px; white-space: nowrap; }
 .cmp-mini td:first-child { overflow-wrap: anywhere; }
+
+/* 11-25 운영 현황 간트: 재생 시각 선 */
+.gt-cursor { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--accent); pointer-events: none; z-index: 2; }
+.gt-cursor-label { position: absolute; top: 1px; transform: translateX(-50%); padding: 0 4px; background: var(--accent); color: #fff; font-weight: 600; white-space: nowrap; z-index: 3; }
+.gt-wait { position: absolute; top: 50%; height: 0; border-top: 2px dashed var(--amber); opacity: 0.9; z-index: 1; }
+.gt-key.wait { height: 0; border: 0; border-top: 2px dashed var(--amber); background: none; }
+
+/* 11-25 범례 없이 읽히게: 그림 안에 뜻을 글로 */
+.gt-wait em { position: absolute; left: 50%; transform: translateX(-50%); top: -7px; padding: 0 3px; background: var(--bg-2); color: var(--amber); font: 600 calc(9px * var(--fs)) var(--sans); font-style: normal; line-height: 12px; white-space: nowrap; }
+.gt-block em { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--red); font: 600 calc(9px * var(--fs)) var(--sans); font-style: normal; white-space: nowrap; }
+.gt-bar-t { display: flex; align-items: center; gap: 3px; }
+.gt-tag { flex: none; padding: 0 3px; border-radius: 2px; font: 700 calc(8.5px * var(--fs)) var(--sans); font-style: normal; line-height: 1.4; }
+.gt-tag.dem { background: var(--red); color: #fff; }
+.gt-tag.night { background: var(--amber); color: #111; }
+.gt-axis .gt-night { display: none; }
+.gt-night-label { position: absolute; top: 0; bottom: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 1px; background: var(--night); color: var(--fg-3); font-size: calc(9px * var(--fs)); pointer-events: none; }
+
+/* 11-25 체선 구간만 칠하기: 막대 바탕은 --gt-base, 체선이 생기는 부분만 --dem-fill(Timeline.jsx가 그 구간을 그라데이션으로 넣음) */
+.gt-bar { --gt-base: var(--bg-4); --dem-fill: color-mix(in srgb, var(--red) 55%, var(--bg-2)); background: var(--gt-base); }
+.gt-bar.night { --gt-base: var(--amber-wash); }
+.gt-bar.active, .gt-bar:hover { --gt-base: var(--line-2); }
+.gt-wait-dem { position: absolute; top: 50%; height: 0; border-top: 3px solid var(--red); margin-top: -0.5px; z-index: 1; pointer-events: none; }

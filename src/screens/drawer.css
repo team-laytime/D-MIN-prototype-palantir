@@ -132,3 +132,82 @@
 .vd-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; }
 .vd-tags button { height: 20px; padding: 0 6px; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--accent); font-size: calc(11px * var(--fs)); cursor: pointer; }
 .vd-mention { color: var(--accent); }
+
+/* ===== 11-25 선박 카드 요약: 흐름 한 줄 + 핵심 세 칸 + 접는 상세 ===== */
+.vc-flow { display: grid; grid-template-columns: repeat(4, 1fr); margin: 14px 14px 12px; position: relative; }
+.vc-flow::before { content: ''; position: absolute; top: 7px; left: 12.5%; right: 12.5%; height: 2px; background: var(--line-2); }
+.vc-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.vc-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line-3); background: var(--bg-2); z-index: 1; }
+.vc-step.done .vc-dot { border-color: var(--fg-3); background: var(--fg-3); }
+.vc-step.now .vc-dot { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 4px var(--accent-wash); }
+.vc-label { margin-top: 2px; font-size: calc(11px * var(--fs)); color: var(--fg-2); }
+.vc-step.now .vc-label { color: var(--accent); font-weight: 600; }
+.vc-step b { font-size: calc(12px * var(--fs)); color: var(--fg); }
+.vc-step small { font-size: calc(10.5px * var(--fs)); color: var(--fg-3); }
+.vc-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin: 0 14px 12px; }
+.vc-facts > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--bg-1); min-width: 0; }
+.vc-facts span { font-size: calc(10.5px * var(--fs)); color: var(--fg-3); }
+.vc-facts b { font-size: calc(13px * var(--fs)); color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vc-facts small { font-size: calc(10.5px * var(--fs)); color: var(--fg-2); }
+.vc-facts .dem { border-color: var(--red); background: var(--red-wash); }
+.vc-facts .dem b { color: var(--red); }
+.vc-facts .ok b { color: var(--green); }
+.vc-link { border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.vc-more { margin: 0 14px 8px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--bg-2); }
+.vc-more summary { display: flex; align-items: center; gap: 6px; padding: 10px 12px; font-size: calc(12px * var(--fs)); font-weight: 600; color: var(--fg); cursor: pointer; list-style: none; }
+.vc-more summary::-webkit-details-marker { display: none; }
+.vc-more summary::after { content: '▾'; margin-left: auto; color: var(--fg-3); transition: transform 0.15s; }
+.vc-more[open] summary::after { transform: rotate(180deg); }
+.vc-more summary .num { padding: 0 6px; border-radius: 8px; background: var(--bg-4); font-size: calc(10.5px * var(--fs)); color: var(--fg-2); }
+.vc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 0; padding: 4px 12px 12px; }
+.vc-grid div { min-width: 0; }
+.vc-grid dt { font-size: calc(10.5px * var(--fs)); color: var(--fg-3); }
+.vc-grid dd { margin: 1px 0 0; font-size: calc(12px * var(--fs)); color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vc-berths { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 12px; }
+.vc-berth { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border: 1px solid var(--line-2); border-radius: 12px; font-family: var(--mono); font-size: calc(11px * var(--fs)); color: var(--fg-2); }
+.vc-berth.on { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+.vc-berth em { font-family: var(--sans); font-style: normal; font-size: calc(10px * var(--fs)); }
+.vessel-drawer-ident { display: inline-flex; align-items: center; gap: 8px; }
+.vc-facts b { white-space: normal; word-break: keep-all; line-height: 1.3; }
+
+/* ===== 11-25 산출 근거: 결론 + 시간 흐름 ===== */
+.vd-verdict { display: flex; align-items: flex-start; gap: 12px; margin: 12px 14px 8px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--bg-1); }
+.vd-verdict.ok { border-color: color-mix(in srgb, var(--green) 45%, transparent); background: var(--green-wash); }
+.vd-verdict.dem { border-color: color-mix(in srgb, var(--red) 45%, transparent); background: var(--red-wash); }
+.vd-verdict-icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; }
+.vd-verdict.ok .vd-verdict-icon { background: var(--green); color: #06140d; }
+.vd-verdict.dem .vd-verdict-icon { background: var(--red); color: #fff; }
+.vd-verdict-k { display: block; font-size: calc(11px * var(--fs)); font-weight: 600; color: var(--fg-2); }
+.vd-verdict > div > b { display: block; margin: 1px 0 3px; font-size: calc(22px * var(--fs)); font-weight: 600; line-height: 1.15; }
+.vd-verdict.ok > div > b { color: var(--green); }
+.vd-verdict.dem > div > b { color: var(--red); }
+.vd-verdict p { margin: 0; font-size: calc(12px * var(--fs)); color: var(--fg); }
+
+.tf { position: relative; display: grid; gap: 8px; padding: 4px 0 2px; }
+.tf-lane, .tf-axis { display: grid; grid-template-columns: 62px 1fr; align-items: center; }
+.tf-name { font-size: calc(11px * var(--fs)); font-weight: 600; color: var(--fg-2); }
+.tf-track { position: relative; height: 26px; border-radius: 4px; background: var(--bg-1); }
+.tf-axis .tf-track { height: 40px; background: none; }
+.tf-seg { position: absolute; top: 3px; bottom: 3px; min-width: 4px; border-radius: 3px; overflow: hidden; display: flex; align-items: center; }
+.tf-seg em { padding: 0 7px; font-style: normal; font-size: calc(10.5px * var(--fs)); font-weight: 600; white-space: nowrap; }
+.tf-seg.wait { background: var(--amber-wash); border: 1px dashed var(--amber); }
+.tf-seg.wait em { color: var(--amber); }
+.tf-seg.work { background: color-mix(in srgb, var(--blue) 28%, var(--bg-2)); border: 1px solid var(--blue); }
+.tf-seg.work em { color: var(--fg); }
+.tf-seg.lay { background: var(--green-wash); border: 1px solid var(--green); }
+.tf-seg.lay em { color: var(--green); }
+.tf-seg.dem { background: var(--red); border: 1px solid var(--red); }
+.tf-seg.dem em { color: #fff; }
+.tf-none { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: calc(11px * var(--fs)); color: var(--green); font-weight: 600; }
+.tf-guides { position: absolute; left: 62px; right: 0; top: 0; bottom: 40px; pointer-events: none; z-index: 1; }
+.tf-guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--line-3); }
+.tf-tick { position: absolute; top: 2px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; line-height: 1.2; white-space: nowrap; }
+.tf-tick.low { top: 20px; }
+.tf-tick b { font-size: calc(10.5px * var(--fs)); color: var(--fg); }
+.tf-tick span { font-size: calc(10px * var(--fs)); color: var(--fg-3); }
+.tf-seg.dem { overflow: visible; }
+.tf-seg.dem em { position: absolute; right: calc(100% + 4px); top: 50%; transform: translateY(-50%); padding: 1px 6px; border-radius: 3px; background: var(--red); color: #fff; }
+.tf-tick.end { transform: translateX(-100%); align-items: flex-end; }
+.tf-axis .tf-track { overflow: visible; }
+.tf-seg em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tf-axis .tf-track { height: 58px; } .tf-tick.low { top: 30px; } .tf-guides { bottom: 58px; }

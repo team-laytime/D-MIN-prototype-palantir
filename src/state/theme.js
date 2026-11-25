@@ -37,10 +37,11 @@ export const FONT_SCALES = [
   { id: 'xlarge', label: '아주 크게', zoom: 1.3 },
 ]
 const FKEY = 'dmin-font'
+// 11-25 상단 바의 글씨 크기 버튼을 뺐다(사용자 결정). 예전에 고른 값이 남아 화면이 커져 있지 않게 늘 보통으로 시작한다.
+//   (기본 글씨는 theme.css --fs 배율로 이미 키워 두었다. 시연용으로는 주소에 ?font=large 를 붙이면 아직 쓸 수 있다.)
 const fontInitial = () => {
   const q = new URLSearchParams(location.search).get('font')
-  const saved = q ?? (() => { try { return localStorage.getItem(FKEY) } catch { return null } })()
-  return FONT_SCALES.some((f) => f.id === saved) ? saved : 'normal'
+  return FONT_SCALES.some((f) => f.id === q) ? q : 'normal'
 }
 let font = fontInitial()
 const fontListeners = new Set()

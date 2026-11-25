@@ -111,7 +111,7 @@
 .cmp-report tbody th { width: 92px; padding: 8px 10px; font-size: calc(11px * var(--fs)); font-weight: 600; color: var(--fg-2); background: var(--bg-2); text-align: left; white-space: nowrap; }
 .cmp-report thead th.on, .cmp-report td.on { background: var(--accent-wash); }
 .cmp-report td { padding: 8px 10px; font-size: calc(12px * var(--fs)); height: auto; }
-.cmp-col { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; font: 600 12px var(--sans); color: var(--fg); cursor: pointer; }
+.cmp-col { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; font: 600 calc(12px * var(--fs)) var(--sans); color: var(--fg); cursor: pointer; }
 th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var(--accent) 40%, transparent 45%); }
 .cmp-total { font-size: calc(15px * var(--fs)) !important; font-weight: 600; }
 .cmp-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: calc(11.5px * var(--fs)); line-height: 1.45; }
@@ -150,14 +150,14 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .oc-col { cursor: pointer; }
 .oc-colbg { fill: transparent; }
 .oc-col.on .oc-colbg { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 1.5; }
-.oc-head { font: 700 14px var(--sans); fill: var(--fg); }
-.oc-sub { font: 11.5px var(--sans); fill: var(--fg-3); }
-.oc-rank { font: 11.5px var(--sans); fill: var(--fg-3); }
+.oc-head { font: 700 calc(14px * var(--fs)) var(--sans); fill: var(--fg); }
+.oc-sub { font: calc(11.5px * var(--fs)) var(--sans); fill: var(--fg-3); }
+.oc-rank { font: calc(11.5px * var(--fs)) var(--sans); fill: var(--fg-3); }
 .oc-chip { fill: var(--bg-1); stroke-width: 1.5; }
 .oc-chip.ch { stroke-width: 2.5; }
-.oc-chip-t { font: 11.5px var(--mono); fill: var(--fg); }
-.oc-name { font: 700 12px var(--sans); }
-.oc-delta { font: 700 11px var(--sans); }
+.oc-chip-t { font: calc(11.5px * var(--fs)) var(--mono); fill: var(--fg); }
+.oc-name { font: 700 calc(12px * var(--fs)) var(--sans); }
+.oc-delta { font: 700 calc(11px * var(--fs)) var(--sans); }
 .oc-delta.up { fill: var(--green); }
 .oc-delta.down { fill: var(--red); }
 .oc-cap { margin: 6px 12px 10px; font-size: calc(11.5px * var(--fs)); color: var(--fg-2); }
@@ -207,7 +207,7 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .pi-empty { padding: 12px; margin: 0; }
 .pi-wind { width: 100%; height: auto; display: block; }
 .pi-wind-grid { stroke: var(--line); stroke-width: 1; }
-.pi-wind-tick { font: 9px var(--mono); fill: var(--fg-3); }
+.pi-wind-tick { font: calc(9px * var(--fs)) var(--mono); fill: var(--fg-3); }
 .pi-wind-tick.limit { fill: var(--red); }
 .pi-wind-limit { stroke: var(--red); stroke-width: 1; stroke-dasharray: 4 3; }
 .pi-wind-line { fill: none; stroke: var(--blue); stroke-width: 1.4; }
@@ -217,3 +217,268 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
   .plan-input-bottom { grid-template-columns: 1fr; }
   .pi-params { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* 11-25 계획 조건 묶음 탭 */
+.pi-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pi-tabs button { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--bg-2); color: var(--fg-2); text-align: left; font: inherit; cursor: pointer; }
+.pi-tabs button .bp6-icon { grid-row: 1 / span 2; color: var(--fg-3); }
+.pi-tabs button b { font-size: calc(13px * var(--fs)); color: var(--fg); }
+.pi-tabs button span { font-size: calc(11px * var(--fs)); color: var(--fg-3); font-family: var(--mono); }
+.pi-tabs button:hover { border-color: var(--line-3); }
+.pi-tabs button.on { border-color: var(--accent); background: var(--accent-wash); }
+.pi-tabs button.on .bp6-icon, .pi-tabs button.on b { color: var(--accent); }
+.pi-tab-berth { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.plan-input .pi-scroll { max-height: calc(100vh - 230px); }
+/* 선박 탭 안: 입항·선박 정보 / 계약 조건 */
+.pi-subtabs { display: inline-flex; margin-right: 8px; border: 1px solid var(--line-2); border-radius: 5px; overflow: hidden; }
+.pi-subtabs button { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 12px; border: 0; background: var(--bg-2); color: var(--fg-2); font: inherit; font-size: calc(12px * var(--fs)); font-weight: 600; cursor: pointer; }
+.pi-subtabs button + button { border-left: 1px solid var(--line-2); }
+.pi-subtabs button.on { background: var(--accent-wash); color: var(--accent); }
+
+/* ── 11-25 계획 조건 고도화 ───────────────────────────────────────────
+   묶음 탭은 운영 사이트식 탭 줄(글자 + 밑줄), 선박 탭은 왼쪽 목록(선박, ETA) + 오른쪽 상세/비교 */
+.pi-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line-2); }
+.pi-tabs button { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 22px 11px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; }
+.pi-tabs button .bp6-icon { display: none; }
+.pi-tabs button b { font-size: calc(15px * var(--fs)); font-weight: 600; color: var(--fg-2); }
+.pi-tabs button span { font-family: var(--sans); font-size: calc(12.5px * var(--fs)); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.pi-tabs button:hover { border-color: transparent; background: none; }
+.pi-tabs button:hover b { color: var(--fg); }
+.pi-tabs button.on { border-color: transparent; border-bottom-color: var(--accent); background: none; }
+.pi-tabs button.on b { color: var(--fg); }
+.pi-tabs button.on span { color: var(--fg-2); }
+
+.vt { container-type: inline-size; display: grid; grid-template-columns: minmax(380px, 0.95fr) minmax(0, 1.05fr); gap: 0; height: calc(100vh - 215px); min-height: 420px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.vt-list { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line-2); }
+.vt-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line-2); }
+.vt-search { flex: 1; min-width: 0; }
+.vt-search .bp6-input { height: 36px; font-size: calc(13.5px * var(--fs)); }
+.vt-search .bp6-icon { margin: 11px 10px !important; }
+.vt-cmp-btn.bp6-button { height: 36px; padding: 0 14px; font-size: calc(13px * var(--fs)); font-weight: 600; white-space: nowrap; }
+.vt-scroll { flex: 1; min-height: 0; overflow: auto; }
+.vt-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.vt-c-pick { width: 44px; }
+.vt-c-eta { width: 46%; }
+.vt-table th { position: sticky; top: 0; z-index: 1; height: 38px; padding: 0 12px; background: var(--bg-3); border-bottom: 1px solid var(--line-2); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-weight: 600; text-align: left; }
+.vt-table td { height: 50px; padding: 0 12px; border-bottom: 1px solid var(--line); font-size: calc(14px * var(--fs)); color: var(--fg); }
+.vt-table tbody tr { cursor: pointer; }
+.vt-table tbody tr:hover td { background: var(--bg-3); }
+.vt-table tbody tr.open td { background: var(--accent-wash); }
+.vt-table tbody tr.picked .vt-pick { background: var(--accent-wash); }
+.vt-pick { text-align: center; padding: 0 !important; }
+.vt-pick input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; vertical-align: middle; }
+.vt-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vt-name > span { overflow: hidden; text-overflow: ellipsis; }
+.vt-tag { margin-left: 8px; padding: 1px 6px; border: 1px solid var(--accent); border-radius: 3px; color: var(--accent); font-size: calc(11px * var(--fs)); font-style: normal; font-weight: 600; vertical-align: 1px; }
+.vt-eta { white-space: nowrap; }
+.vt-eta-input { width: calc(100% - 30px); max-width: 230px; height: 34px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--input-bg); color: var(--fg); font: calc(13.5px * var(--fs)) var(--sans); font-variant-numeric: tabular-nums; }
+.vt-eta-input:hover { border-color: var(--line-3); }
+.vt-eta-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.vt-eta-input.bad { border-color: var(--red); }
+.vt-eta.changed .vt-eta-input { border-color: var(--amber); color: var(--amber); font-weight: 600; }
+.vt-undo { margin-left: 4px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 3px; background: none; color: var(--fg-2); cursor: pointer; vertical-align: middle; }
+.vt-undo:hover { background: var(--bg-4); color: var(--fg); }
+.vt-empty { color: var(--fg-2); cursor: default; }
+
+.vt-side { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.vd2 { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.vd2-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 57px; padding: 10px 18px; border-bottom: 1px solid var(--line-2); }
+.vd2-head h3 { margin: 0; font-size: calc(18px * var(--fs)); font-weight: 700; color: var(--fg); }
+.vd2-pick.bp6-button, .vc2-actions .bp6-button { margin-left: auto; height: 34px; font-size: calc(12.5px * var(--fs)); }
+.vc2-actions { margin-left: auto; display: flex; gap: 6px; }
+.vc2-actions .bp6-button { margin-left: 0; }
+.vd2-body { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; align-content: start; }
+.vd2-grid { width: 100%; border-collapse: collapse; border: 1px solid var(--line-2); align-self: start; }
+.vd2-grid caption { caption-side: top; text-align: left; padding: 0 0 7px; font-size: calc(13.5px * var(--fs)); font-weight: 700; color: var(--fg); }
+.vd2-grid caption .bp6-icon { margin-left: 6px; color: var(--fg-3); vertical-align: -1px; }
+.vd2-grid th, .vd2-grid td { height: 40px; padding: 0 12px; border-bottom: 1px solid var(--line); font-size: calc(13.5px * var(--fs)); text-align: left; }
+.vd2-grid tr:last-child th, .vd2-grid tr:last-child td { border-bottom: 0; }
+.vd2-grid th { width: 38%; background: var(--bg-3); color: var(--fg-2); font-weight: 500; white-space: nowrap; border-right: 1px solid var(--line); }
+.vd2-grid td { color: var(--fg); font-variant-numeric: tabular-nums; }
+.vd2-grid td small { display: block; margin-top: 1px; color: var(--amber); font-size: calc(11.5px * var(--fs)); }
+.vd2-grid.locked td { color: var(--fg-2); }
+
+.vc2 .vd2-body { display: block; }
+.vc2-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line-2); }
+.vc2-k { width: 22%; }
+.vc2-table thead th { position: sticky; top: -16px; z-index: 1; height: 44px; padding: 0 14px; background: var(--bg-3); border-bottom: 1px solid var(--line-2); font-size: calc(14.5px * var(--fs)); font-weight: 700; color: var(--fg); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vc2-table thead th + th { border-left: 1px solid var(--line-2); }
+.vc2-group th { height: 34px; padding: 0 14px; background: var(--bg-1); border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line); color: var(--fg); font-size: calc(13px * var(--fs)); font-weight: 700; text-align: left; }
+.vc2-group th .bp6-icon { margin-left: 6px; color: var(--fg-3); vertical-align: -1px; }
+.vc2-table tbody tr:not(.vc2-group) th, .vc2-table tbody tr:not(.vc2-group) td { height: 40px; padding: 0 14px; border-bottom: 1px solid var(--line); font-size: calc(13.5px * var(--fs)); text-align: left; }
+.vc2-table tbody tr:not(.vc2-group) th { color: var(--fg-2); font-weight: 500; background: var(--bg-3); border-right: 1px solid var(--line); white-space: nowrap; }
+.vc2-table tbody td + td { border-left: 1px solid var(--line); }
+.vc2-table tbody td { color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.vc2-table tr.diff td { color: var(--fg); font-weight: 700; }
+
+@container (max-width: 860px) {
+  .vd2-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 1100px) {
+  .vt { grid-template-columns: 1fr; height: auto; }
+  .vt-list { border-right: 0; border-bottom: 1px solid var(--line-2); max-height: 60vh; }
+}
+
+/* 11-25 탭 그림 아이콘 */
+.pi-tabs button { align-items: center; }
+.pi-ico { flex: none; color: var(--fg-3); }
+.pi-tabs button:hover .pi-ico { color: var(--fg-2); }
+.pi-tabs button.on .pi-ico { color: var(--accent); }
+
+/* 11-25 부두 탭 (선박 탭과 같은 목록 + 상세) */
+.bt { grid-template-columns: minmax(300px, 0.7fr) minmax(0, 1.3fr); }
+.bt-c-st { width: 34%; }
+.bt-pier th { height: 34px; padding: 0 12px; background: var(--bg-1); border-bottom: 1px solid var(--line); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-weight: 700; text-align: left; position: static; }
+.bt-table td { height: 44px; }
+.bt-st { color: var(--fg-3); font-size: calc(13px * var(--fs)); }
+.bt-st.on { color: var(--amber); font-weight: 700; }
+.bt-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.bt-cap { display: flex; align-items: center; gap: 8px; min-height: 30px; padding-bottom: 7px; font-size: calc(13.5px * var(--fs)); font-weight: 700; color: var(--fg); }
+.bt-cap > span { color: var(--fg-3); font-weight: 500; }
+.bt-prod ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.bt-prod li { padding: 5px 10px; border: 1px solid var(--line-2); border-radius: 3px; font-size: calc(13px * var(--fs)); color: var(--fg); }
+.bt-blocks { grid-column: 1 / -1; }
+.bt-add.bp6-button { margin-left: auto; height: 32px; font-size: calc(12.5px * var(--fs)); font-weight: 600; }
+.bt-none { padding: 18px 14px; border: 1px dashed var(--line-2); color: var(--fg-3); font-size: calc(13px * var(--fs)); text-align: center; }
+.bt-block-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line-2); }
+.bt-block-table th { height: 36px; padding: 0 10px; background: var(--bg-3); border-bottom: 1px solid var(--line-2); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-weight: 600; text-align: left; }
+.bt-block-table td { height: 50px; padding: 0 10px; border-bottom: 1px solid var(--line); }
+.bt-block-table tr:last-child td { border-bottom: 0; }
+.bt-block-table tr.inc td { background: var(--amber-wash); }
+.bt-block-table .vt-eta-input { width: 100%; }
+.bt-select { height: 34px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--input-bg); color: var(--fg); font: calc(13.5px * var(--fs)) var(--sans); }
+.bt-select:focus { outline: none; border-color: var(--accent); }
+
+/* 11-25 엔진 조절값 */
+.pf { max-width: 860px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.pf-table { width: 100%; border-collapse: collapse; }
+.pf-c-k { width: 34%; }
+.pf-c-v { width: 34%; }
+.pf-table thead th { height: 38px; padding: 0 16px; background: var(--bg-3); border-bottom: 1px solid var(--line-2); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-weight: 600; text-align: left; }
+.pf-table tbody th, .pf-table tbody td { height: 58px; padding: 0 16px; border-bottom: 1px solid var(--line); text-align: left; }
+.pf-table tbody tr:last-child th, .pf-table tbody tr:last-child td { border-bottom: 0; }
+.pf-table tbody th { font-size: calc(14px * var(--fs)); font-weight: 600; color: var(--fg); }
+.pf-input { display: inline-flex; align-items: center; gap: 8px; }
+.pf-input .bp6-input-group { width: 120px; }
+.pf-input .bp6-input { height: 36px; font: calc(14px * var(--fs)) var(--sans); font-variant-numeric: tabular-nums; text-align: right; }
+.pf-unit { color: var(--fg-2); font-size: calc(13.5px * var(--fs)); }
+.pf-table tr.changed .bp6-input { color: var(--amber); font-weight: 700; box-shadow: inset 0 0 0 1px var(--amber); }
+.pf-def { color: var(--fg-3); font-size: calc(13.5px * var(--fs)); font-variant-numeric: tabular-nums; }
+
+/* 11-25 기상 */
+.wx { border: 1px solid var(--line-2); background: var(--bg-2); }
+.wx-head { display: flex; border-bottom: 1px solid var(--line-2); }
+.wx-head > div { display: flex; flex-direction: column; gap: 4px; padding: 14px 22px; border-right: 1px solid var(--line); }
+.wx-head span { color: var(--fg-2); font-size: calc(12.5px * var(--fs)); }
+.wx-head b { font-size: calc(20px * var(--fs)); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
+.wx-head b.c-red { color: var(--red); }
+.wx-chart { padding: 16px 18px 12px; }
+.wx-chart .pi-wind-tick { font-size: calc(11px * var(--fs)); font-family: var(--sans); }
+.wx-chart .pi-wind-line { stroke-width: 2; }
+.pi-tabs button:focus { outline: none; }
+.pi-tabs button:focus-visible { outline: 1px solid var(--accent); outline-offset: -3px; }
+
+/* 11-25 운영 여건 탭: 생산계획과 탱크 재고 + 풍속 */
+.env { display: flex; flex-direction: column; gap: 14px; }
+.wx-head h3 { margin: 0; padding: 14px 22px; align-self: center; font-size: calc(15px * var(--fs)); font-weight: 700; color: var(--fg); border-right: 1px solid var(--line); min-width: 150px; }
+.tp { border: 1px solid var(--line-2); background: var(--bg-2); }
+.tp .wx-head h3 { border-right: 0; }
+.tp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tp-c-name { width: 17%; }
+.tp-c-n { width: 8%; }
+.tp-c-g { width: 34%; }
+.tp-table thead th { height: 38px; padding: 0 16px; background: var(--bg-3); border-bottom: 1px solid var(--line-2); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-weight: 600; text-align: left; }
+.tp-table thead th.r { text-align: right; }
+.tp-table thead th span { color: var(--fg-3); font-weight: 500; margin-left: 2px; }
+.tp-table tbody th, .tp-table tbody td { height: 48px; padding: 0 16px; border-bottom: 1px solid var(--line); font-size: calc(13.5px * var(--fs)); text-align: left; }
+.tp-table tbody tr:last-child th, .tp-table tbody tr:last-child td { border-bottom: 0; }
+.tp-table tbody th { font-weight: 600; color: var(--fg); }
+.tp-table td.r { text-align: right; }
+.tp-g { display: flex; align-items: center; gap: 12px; }
+.tp-bar { position: relative; flex: 1; height: 10px; border-radius: 2px; background: var(--bg-4); overflow: hidden; }
+.tp-safe { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--green) 16%, transparent); }
+.tp-fill { position: absolute; left: 0; top: 3px; bottom: 3px; background: var(--fg-2); border-radius: 1px; }
+.tp-fill.near { background: var(--amber); }
+.tp-g b { width: 44px; text-align: right; font-size: calc(14px * var(--fs)); font-variant-numeric: tabular-nums; }
+.tp-g b.near { color: var(--amber); }
+.tp-t { width: 96px; color: var(--fg-3); font-size: calc(12.5px * var(--fs)); font-variant-numeric: tabular-nums; text-align: right; }
+.tp-rate { font-variant-numeric: tabular-nums; color: var(--fg); }
+.tp-rate.down { color: var(--fg-2); }
+
+/* 11-25 엔진 값 입력 칸 (부두 전환 여유, 안전재고 상한, 하한) */
+.pin { display: inline-flex; align-items: center; gap: 8px; font-size: calc(13.5px * var(--fs)); }
+.pin-k { font-weight: 600; color: var(--fg); white-space: nowrap; }
+.pin .bp6-input-group { width: 74px; }
+.pin .bp6-input { height: 34px; font: calc(14px * var(--fs)) var(--sans); font-variant-numeric: tabular-nums; text-align: right; }
+.pin-u { color: var(--fg-2); }
+.pin-def { color: var(--fg-3); font-size: calc(12px * var(--fs)); }
+.pin.changed .bp6-input { color: var(--amber); font-weight: 700; box-shadow: inset 0 0 0 1px var(--amber); }
+.bt-bar { min-height: 57px; }
+
+/* 11-25 생산계획과 탱크 재고: 시간별 재고 흐름 */
+.tp-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; min-height: 56px; padding: 8px 18px; border-bottom: 1px solid var(--line-2); }
+.tp-head h3 { margin: 0; font-size: calc(15px * var(--fs)); font-weight: 700; color: var(--fg); }
+.tp-inputs { margin-left: auto; display: flex; gap: 22px; }
+.tp-c-name { width: 15%; }
+.tp-c-now { width: 9%; }
+.tp-c-rate { width: 12%; }
+.tp-table thead th small, .tp-table tbody th small { color: var(--fg-3); font-weight: 500; font-size: calc(11.5px * var(--fs)); margin-left: 6px; }
+.tp-table tbody td.tp-now b { font-size: calc(15px * var(--fs)); font-variant-numeric: tabular-nums; }
+.tp-axis-h { position: relative; padding-top: 4px !important; padding-bottom: 4px !important; }
+.tp-axis-t { display: block; }
+.tp-axis { display: none; }
+.tp-days { position: relative; height: 14px; margin-right: 64px; }
+.tp-days span { position: absolute; transform: translateX(-50%); color: var(--fg-3); font-size: calc(11px * var(--fs)); font-weight: 500; }
+.tp-table thead th.tp-axis-h { height: 50px; }
+.tp-spark { position: relative; padding-right: 80px !important; }
+.tp-spark svg { display: block; width: 100%; height: 40px; }
+.tp-band { fill: color-mix(in srgb, var(--green) 12%, transparent); }
+.tp-grid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tp-area { fill: color-mix(in srgb, var(--blue) 14%, transparent); }
+.tp-line { fill: none; stroke: var(--blue); stroke-width: 1.8; }
+.tp-line.out { stroke: var(--amber); }
+.tp-range { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-variant-numeric: tabular-nums; }
+.tp-table tbody td.tp-rate { font-size: calc(13px * var(--fs)); }
+
+/* 11-25 접안 중인 배, 야간 도선 제한 */
+.env-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.env-count { color: var(--fg-2); font-size: calc(13px * var(--fs)); }
+.env-table { width: 100%; border-collapse: collapse; }
+.env-table thead th { height: 36px; padding: 0 16px; background: var(--bg-3); border-bottom: 1px solid var(--line-2); color: var(--fg-2); font-size: calc(12.5px * var(--fs)); font-weight: 600; text-align: left; }
+.env-table th.r, .env-table td.r { text-align: right; }
+.env-table tbody th, .env-table tbody td { height: 42px; padding: 0 16px; border-bottom: 1px solid var(--line); font-size: calc(13.5px * var(--fs)); text-align: left; }
+.env-table tbody th { font-weight: 600; color: var(--fg); white-space: nowrap; }
+.env-table tbody tr:last-child th, .env-table tbody tr:last-child td { border-bottom: 0; }
+.env-table td.num { font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.np-rule { display: grid; grid-template-columns: max-content 1fr; margin: 0; border-bottom: 1px solid var(--line-2); }
+.np-rule dt, .np-rule dd { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: calc(13px * var(--fs)); line-height: 1.5; }
+.np-rule dt { background: var(--bg-3); color: var(--fg-2); font-weight: 600; border-right: 1px solid var(--line); }
+.np-rule dd { color: var(--fg); }
+.np-rule dt:nth-last-of-type(1), .np-rule dd:last-of-type { border-bottom: 0; }
+@media (max-width: 1300px) { .env-2 { grid-template-columns: 1fr; } }
+.tp-spark svg { height: 52px; }
+.tp-table tbody th, .tp-table tbody td { height: 66px; }
+
+/* 11-25 고정 규칙 표시, 계획용 풍속 기준 */
+.rule-lock { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; height: 30px; border: 1px solid var(--line-2); border-radius: 3px; color: var(--fg-2); font-size: calc(12.5px * var(--fs)); white-space: nowrap; }
+.rule-lock .bp6-icon { color: var(--fg-3); }
+.tp-inputs { align-items: center; }
+.wx-head { flex-wrap: wrap; }
+.wx-plan { flex: 1; border-right: 0 !important; }
+.wx-inputs { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 2px; }
+.pi-wind-plan { stroke: var(--amber); stroke-width: 1.5; }
+.pi-wind-margin { fill: color-mix(in srgb, var(--amber) 10%, transparent); }
+.pi-wind-tick.plan { fill: var(--amber); }
+
+/* 11-25 숫자 칸 (입력을 끝낼 때 확정) */
+.pin-in { width: 74px; height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--input-bg); color: var(--fg); font: calc(14px * var(--fs)) var(--sans); font-variant-numeric: tabular-nums; text-align: right; }
+.pin-in:hover { border-color: var(--line-3); }
+.pin-in:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pin.changed .pin-in { color: var(--amber); font-weight: 700; border-color: var(--amber); }
+.num-warn { margin: 0; font-size: calc(14px * var(--fs)); line-height: 1.5; color: var(--fg); }
+.num-warn.sub { margin-top: 4px; color: var(--fg-2); }
+.bp6-alert { width: 440px; padding: 22px 24px 18px; border: 1px solid var(--line-2); border-radius: 4px; background: var(--bg-2); color: var(--fg); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); }
+.bp6-alert .bp6-alert-body { gap: 14px; }
+.bp6-alert .bp6-alert-body .bp6-icon { color: var(--amber); }
+.bp6-alert .bp6-alert-footer { margin-top: 16px; }
+.bp6-alert .bp6-alert-footer .bp6-button { height: 34px; padding: 0 16px; font-size: calc(13px * var(--fs)); font-weight: 600; }

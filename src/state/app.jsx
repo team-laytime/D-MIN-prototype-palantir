@@ -88,7 +88,8 @@ export function AppProvider({ children }) {
     loading: !scen && !loadError,
     stale: !!scen && calc.version !== version, // 계획 조건이 후보 계산 뒤에 바뀜
     running: calc.running, calcError: calc.error, calcAt: calc.at,
-    baseline: calc.sims[0]?.baseline ?? null, // 실제 계획(실제 부두·실제 접안)
+    // 11-25 실제 접안 실적(엔진 baseline)과는 화면 어디에서도 비교하지 않는다(사용자 결정). 계획 시점에는 모르는 정보다.
+    baseline: null,
   }), [calc, scen, version, loadError])
   const all = result.candidates
 

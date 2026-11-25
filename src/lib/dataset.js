@@ -12,7 +12,19 @@ export async function loadIndex() {
 export async function loadDataset(id) {
   const r = await fetch(`${import.meta.env.BASE_URL}data/${id}.json`)
   if (!r.ok) throw new Error(`데이터셋 ${id}를 불러오지 못했습니다 (${r.status})`)
-  return r.json()
+  const ds = await r.json()
+  ds.vesselRef = await loadVesselRef()
+  return ds
+}
+
+// 11-25 호출부호별 선박명, 제원표 (D-MIN-dataset data/reference → tools/real-data/build_vessel_ref.py → public/data/vessel-ref.json).
+//   파일이 없으면 빈 표로 두고 화면은 호출부호를 이름 대신 쓴다.
+let refCache = null
+async function loadVesselRef() {
+  if (refCache) return refCache
+  const r = await fetch(`${import.meta.env.BASE_URL}data/vessel-ref.json`).catch(() => null)
+  refCache = r?.ok ? await r.json().catch(() => ({})) : {}
+  return refCache
 }
 
 // ── 부두 ─────────────────────────────────────────────────────────────
@@ -34,6 +46,13 @@ export function berthName(id) {
   return id.includes('-') ? `SK ${pierOf(id)}부두 ${id}` : `SK ${id}부두`
 }
 export const berthCode = (id) => (id.startsWith('BUOY') ? `B${id.slice(4)}` : id.startsWith('GAS') ? `G${id.slice(3)}` : id)
+// 11-25 화면에 보이는 선석 이름(풀어 쓴 것): 2-1 → SK2부두 1번, 3 → SK3부두, BUOY2 → 부이 2번, GAS1 → 가스부두 1번
+export const berthLabel = (id) => {
+  if (id.startsWith('BUOY')) return `부이 ${id.slice(4)}번`
+  if (id.startsWith('GAS')) return `가스부두 ${id.slice(3)}번`
+  const [pier, n] = id.split('-')
+  return n ? `SK${pier}부두 ${Number(n)}번` : `SK${pier}부두`
+}
 
 // ── 화물·방향 ─────────────────────────────────────────────────────────
 export const CARGO = {
@@ -46,6 +65,12 @@ export const cargoName = (g) => CARGO[g] ?? g
 // biz: IM 수입 · EX 수출 · DI 국내 입고 · DO 국내 출고. 탱크 기준으로는 IM·DI가 들어오고(양하) EX·DO가 나간다(선적).
 export const BIZ = { IM: '수입', EX: '수출', DI: '국내 입고', DO: '국내 출고' }
 export const isIn = (biz) => biz === 'IM' || biz === 'DI'
+
+// 11-25 탱크 묶음: 팀 엔진 product_direction.tank_group과 같은 규칙(원유 / 반입 원료 / 양방향 / 제품 분류별 반출)
+const DIR_IN = new Set(['CRUDE', 'L/S', '기유(양하)', 'MEOH', 'C9+ARO (JX)', 'UCO'])
+const DIR_BOTH = new Set(['NAPH', 'LPG', 'BUTENE', 'FO'])
+const CLASS_LABEL = { CR: '원유', PP: '석유제품', PC: '화학', LB: '윤활유', SP: '특수' }
+export const tankGroupOf = (cargo, pclass) => (pclass === 'CR' ? '원유' : DIR_IN.has(cargo) ? '반입 원료' : DIR_BOTH.has(cargo) ? '양방향' : `${CLASS_LABEL[pclass] ?? pclass} 반출`)
 
 export const vesselIdOf = (v) => `${v.call_sign}-${v.entry_year}-${v.voyage}-${v.stay_seq}`
 
@@ -62,32 +87,57 @@ export function buildScen(ds) {
     const base = PIER_POS[pier] ?? PIER_POS[8]
     const pos = pier === 'BUOY' ? (b.berth === 'BUOY2' ? [35.4483, 129.4236] : [35.44, 129.43]) : [base[0] - k * 0.0011, base[1]]
     return {
-      id: b.berth, name: berthName(b.berth), code: berthCode(b.berth), pier, pierName: pierName(pier),
+      id: b.berth, name: berthName(b.berth), code: berthCode(b.berth), label: berthLabel(b.berth), pier, pierName: pierName(pier),
       maxDwt: b.max_dwt, maxDraft: b.max_draft, maxLoa: b.max_loa, minLoa: b.min_loa, size: b.size,
       products: [...new Set(prods.filter((p) => p.berth === b.berth).map((p) => cargoName(p.group)))],
       pos, moor: [pos[0], pos[1] + 0.0019], approxPos: pier === 'GAS',
     }
   })
+  const refs = ds.vesselRef ?? {}
+  const ref = (v) => refs[v.call_sign] ?? {}
   const vessels = req.vessels.filter((v) => planIds.has(vesselIdOf(v))).map((v) => ({
-    id: vesselIdOf(v), name: `${v.call_sign} ${Number(v.voyage)}항차`, callSign: v.call_sign, voyage: v.voyage,
+    // 11-25 화면에는 선박명(한글)을 쓴다. 묶음에는 선박명 칸이 없어 호출부호로 선박명표(vesselRef)에서 찾고, 없으면 호출부호.
+    id: vesselIdOf(v), name: ref(v).nameKo ?? ref(v).nameEn ?? v.call_sign, shipName: ref(v).nameKo ?? null, nameEn: ref(v).nameEn ?? null,
+    flag: ref(v).flag ?? null, web: ref(v).web ?? null, usualBerths: ref(v).usualBerths ?? null,
+    callSign: v.call_sign, voyage: v.voyage,
     cls: v.ship_class, vtype: v.vessel_type, cargo: v.cargo_group, product: cargoName(v.cargo_group), material: v.material_code,
     biz: v.biz, dir: BIZ[v.biz] ?? v.biz, in: isIn(v.biz),
     dwt: v.dwt, grt: v.grt, draft: v.draft, loa: v.loa, ton: v.qty, workHours: v.work_hours,
+    tank: tankGroupOf(v.cargo_group, v.product_class),
     eta: toMin(v.eta), nor: toMin(v.nor_tender),
     laycan: v.laycan_from ? { from: toMin(v.laycan_from), to: toMin(v.laycan_to), case: v.laycan_case } : null,
     contract: { laytimeH: v.laytime_h, rateUsd: v.demurrage_rate?.amount ?? 0, noticeH: v.notice_hours ?? 6, weatherPct: v.weather_deduct_pct ?? 50, cfr: v.cfr },
     rates: v.rate_t_per_h ?? {}, compat: Object.keys(v.rate_t_per_h ?? {}),
     actual: v.actual_berth ? { bid: v.actual_berth, etb: toMin(v.berthed), etu: toMin(v.unberthed) } : null,
   })).sort((a, b) => a.eta - b.eta)
-  // 같은 항차에 접안이 여러 번이면(부두 이동·별개 작업) 이름이 겹친다. 겹칠 때만 접안 순번을 붙인다.
-  const dup = {}
-  for (const v of vessels) dup[v.name] = (dup[v.name] ?? 0) + 1
-  for (const v of vessels) if (dup[v.name] > 1) v.name = `${v.name} (접안 순번 ${Number(v.id.split('-').at(-1))})`
+  // 같은 배가 기간 안에 여러 번 들어오면 이름이 겹친다. 겹칠 때만 항차를, 그래도 겹치면 접안 순번을 붙인다.
+  const count = (key) => { const d = {}; for (const v of vessels) d[key(v)] = (d[key(v)] ?? 0) + 1; return d }
+  const d1 = count((v) => v.name)
+  for (const v of vessels) if (d1[v.name] > 1) v.name = `${v.name} ${Number(v.voyage)}항차`
+  const d2 = count((v) => v.name)
+  for (const v of vessels) if (d2[v.name] > 1) v.name = `${v.name} (${Number(v.id.split('-').at(-1))}번째 접안)`
   const t0 = toMin(first.window.start)
   const wind = (req.weather ?? []).map((w) => ({ t: toMin(w.time), ms: w.wind_ms, thunder: w.thunder, typhoon: w.typhoon })).filter((w) => w.t >= t0 - 24 * 60)
+  // 11-25 생산계획과 탱크: 최적화 팀 후보정(make_tank_plan)으로 만든 주별 생산계획(요청 production_plan)과
+  // 엔진이 1/1부터 실적으로 이어 센 기준 시각 재고(응답 tanks의 initial_t). 계획 입력이라 고치지 않는다.
+  const win1 = toMin(first.window.end)
+  const weekOf = (d) => toMin(`${d}T00:00:00+09:00`)
+  const tanks = (first.tanks ?? []).map((t) => {
+    const rows = (req.production_plan ?? []).filter((w) => w.tank === t.tank).map((w) => ({ from: weekOf(w.week_start), rate: w.rate_t_per_h })).sort((a, b) => a.from - b.from)
+    const cur = rows.filter((w) => w.from <= t0).at(-1)
+    const weeks = [cur, ...rows.filter((w) => w.from > t0 && w.from < win1)].filter(Boolean)
+    return { name: t.tank, count: t.tanks, cap: t.capacity_t, start: t.initial_t, safeMin: t.safe_min_t, safeMax: t.safe_max_t, weeks }
+  })
+  // 11-25 기준 시각에 이미 접안해 작업 중인 배(계획 대상 아님): 실적 접안 < T < 실적 이안 (T에 접안하는 배는 계획 대상). 엔진도 이 기록으로 선석이 비는 시각을 잡는다.
+  const berthIds = new Set(berths.map((b) => b.id))
+  const occupied = req.vessels
+    .filter((v) => v.berthed && v.unberthed && toMin(v.berthed) < t0 && toMin(v.unberthed) > t0 && berthIds.has(v.actual_berth))
+    .map((v) => ({ bid: v.actual_berth, name: ref(v).nameKo ?? ref(v).nameEn ?? v.call_sign, product: cargoName(v.cargo_group), dir: BIZ[v.biz] ?? v.biz, etb: toMin(v.berthed), etu: toMin(v.unberthed) }))
+    .sort((a, b) => a.etu - b.etu)
   return {
     id: ds.id, name: ds.label, summary: ds.source, bundle: ds.bundle, start: ds.start, days: ds.days, builtAt: ds.built_at,
-    meta: ds.meta, berths, vessels, wind,
+    meta: ds.meta, berths, vessels, wind, tanks, occupied, nightPilot: first.params?.night_pilot ?? null,
+    windDefault: first.params?.weather?.thresholds_ms ?? null,
     window: { start: t0, end: toMin(first.window.end) },
     // 스케줄러가 고치는 값: 선박 ETA(vessels[].eta), 부두 사용 불가(blocks), 고정 선박(fixes), 엔진 파라미터(params)
     blocks: [], fixes: [], params: {},

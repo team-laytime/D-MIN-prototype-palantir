@@ -11,9 +11,10 @@ import { GROUPS } from '../lib/mailGroups.js'
 import { markRead, sendMail, setAlertStatus, useWorkspace, ws } from '../lib/workspace.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import MailBody from './MailBody.jsx'
+import AttachmentDialog, { AttachmentButtons } from './MailAttachment.jsx'
+import './report.css'
 import './inbox.css'
 
-const TONE = { bad: 'bad', warn: 'warn', unknown: 'unknown', info: 'live' }
 const ME = { scheduler: '스케줄러 A <scheduler@example.com>', user: '이용자 B <sk3-ops@example.com>' }
 const goLabel = (a) => (a.action.tab === 'input' ? '계획 조건에서 보기' : a.action.tab === 'compare' ? '후보 비교·확정에서 보기' : a.action.tab === 'ops' ? '확정 일정 보기' : '선박 카드 열기')
 
@@ -46,6 +47,7 @@ export default function Inbox() {
   const [folder, setFolder] = useState('in')
   const [selId, setSelId] = useState(null)
   const [composing, setComposing] = useState(false)
+  const [viewing, setViewing] = useState(null) // 열어 본 첨부
 
   // 돌발 상황이 하나도 없으면 분류에서 뺀다. 그 분류를 보고 있었다면 전체로 돌린다.
   const channels = (isScheduler ? CHANNELS : CHANNELS.filter((c) => c.id === 'all' || c.id === 'plan'))
@@ -68,7 +70,7 @@ export default function Inbox() {
   const pickChannel = (id) => { setFolder('in'); setMailFilter(id); setSelId(null) }
 
   return (
-    <Screen tab="inbox" title="메일함" desc={isScheduler ? '기상 관측, 현장, 시스템에서 온 메일을 받아 업무에 참고합니다. 보낸 확정 통보 메일은 보낸메일함에 남습니다.' : '확정되거나 취소된 접안 일정 메일입니다.'} bodyClass="inbox-page">
+    <Screen tab="inbox" title="메일함" bodyClass="inbox-page">
       {isScheduler && incidents.length > 0 && (
         <button type="button" className="mb-strip warn" onClick={() => pickChannel('incident')}>
           <Icon icon="warning-sign" size={14} /><b>돌발 상황 {incidents.length}건</b><span>반영할지 아직 정하지 않았습니다. 눌러서 보기</span>
@@ -128,15 +130,19 @@ export default function Inbox() {
         <Panel code="READ" title="메일 보기">
           {!sel ? <NonIdealState className="inbox-empty" icon="envelope" title="메일을 고르십시오" /> : folder === 'in' ? (
             <article className="mb-read">
-              <h3>{sel.subject}</h3>
-              <dl className="ml-head small">
-                <dt>보낸 사람</dt><dd>{sel.from} &lt;{sel.fromAddr}&gt;</dd>
-                <dt>받는 사람</dt><dd>{ME[role?.id] ?? '-'}</dd>
-                <dt>받은 시각</dt><dd className="num">{sel.at}</dd>
-                <dt>분류</dt><dd><St tone={TONE[sel.tone]}>{chLabel(sel.channel)}</St></dd>
-                {sel.attachments?.length > 0 && <><dt>첨부</dt><dd className="ml-files">{sel.attachments.map((f) => <span key={f.name} className="ml-file static"><Icon icon={f.kind === 'report' ? 'document' : 'th'} size={12} />{f.name}</span>)}</dd></>}
-              </dl>
-              {(() => { const p = sel.planNo && ws.plans.find((x) => x.no === sel.planNo); return p ? <MailBody text={sel.body} plan={p} /> : <pre className="ml-preview">{sel.body}</pre> })()}
+              {/* 11-25 확정 통보 메일 미리보기와 같은 메일 종이로 그린다 */}
+              <div className="ml-paper-wrap">
+                <div className="ml-paper">
+                  <dl className="ml-head">
+                    <dt>보낸 사람</dt><dd>{sel.from} &lt;{sel.fromAddr}&gt;</dd>
+                    <dt>받는 사람</dt><dd>{ME[role?.id] ?? '-'}</dd>
+                    <dt>받은 시각</dt><dd className="num">{sel.at}</dd>
+                    <dt>제목</dt><dd className="strong">{sel.subject}</dd>
+                    {sel.attachments?.length > 0 && <><dt>첨부</dt><dd className="ml-files"><AttachmentButtons files={sel.attachments} onOpen={setViewing} /></dd></>}
+                  </dl>
+                  {(() => { const p = sel.planNo && ws.plans.find((x) => x.no === sel.planNo); return p ? <MailBody text={sel.body} plan={p} /> : <pre className="ml-preview">{sel.body}</pre> })()}
+                </div>
+              </div>
               {sel.channel === 'incident' && isScheduler ? (
                 <div className={`mb-decide ${sel.status === 'applied' ? 'ok' : sel.status === 'dismissed' ? 'idle' : ''}`}>
                   {sel.status === 'applied' || sel.status === 'dismissed' ? (
@@ -160,18 +166,24 @@ export default function Inbox() {
             </article>
           ) : (
             <article className="mb-read">
-              <h3>{sel.subject}</h3>
-              <dl className="ml-head small">
-                <dt>받는 사람</dt><dd>{sel.toName} &lt;{sel.to}&gt;</dd>
-                <dt>보낸 시각</dt><dd className="num">{sel.at} · {sel.who}</dd>
-                <dt>첨부</dt><dd className="ml-files">{sel.attachments.length ? sel.attachments.map((f) => <span key={f.name} className="ml-file static"><Icon icon={f.kind === 'report' ? 'document' : 'th'} size={12} />{f.name}</span>) : <span className="muted">없음</span>}</dd>
-              </dl>
-              {(() => { const p = sel.planNo && ws.plans.find((x) => x.no === sel.planNo); return p ? <MailBody text={sel.body} plan={p} /> : <pre className="ml-preview">{sel.body}</pre> })()}
+              {/* 11-25 확정 통보 메일 미리보기와 같은 메일 종이로 그린다 */}
+              <div className="ml-paper-wrap">
+                <div className="ml-paper">
+                  <dl className="ml-head">
+                    <dt>받는 사람</dt><dd>{sel.toName} &lt;{sel.to}&gt;</dd>
+                    <dt>보낸 시각</dt><dd className="num">{sel.at}, {sel.who}</dd>
+                    <dt>제목</dt><dd className="strong">{sel.subject}</dd>
+                    {sel.attachments.length > 0 && <><dt>첨부</dt><dd className="ml-files"><AttachmentButtons files={sel.attachments} onOpen={setViewing} /></dd></>}
+                  </dl>
+                  {(() => { const p = sel.planNo && ws.plans.find((x) => x.no === sel.planNo); return p ? <MailBody text={sel.body} plan={p} /> : <pre className="ml-preview">{sel.body}</pre> })()}
+                </div>
+              </div>
             </article>
           )}
         </Panel>
       </div>
       <Compose open={composing} onClose={() => setComposing(false)} />
+      <AttachmentDialog file={viewing} plan={sel?.planNo ? ws.plans.find((x) => x.no === sel.planNo) : null} onClose={() => setViewing(null)} />
     </Screen>
   )
 }

@@ -1,117 +1,132 @@
-// 확정 통보 메일의 받는 부서, 부서별 템플릿, 첨부 규칙 (11-24 실데이터).
-//  - 부두 하역팀: 확정안에 배정이 있는 부두(SK 1부두 ~ SK 8부두, 부이, 가스부두)마다 한 곳. 연락처는 lib/teams.js의 가상 값.
-//    본문에는 그 부두 일정만 표와 선석별 간트로 넣고, 전 부두 상세는 전체확정일정.xlsx로 붙인다.
-//  - 입출항 작업지시자: 전 부두 입출항 일정 + 간트 + xlsx.
-//  - 생산팀: 확정안의 탱크 재고 예상(엔진 tanks)과 입고, 출하 선박. 첨부 없음.
-//  - 체선료 지불 부서: 체선료 요약 + 접안계획 보고서 첨부.
+// 확정 통보 메일의 받는 곳, 부서별 템플릿, 첨부 규칙.
+// 11-25 개편: 업무에서 바로 쓰는 짧은 메일. 그림과 표가 먼저, 글은 주의사항과 요청만.
+//  - 부두 하역팀: 그 부두 간트 → 접안 일정 표 → 주의사항, 기타. 첨부 전체확정일정.xlsx
+//  - 입출항 작업지시자: 전 부두 간트 → 24시간 주의 선박 표(체선, 사용 불가 구간) → 주의사항(야간 도선 제한, 야간 접안 건수). 첨부 xlsx
+//  - 생산계획팀: 탱크 묶음(제품)별 재고 흐름 그래프, 생산계획, 입고와 출하 선박
+//  - 체선료 지불 부서: 체선 선박 브리핑 표 + 고른 이유, 접안계획 보고서 첨부
+// 본문의 {{태그}}는 화면에서는 이름표(칩)로만 보이고, 미리보기와 보낼 때 실제 내용으로 바뀐다.
 // 모든 값은 확정 스냅숏(plan)에서 읽는다. 확정 뒤 계획 조건을 고쳐도 메일 내용은 바뀌지 않는다.
 import { PIER_TEAMS } from './teams.js'
-import { fmt, fmtFull, money, toMin } from './time.js'
+import { NOW, fmt, fmtDur, fmtFull, money } from './time.js'
 
 export const DEPTS = [
   { id: 'DOCK', label: '부두 하역팀' },
   { id: 'PORT', label: '입출항 작업지시자' },
-  { id: 'PROD', label: '생산팀' },
+  { id: 'PROD', label: '생산계획팀' },
   { id: 'PAY', label: '체선료 지불 부서' },
 ]
 
 const PIERS = ['1', '2', '3', '4', '5', '6', '7', '8', 'BUOY', 'GAS']
+// 11-25 생산계획팀은 부두처럼 제품(탱크 묶음)마다 따로 받는다
+const TANKS = ['원유', '반입 원료', '양방향', '석유제품 반출', '화학 반출', '윤활유 반출', '특수 반출']
+export const WINDOW_MIN = 24 * 60 // 하역팀, 입출항 메일은 현재부터 24시간만
 
-/** 받을 수 있는 곳 전체(연락처는 모두 가상). 실제로 보낼 곳은 groupsFor(plan). */
+/** 받을 수 있는 곳 전체. 실제로 보낼 곳은 groupsFor(plan). */
 export const GROUPS = [
   ...PIERS.map((p) => ({ id: `P${p}`, dept: 'DOCK', pier: p, name: PIER_TEAMS[p].team, to: PIER_TEAMS[p].mail, tpl: 'dock', attach: ['xlsx'] })),
   { id: 'PORT', dept: 'PORT', pier: null, name: '입출항 작업 지시 (도선, 예선, 줄잡이)', to: 'port-ops@example.com', tpl: 'port', attach: ['xlsx'] },
-  { id: 'PROD', dept: 'PROD', pier: null, name: '생산계획팀', to: 'production@example.com', tpl: 'prod', attach: [] },
+  ...TANKS.map((t, i) => ({ id: `T${i}`, dept: 'PROD', pier: null, tank: t, side: t, name: `생산계획팀 (${t})`, to: 'production@example.com', tpl: 'prod', attach: [] })),
   { id: 'PAY', dept: 'PAY', pier: null, name: '해상운송 정산팀', to: 'demurrage-pay@example.com', tpl: 'pay', attach: ['report'] },
 ]
 
 /** 확정안에 배정이 있는 부두의 하역팀 + 나머지 부서 */
-export const groupsFor = (plan) => GROUPS.filter((g) => !g.pier || plan.placements.some((p) => p.pier === g.pier))
-export const rowsFor = (plan, g) => (g?.pier ? plan.placements.filter((p) => p.pier === g.pier) : plan.placements)
+export const groupsFor = (plan) => GROUPS.filter((g) => (g.pier ? plan.placements.some((p) => p.pier === g.pier) : g.tank ? (plan.tanks ?? []).some((k) => k.tank === g.tank) : true))
+export const rowsFor = (plan, g) => (g?.pier ? plan.placements.filter((p) => p.pier === g.pier) : g?.tank ? plan.placements.filter((p) => p.tank === g.tank) : plan.placements)
 
+/** 현재부터 24시간 안에 작업이 걸치는 배 중 주의할 것이 있는 배와 그 이유 */
+export function riskRows(plan, g) {
+  const end = NOW + WINDOW_MIN
+  const all = plan.placements
+  const rows = rowsFor(plan, g).filter((p) => p.etb < end && p.etu > NOW)
+  const prevOf = (p) => all.filter((x) => x.bid === p.bid && x.etu <= p.etb).sort((a, b) => b.etu - a.etu)[0]
+  return rows.map((p) => {
+    const why = []
+    if (p.dem > 0) why.push(`체선 ${p.demMin != null ? fmtDur(p.demMin) : ''}`.trim())
+    // 앞 배 이안 뒤 간격은 엔진 전환 시간(1~2.5시간) 안이면 정상이라 넣지 않는다. 그보다 짧을 때(고정 배 등)만
+    const prev = prevOf(p)
+    if (prev && p.etb - prev.etu < 60) why.push(`앞 배 이안 뒤 ${fmtDur(Math.max(0, p.etb - prev.etu))}`)
+    if ((plan.blocks ?? []).some((b) => (!b.berths || b.berths.includes(p.bid)) && b.start < p.etu && b.end > p.etb)) why.push('사용 불가 구간과 겹침')
+    return { p, why }
+  }).filter((r) => r.why.length)
+}
+
+/** 태그: [이름, 설명]. 화면에는 이름만 칩으로 보인다. */
 export const TAGS = [
-  ['확정버전', '확정 v1'], ['확정일시', '확정한 시각'], ['받는곳', '받는 부서 이름'], ['담당부두', '부서의 부두'],
-  ['일정표', '그 부두 접안 일정 표 (본문에 표로)'], ['작업간트', '그 부두 선석별 간트 (본문에 그림으로)'], ['내일정', '그 부두 접안 일정 (글)'],
-  ['입출항일정', '도착, 접안, 이안 시각'], ['입고일정', '입고, 출하 선박'], ['탱크재고', '탱크 묶음별 예상 재고와 안전 범위'],
-  ['체선료요약', '예상 체선료 합계와 선박별'], ['판단근거', '확정할 때 적은 이유'], ['주의사항', '야간 접안 등'], ['연락처', '문의처'],
+  ['확정버전', '확정 v1'], ['확정일시', '확정한 시각'], ['받는곳', '받는 부서 이름'], ['담당부두', '부서의 부두'], ['담당제품', '생산계획팀이 맡은 제품(탱크 묶음)'],
+  ['작업간트', '현재부터 24시간 선석별 간트 (그림)'], ['일정표', '현재부터 24시간, 주의할 선박 표'], ['입출항표', '현재부터 24시간, 주의할 입출항 표'],
+  ['탱크현황', '그 제품 탱크의 재고 그래프와 생산계획, 입고와 출하'], ['체선선박', '체선이 생기는 선박 요약 표'],
+  ['판단근거', '확정할 때 적은 이유'], ['주의사항', '야간 접안, 야간 도선 제한, 연속 접안, 사용 불가 구간 건수'], ['연락처', '문의처'],
 ]
 
 export const TEMPLATES = {
   dock: {
     label: '부두 하역팀용',
-    subject: '[작업 지시] {{담당부두}} 접안 일정 {{확정버전}}',
-    body: `{{받는곳}} 담당자님께,
+    subject: '[{{담당부두}}] 접안 작업 일정 안내 ({{확정버전}})',
+    body: `{{받는곳}} 담당자님,
 
-{{확정일시}}에 접안 계획 {{확정버전}}이 확정되어 {{담당부두}} 작업 일정을 보내드립니다.
+{{확정일시}} 확정된 접안 계획 {{확정버전}} 기준 {{담당부두}}의 앞으로 24시간 작업 일정입니다.
 
-■ {{담당부두}} 접안 일정
-{{일정표}}
-
-■ {{담당부두}} 선석별 작업 일정
 {{작업간트}}
+
+{{일정표}}
 
 ■ 주의사항
 {{주의사항}}
 
-전 부두 상세 일정은 첨부한 전체확정일정 파일에 있습니다.
-문의: {{연락처}}`,
+■ 기타
+- 전 부두 일정은 첨부한 전체확정일정 파일을 참고해 주세요.
+- 작업이 늦어지거나 일정 변경이 필요하면 바로 회신 부탁드립니다.
+
+{{연락처}}`,
   },
   port: {
     label: '입출항 작업지시자용',
-    subject: '[입출항] 접안 계획 {{확정버전}} 도선, 예선, 줄잡이 배치 요청',
-    body: `{{받는곳}} 담당자님께,
+    subject: '[입출항] 도선, 예선, 줄잡이 배치 요청 ({{확정버전}})',
+    body: `{{받는곳}} 담당자님,
 
-접안 계획 {{확정버전}}({{확정일시}} 확정) 기준 입출항 일정입니다. 도선, 예선, 줄잡이 배치를 부탁드립니다.
+접안 계획 {{확정버전}}({{확정일시}} 확정) 기준 앞으로 24시간 입출항 일정입니다. 도선, 예선, 줄잡이 배치를 부탁드립니다.
 
-■ 입출항 일정 (도착 → 접안 → 이안)
-{{입출항일정}}
-
-■ 전 부두 선석별 작업 일정
 {{작업간트}}
+
+{{입출항표}}
 
 ■ 주의사항
 {{주의사항}}
 
-첨부: 전체확정일정 (부두별 시트)
-문의: {{연락처}}`,
+{{연락처}}`,
   },
   prod: {
-    label: '생산팀용',
-    subject: '[생산] 접안 계획 {{확정버전}} 탱크 재고 예상과 입고, 출하 일정',
-    body: `{{받는곳}} 담당자님께,
+    label: '생산계획팀용',
+    subject: '[생산] {{담당제품}} 탱크 재고 예상과 입고, 출하 일정 ({{확정버전}})',
+    body: `{{받는곳}} 담당자님,
 
-접안 계획 {{확정버전}}이 확정되어 탱크 재고 예상과 입고, 출하 일정을 알려드립니다.
+접안 계획 {{확정버전}} 확정에 따라 {{담당제품}} 탱크 재고 예상과 입고, 출하 일정을 공유드립니다.
 
-■ 탱크 재고 예상 (확정안 기준, 안전 범위 대비)
-{{탱크재고}}
-
-■ 입고, 출하 선박
-{{입고일정}}
+{{탱크현황}}
 
 공정 투입이나 출하 계획이 바뀌면 회신 부탁드립니다.
-문의: {{연락처}}`,
+
+{{연락처}}`,
   },
   pay: {
     label: '체선료 지불 부서용',
-    subject: '[체선료] 접안 계획 {{확정버전}} 예상 체선료 보고',
-    body: `{{받는곳}} 담당자님께,
+    subject: '[체선료] 예상 체선료 보고 ({{확정버전}})',
+    body: `{{받는곳}} 담당자님,
 
 접안 계획 {{확정버전}}({{확정일시}} 확정)의 예상 체선료를 보고드립니다.
 
-■ 예상 체선료
-{{체선료요약}}
+{{체선선박}}
 
 ■ 이 안을 고른 이유
 {{판단근거}}
 
-후보 비교, 선박별 체선료, 바뀐 선박과 남은 리스크는 첨부한 접안계획 보고서에 있습니다.
-계약 조건은 가상 값이라 금액은 후보끼리 비교하는 용도입니다.
-문의: {{연락처}}`,
+후보 비교와 선박별 상세 내역은 첨부한 접안계획 보고서를 참고해 주세요.
+
+{{연락처}}`,
   },
 }
 
-const SCHEDULER = '선박 스케줄러 052-000-0000 (가상)'
-const t = (n) => (n === null || n === undefined ? '-' : `${Math.round(n).toLocaleString()}t`)
+const SIGN = '선박 스케줄러 드림\n문의 052-000-0000'
 
 /** 부서별 첨부 파일. kind: xlsx(전 부두 상세 일정) | report(접안계획 보고서) */
 export function attachmentsFor(g, plan) {
@@ -138,56 +153,86 @@ export function scheduleSheets(plan) {
     { name: '안내', widths: [90], rows: [
       ['안내'],
       [`접안 계획 v${plan.no} (${plan.label}${plan.preset ? `, ${plan.preset.label}` : ''}), ${plan.at} 확정, ${plan.who}`],
-      [`데이터: ${plan.scenName ?? '-'}${plan.bundle ? ` (${plan.bundle})` : ''}`],
-      ['배정과 시각은 팀 엔진(CP-SAT) 계산 결과입니다. 하역팀 연락처는 시연용 가상 값입니다.'],
+      [`데이터: ${plan.scenName ?? '-'}`],
     ] },
   ]
 }
 
-/** 탱크 묶음별 예상 재고: 엔진 tanks의 시간별 재고에서 최저, 최고를 찾아 안전 범위와 비교한다. */
-export function tankLines(tanks = []) {
-  return tanks.map((k) => {
-    const lv = k.levels_t ?? []
-    if (!lv.length) return `- ${k.tank}: 재고 자료 없음`
-    const t0 = toMin(k.start)
-    let iMin = 0, iMax = 0
-    lv.forEach((x, i) => { if (x < lv[iMin]) iMin = i; if (x > lv[iMax]) iMax = i })
-    const at = (i) => fmt(t0 + i * (k.step_min ?? 60))
-    const under = lv.findIndex((x) => x < k.safe_min_t)
-    const over = lv.findIndex((x) => x > k.safe_max_t)
-    const verdict = under < 0 && over < 0 ? '안전 범위 안' : [under >= 0 && `${at(under)}부터 안전 하한 아래`, over >= 0 && `${at(over)}부터 안전 상한 위`].filter(Boolean).join(', ')
-    return `- ${k.tank} (탱크 ${k.tanks}기, 용량 ${t(k.capacity_t)}): 예상 최저 ${t(lv[iMin])} (${at(iMin)}), 최고 ${t(lv[iMax])} (${at(iMax)}), 안전 범위 ${t(k.safe_min_t)} ~ ${t(k.safe_max_t)} → ${verdict}`
-  })
+/** 야간 도선 제한 대상인가 (팀 엔진 step2_night_pilot.is_restricted와 같은 규칙) */
+export const nightPilotHit = (p, rule) => Boolean(rule) && p.grt != null &&
+  (p.grt >= rule.grt_always || (p.grt >= rule.grt_min && p.biz === 'IM' && p.draft != null && p.draft >= rule.draft_min))
+
+/** 주의사항: 부서마다 필요한 것만, 많아도 몇 줄 */
+
+function cautions(plan, g, mine) {
+  const out = []
+  // 11-25 야간 접안, 야간 도선 제한은 표에는 넣지 않고 주의사항에 건수로만 적는다
+  const night = mine.filter((p) => p.night)
+  if (g.dept === 'PORT') {
+    const rule = plan.nightPilot
+    const np = plan.placements.filter((p) => nightPilotHit(p, rule))
+    if (np.length) out.push([`- 야간 도선 제한 대상 ${np.length}척 (${rule.night_start}~${rule.release} 접안 불가)`, ...np.map((p) => `    ${p.name}`)].join('\n'))
+    if (night.length) out.push(`- 야간 접안 ${night.length}척`)
+    const blocks = plan.blocks ?? []
+    if (blocks.length) out.push([`- 사용 불가 구간 ${blocks.length}건`, ...blocks.map((b) => `    ${fmt(b.start)} ~ ${fmt(b.end)}`)].join('\n'))
+  } else {
+    if (night.length) out.push(`- 야간 접안 ${night.length}척, 계류 인력을 미리 배치해 주세요`)
+    // 같은 선석에서 이안 뒤 2시간 안에 다음 배가 붙는 곳: 건수와 가장 짧은 간격만 한 줄로
+    const tight = []
+    const byBerth = {}
+    for (const p of mine) (byBerth[p.bid] ??= []).push(p)
+    for (const list of Object.values(byBerth)) {
+      list.sort((a, b) => a.etb - b.etb)
+      for (let i = 1; i < list.length; i++) {
+        const gap = list[i].etb - list[i - 1].etu
+        if (gap < 120) tight.push({ gap: Math.max(0, gap), p: list[i] })
+      }
+    }
+    if (tight.length) {
+      const m = tight.reduce((a, b) => (b.gap < a.gap ? b : a))
+      out.push(`- 이안 뒤 2시간 안에 다음 배가 붙는 곳 ${tight.length}건\n    가장 짧은 간격 ${fmtDur(m.gap)}: ${m.p.berth} ${fmt(m.p.etb)} ${m.p.name}`)
+    }
+    const bids = new Set(mine.map((p) => p.bid))
+    const blocks = (plan.blocks ?? []).filter((b) => !b.berths || b.berths.some((x) => bids.has(x)))
+    if (blocks.length) out.push([`- 사용 불가 구간 ${blocks.length}건`, ...blocks.map((b) => `    ${fmt(b.start)} ~ ${fmt(b.end)}`)].join('\n'))
+  }
+  return out.length ? out.join('\n\n') : '- 특이사항 없음'
 }
 
-/** {{태그}}를 부서에 맞는 내용으로 바꾸는 함수. 값은 모두 확정 스냅숏에서 읽는다. */
+/** {{태그}}를 부서에 맞는 내용으로 바꾸는 함수. 그림과 표 자리는 [[종류:그룹]] 표시로 두고 MailBody가 그린다. */
 export function makeFill({ plan }) {
   return (text, g) => {
     const mine = rowsFor(plan, g)
-    const row = (p) => `- ${fmt(p.etb)} 접안 → ${fmt(p.etu)} 이안  ${p.name}  ${p.berth}  (${p.product}, ${p.dir}, ${t(p.ton)})`
-    const nightRows = mine.filter((p) => p.night)
     const team = g.pier ? PIER_TEAMS[g.pier] : null
-    const dem = plan.placements.filter((p) => p.dem > 0).sort((a, b) => b.dem - a.dem)
-    const vsBase = plan.baselineTotal ? Math.round(((plan.total - plan.baselineTotal) / plan.baselineTotal) * 1000) / 10 : null
     const vals = {
-      확정버전: `v${plan.no}`, 확정일시: plan.at, 받는곳: g.name,
+      확정버전: `v${plan.no}`, 확정일시: plan.at.slice(0, 16), 받는곳: g.name,
       담당부두: g.pier ? mine[0]?.pierName ?? g.name : '전 부두',
-      내일정: mine.length ? mine.map(row).join('\n') : '- 이번 계획에서 배정된 선박 없음',
-      일정표: `[[표:${g.id}]]`,
+      담당제품: g.tank ?? '전 제품',
       작업간트: `[[간트:${g.id}]]`,
-      입출항일정: plan.placements.map((p, i) => `${i + 1}. ${p.name}  ${p.berth}  도착 ${fmt(p.eta)} → 접안 ${fmt(p.etb)} → 이안 ${fmt(p.etu)}${p.night ? '  (야간 접안)' : ''}`).join('\n'),
-      입고일정: plan.placements.map((p) => `- ${fmt(p.etb)} ~ ${fmt(p.etu)}  ${p.in ? '입고' : '출하'}  ${p.name}  ${p.product} ${t(p.ton)}  (${p.berth})`).join('\n'),
-      탱크재고: plan.tanks?.length ? tankLines(plan.tanks).join('\n') : '- 엔진 결과에 탱크 자료 없음',
-      체선료요약: [
-        `- 합계 ${money(plan.total)} (${plan.label}${plan.preset ? `, ${plan.preset.label}` : ''})`,
-        ...(plan.baselineTotal !== null && plan.baselineTotal !== undefined ? [`- 실제 계획 ${money(plan.baselineTotal)} 대비 ${vsBase > 0 ? '+' : vsBase < 0 ? '−' : ''}${Math.abs(vsBase)}%`] : []),
-        ...(dem.length ? [`- 체선이 생기는 선박 ${dem.length}척`, ...dem.map((p) => `  ${p.name}  ${p.berth}  ${money(p.dem)}`)] : ['- 체선이 생기는 선박 없음']),
-      ].join('\n'),
-      판단근거: plan.reason || '(확정 사유 없음)',
-      주의사항: nightRows.length ? [`- 야간 접안 ${nightRows.length}척: 도선, 계류 인력 미리 배치`, ...nightRows.map((p) => `  ${fmt(p.etb)} ${p.name} (${p.berth})`)].join('\n') : '- 특이사항 없음',
-      연락처: team ? `${team.team} ${team.lead}, ${team.tel}` : SCHEDULER,
+      일정표: `[[표:${g.id}]]`,
+      입출항표: `[[입출항:${g.id}]]`,
+      탱크현황: `[[탱크:${g.id}]]`,
+      체선선박: `[[체선:${g.id}]]`,
+      판단근거: plan.reason || '-',
+      주의사항: cautions(plan, g, mine),
+      연락처: team ? `${SIGN}\n(${team.team} ${team.lead} ${team.tel})` : SIGN,
     }
     return text.replace(/\{\{(.+?)\}\}/g, (m, k) => vals[k] ?? m)
   }
 }
 
+/** 탱크 묶음별 요약 (복사용 글) */
+export function tankLines(plan, tank) {
+  const prod = Object.fromEntries((plan.production ?? []).map((t) => [t.name, t.weeks]))
+  return (plan.tanks ?? []).filter((k) => !tank || k.tank === tank).map((k) => {
+    const lv = k.levels_t ?? []
+    const pct = (x) => `${Math.round((x / k.capacity_t) * 100)}%`
+    const w = prod[k.tank]?.[0]?.rate
+    const rate = w == null ? '' : w >= 0 ? `, 생산 ${Math.round(w).toLocaleString()} t/h` : `, 공정 투입 ${Math.round(-w).toLocaleString()} t/h`
+    return `- ${k.tank} (탱크 ${k.tanks}기): 현재 ${pct(k.initial_t)}, 기간 중 ${lv.length ? `${pct(Math.min(...lv))} ~ ${pct(Math.max(...lv))}` : '-'}${rate}`
+  })
+}
+export const demLines = (plan) => {
+  const dem = plan.placements.filter((p) => p.dem > 0).sort((a, b) => b.dem - a.dem)
+  return [`예상 체선료 합계 ${money(plan.total)}, 체선 선박 ${dem.length}척`, ...dem.map((p) => `- ${p.name} (${p.berth}) ${p.demMin != null ? fmtDur(p.demMin) : ''} ${money(p.dem)}`)]
+}

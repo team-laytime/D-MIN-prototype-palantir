@@ -1,5 +1,5 @@
 // 보고서 차트 두 개. 88척이어도 읽히도록 합계 막대와 상위 선박만 그린다.
-// 색은 뜻대로: 선택한 안 = 시안, 다른 후보 = 중립, 실제 계획 = 테두리만.
+// 색은 뜻대로: 선택한 안 = 강조색, 다른 후보 = 중립.
 import { money, moneyShort } from '../lib/time.js'
 
 const fill = (id, selId) => (id === selId ? 'var(--accent)' : id === 'BASE' ? 'none' : 'var(--fg-3)')

@@ -1,43 +1,61 @@
-// 확정 통보 메일 (11-24 실데이터)
-//  - 받는 곳: 확정안에 배정이 있는 부두마다 하역팀, 입출항 작업지시자, 생산팀, 체선료 지불 부서(lib/mailGroups.js).
+// 확정 통보 메일
+//  - 11-25 개편: 왼쪽 받는 곳 목록은 부서 종류마다 접고 펴는 드롭다운, 가운데 템플릿 편집, 오른쪽 미리보기.
+//  - 템플릿의 태그는 편집기에서 이름표(칩)로만 보인다({{ }}는 내부 저장 형식).
 //  - 부서마다 템플릿, 미리보기, 첨부가 다르다. 보고서는 체선료 지불 부서에만 붙는다.
 //  - 값은 확정 스냅숏에서 읽는다. 시연판은 실제로 발송하지 않고 메일함의 「보낸메일함」에 저장한다.
-import { useMemo, useRef, useState } from 'react'
-import { Button, Callout, Dialog, DialogBody, HTMLSelect, Icon, InputGroup, TextArea } from '@blueprintjs/core'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Callout, HTMLSelect, Icon } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
-import { useReport } from '../state/useReport.js'
 import { activePlan, logActivity, sendMail, useWorkspace, ws } from '../lib/workspace.js'
-import { DEPTS, TAGS, TEMPLATES, attachmentsFor, groupsFor, makeFill, scheduleSheets } from '../lib/mailGroups.js'
-import { buildXlsx } from '../lib/xlsx.js'
+import { DEPTS, TAGS, TEMPLATES, attachmentsFor, groupsFor, makeFill } from '../lib/mailGroups.js'
 import MailBody, { plainBody } from './MailBody.jsx'
-import { Panel, Screen, St } from '../ui/kit.jsx'
-import { ReportDoc } from './Report.jsx'
+import { Screen } from '../ui/kit.jsx'
+import AttachmentDialog, { AttachmentButtons } from './MailAttachment.jsx'
 import './report.css'
 
 const defaultDraft = (g) => ({ tpl: g.tpl, subject: TEMPLATES[g.tpl].subject, body: TEMPLATES[g.tpl].body })
+const TAG_HINT = Object.fromEntries(TAGS)
 
-// 전체확정일정.xlsx 미리보기: 엑셀처럼 시트 탭 + 표. 「내려받기」는 실제 .xlsx 파일을 만든다.
-function XlsxSheet({ file, plan }) {
-  const sheets = useMemo(() => scheduleSheets(plan), [plan])
-  const [i, setI] = useState(0)
-  const s = sheets[Math.min(i, sheets.length - 1)]
-  const download = () => {
-    const url = URL.createObjectURL(buildXlsx(sheets))
-    const a = document.createElement('a'); a.href = url; a.download = file.name; a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-    logActivity('메일', '첨부 내려받기', file.name)
+// ── 태그 칩 편집기 ───────────────────────────────────────────────
+// 저장 형식은 글자 + {{태그}}. 편집기 안에서는 태그를 고칠 수 없는 칩(span)으로 그린다.
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const chip = (t) => `<span class="tg" contenteditable="false" data-tag="${esc(t)}" title="${esc(TAG_HINT[t] ?? '')}">${esc(t)}</span>`
+const toHtml = (text) => text.split(/(\{\{.+?\}\})/g).map((part) => {
+  const m = part.match(/^\{\{(.+?)\}\}$/)
+  return m ? chip(m[1]) : esc(part).replace(/\n/g, '<br>')
+}).join('')
+function toText(node) {
+  let s = ''
+  node.childNodes.forEach((n) => {
+    if (n.nodeType === 3) s += n.nodeValue.replace(/​/g, '')
+    else if (n.nodeName === 'BR') s += '\n'
+    else if (n.dataset?.tag) s += `{{${n.dataset.tag}}}`
+    else if (n.nodeName === 'DIV' || n.nodeName === 'P') s += (s && !s.endsWith('\n') ? '\n' : '') + toText(n)
+    else s += toText(n)
+  })
+  return s
+}
+
+/** 태그 칩 편집기. resetKey가 바뀔 때만 value로 다시 그린다(입력 중 커서가 튀지 않게). */
+function TagEditor({ value, onChange, resetKey, single = false, disabled, apiRef, label }) {
+  const el = useRef(null)
+  useEffect(() => { if (el.current) el.current.innerHTML = toHtml(value) }, [resetKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const emit = () => { const t = toText(el.current); onChange(single ? t.replace(/\n/g, '') : t) }
+  if (apiRef) apiRef.current = {
+    insert: (tag) => {
+      const node = el.current
+      if (!node) return
+      const sel = window.getSelection()
+      if (!sel.rangeCount || !node.contains(sel.anchorNode)) { node.focus(); const r = document.createRange(); r.selectNodeContents(node); r.collapse(false); sel.removeAllRanges(); sel.addRange(r) }
+      document.execCommand('insertHTML', false, chip(tag) + '​')
+      emit()
+    },
   }
   return (
-    <div className="ml-xlsx">
-      <div className="ml-xlsx-bar"><span className="tiny muted">전 부두 상세 일정, 시트 {sheets.length}장 (전체, 부두별, 안내)</span><Button size="small" icon="download" onClick={download}>내려받기 (.xlsx)</Button></div>
-      <div className="ml-xlsx-grid">
-        <table className="dt ml-sheet">
-          <thead><tr><th className="c faint"></th>{s.rows[0].map((h, c) => <th key={c}>{h}</th>)}</tr></thead>
-          <tbody>{s.rows.slice(1).map((r, ri) => <tr key={ri}><td className="c num faint">{ri + 2}</td>{r.map((v, c) => <td key={c} className={typeof v === 'number' ? 'num r' : ''}>{typeof v === 'number' ? v.toLocaleString() : v}</td>)}</tr>)}</tbody>
-        </table>
-      </div>
-      <div className="ml-xlsx-tabs">{sheets.map((x, k) => <button type="button" key={x.name} className={k === i ? 'on' : ''} onClick={() => setI(k)}>{x.name}</button>)}</div>
-    </div>
+    <div ref={el} className={`tge ${single ? 'single' : ''}`} contentEditable={!disabled} suppressContentEditableWarning role="textbox" aria-label={label} aria-multiline={!single}
+      onInput={emit}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!single) { document.execCommand('insertLineBreak'); emit() } } }}
+      onPaste={(e) => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); emit() }} />
   )
 }
 
@@ -45,12 +63,13 @@ export default function Mail() {
   const { go, isScheduler } = useApp()
   useWorkspace()
   const plan = activePlan()
-  const { model } = useReport()
   const [groupId, setGroupId] = useState(null)
+  const [open, setOpen] = useState({ DOCK: true }) // 부서 종류별 목록 펼침 (처음엔 부두 하역팀만)
   const [drafts, setDrafts] = useState({})
+  const [resetNo, setResetNo] = useState(0)
   const [copied, setCopied] = useState(false)
   const [viewing, setViewing] = useState(null) // 열어 본 첨부
-  const bodyRef = useRef(null)
+  const bodyApi = useRef(null)
   const groups = useMemo(() => (plan ? groupsFor(plan) : []), [plan])
   const fill = useMemo(() => (plan ? makeFill({ plan }) : () => ''), [plan])
 
@@ -72,91 +91,108 @@ export default function Mail() {
   const out = outOf(group)
   const sentOf = (g) => ws.sent.filter((s) => s.kind === 'notice' && s.planNo === plan.no && s.groupId === g.id).at(-1)
   const sentCount = groups.filter((g) => sentOf(g)).length
-  const countOf = (g) => (g.pier ? plan.placements.filter((p) => p.pier === g.pier).length : plan.placements.length)
+  const editorKey = `${group.id}:${draft.tpl}:${resetNo}`
 
-  const insert = (tag) => {
-    const el = bodyRef.current
-    const token = `{{${tag}}}`
-    if (!el) { setDraft({ body: draft.body + token }); return }
-    const { selectionStart: a, selectionEnd: b } = el
-    setDraft({ body: draft.body.slice(0, a) + token + draft.body.slice(b) })
-  }
-  const chooseTpl = (id) => setDraft({ tpl: id, subject: TEMPLATES[id].subject, body: TEMPLATES[id].body })
+  const chooseTpl = (id) => { setDraft({ tpl: id, subject: TEMPLATES[id].subject, body: TEMPLATES[id].body }); setResetNo((n) => n + 1) }
+  const resetDraft = () => { setDrafts((d) => { const n = { ...d }; delete n[group.id]; return n }); setResetNo((n) => n + 1) }
   const send = (g) => { const o = outOf(g); sendMail({ kind: 'notice', planNo: plan.no, groupId: g.id, toName: g.name, to: g.to, subject: o.subject, body: o.body, attachments: o.attachments.map(({ kind, name }) => ({ kind, name })) }) }
   const sendAll = () => { for (const g of groups) if (!sentOf(g)) send(g) }
   const copy = async () => {
     try { await navigator.clipboard.writeText(`제목: ${out.subject}\n\n${plainBody(out.body, plan)}`); setCopied(true); logActivity('메일', '메일 복사', out.subject); setTimeout(() => setCopied(false), 1500) } catch { /* 복사 실패는 화면에서 직접 선택 */ }
   }
   const usedTags = new Set([...`${draft.subject}${draft.body}`.matchAll(/\{\{(.+?)\}\}/g)].map((m) => m[1]))
+  const sent = sentOf(group)
 
   return (
-    <Screen tab="mail" title="확정 통보 메일" step={3} bodyClass="rpt-page" actions={<St tone="ok">접안 계획 v{plan.no}, {plan.label} 확정</St>}>
-      <p className="muted small">부서마다 필요한 내용만 보냅니다. 부두 하역팀은 확정안에 배정이 있는 부두마다 한 곳이고, 보고서는 체선료 지불 부서에만 붙습니다. 연락처는 시연용 가상 값이며, 실제로 발송하지 않고 메일함의 「보낸메일함」에 저장합니다.</p>
-      <div className="ml-grid">
-        <Panel code="MAIL-TO" title="받는 부서" desc={`${sentCount}/${groups.length}곳`} actions={
-          <Button size="small" icon="send-to" disabled={!isScheduler || sentCount === groups.length} onClick={sendAll} title="아직 안 보낸 부서에 각 부서 템플릿으로 보냅니다">모두 보내기</Button>
-        } pad>
-          {DEPTS.map((d) => (
-            <div key={d.id} className="ml-dept">
-              <p className="ml-dept-head tiny">{d.label}</p>
-              <ul className="ml-groups">
-                {groups.filter((g) => g.dept === d.id).map((g) => {
-                  const s = sentOf(g)
-                  const files = attachmentsFor(g, plan)
-                  return (
-                    <li key={g.id}>
-                      <button type="button" className={g.id === group.id ? 'on' : ''} onClick={() => setGroupId(g.id)}>
-                        <span className="ml-group-top"><b>{g.name}</b>{s ? <St tone="ok">보냄 {s.at.slice(11, 16)}</St> : <St tone="idle">보내기 전</St>}</span>
-                        <span className="tiny muted">{g.to} (가상){g.dept === 'DOCK' ? `, ${countOf(g)}척` : ''}</span>
-                        <span className="tiny ml-attach-hint"><Icon icon="paperclip" size={11} />{files.length ? files.map((f) => (f.kind === 'report' ? '보고서' : '전체확정일정.xlsx')).join(', ') : '첨부 없음 (본문만)'}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
+    <Screen tab="mail" title="확정 통보 메일" step={3} bodyClass="rpt-page ml-page">
+      <div className="ml-grid3">
+        {/* 받는 곳: 왼쪽 목록, 부서 종류마다 접고 펴는 드롭다운 */}
+        <aside className="ml-card ml-side">
+          <header className="ml-card-head">
+            <h3>받는 곳</h3>
+          </header>
+          <div className="ml-side-body">
+            {DEPTS.map((d) => {
+              const list = groups.filter((g) => g.dept === d.id)
+              if (!list.length) return null
+              const isOpen = Boolean(open[d.id])
+              return (
+                <section key={d.id} className={`ml-dd ${isOpen ? 'open' : ''}`}>
+                  <button type="button" className="ml-dd-head" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [d.id]: !isOpen }))}>
+                    <Icon icon={isOpen ? 'chevron-down' : 'chevron-right'} size={14} />
+                    <b>{d.label}</b>
+                  </button>
+                  {isOpen && (
+                    <ul className="ml-dd-list">
+                      {list.map((g) => (
+                        <li key={g.id}>
+                          <button type="button" className={g.id === group.id ? 'on' : ''} onClick={() => setGroupId(g.id)}>
+                            <span className="ml-dd-name">{g.side ?? g.name}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )
+            })}
+          </div>
+          <footer className="ml-side-foot">
+            <Button fill icon="send-to" disabled={!isScheduler || sentCount === groups.length} onClick={sendAll}>안 보낸 곳 모두 보내기</Button>
+          </footer>
+        </aside>
+
+        {/* 템플릿 */}
+        <section className="ml-card">
+          <header className="ml-card-head">
+            <h3>템플릿</h3>
+            <HTMLSelect value={draft.tpl} disabled={!isScheduler} onChange={(e) => chooseTpl(e.target.value)} options={Object.entries(TEMPLATES).map(([value, t]) => ({ value, label: t.label }))} aria-label="템플릿 불러오기" />
+            {drafts[group.id] && <Button variant="minimal" icon="reset" onClick={resetDraft}>기본으로</Button>}
+          </header>
+          <div className="ml-card-body">
+            <div className="ml-field">
+              <span className="ml-label">제목</span>
+              <TagEditor single value={draft.subject} resetKey={editorKey} disabled={!isScheduler} onChange={(v) => setDraft({ subject: v })} label="메일 제목" />
             </div>
-          ))}
-        </Panel>
-
-        <Panel code="MAIL-TPL" title={`템플릿, ${DEPTS.find((d) => d.id === group.dept).label}`} actions={<label className="ml-load"><span className="tiny muted">템플릿 불러오기</span><HTMLSelect size="small" value={draft.tpl} disabled={!isScheduler} onChange={(e) => chooseTpl(e.target.value)} options={Object.entries(TEMPLATES).map(([value, t]) => ({ value, label: t.label }))} /></label>} pad>
-          <label className="ml-label">제목</label>
-          <InputGroup value={draft.subject} disabled={!isScheduler} onChange={(e) => setDraft({ subject: e.target.value })} />
-          <div className="ml-tags">
-            <span className="tiny muted">태그 넣기</span>
-            {TAGS.map(([t, hint]) => <button type="button" key={t} title={hint} className={usedTags.has(t) ? 'used' : ''} disabled={!isScheduler} onClick={() => insert(t)}>{`{{${t}}}`}</button>)}
+            <div className="ml-tags">
+              <span className="ml-label">넣을 내용</span>
+              {TAGS.map(([t, hint]) => (
+                <button type="button" key={t} title={hint} className={usedTags.has(t) ? 'used' : ''} disabled={!isScheduler}
+                  onMouseDown={(e) => e.preventDefault()} onClick={() => bodyApi.current?.insert(t)}>{t}</button>
+              ))}
+            </div>
+            <TagEditor value={draft.body} resetKey={editorKey} disabled={!isScheduler} onChange={(v) => setDraft({ body: v })} apiRef={bodyApi} label="메일 본문" />
           </div>
-          <TextArea inputRef={bodyRef} className="ml-body" fill value={draft.body} disabled={!isScheduler} onChange={(e) => setDraft({ body: e.target.value })} aria-label="메일 템플릿 본문" />
-          {drafts[group.id] && <Button size="small" variant="minimal" icon="reset" onClick={() => setDrafts((d) => { const n = { ...d }; delete n[group.id]; return n })}>이 부서 기본 템플릿으로</Button>}
-        </Panel>
+        </section>
 
-        <Panel code="MAIL-PREVIEW" data-tour="mail-compose" title="미리보기" actions={
-          <div className="rpt-tools">
-            <Button size="small" icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
-            <Button size="small" intent="primary" icon="send-message" disabled={!isScheduler} onClick={() => send(group)}>{sentOf(group) ? '다시 보내기' : '이 부서에 보내기'}</Button>
+        {/* 미리보기: 실제 메일처럼 흰 종이 */}
+        <section className="ml-card" data-tour="mail-compose">
+          <header className="ml-card-head">
+            <h3>미리보기</h3>
+            <div className="ml-card-actions">
+              <Button icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
+              <Button intent="primary" icon="send-message" disabled={!isScheduler} onClick={() => send(group)}>{sent ? '다시 보내기' : '보내기'}</Button>
+            </div>
+          </header>
+          <div className="ml-card-body ml-paper-wrap">
+            <article className="ml-paper">
+              <dl className="ml-head">
+                <dt>받는 사람</dt><dd>{group.name} &lt;{group.to}&gt;</dd>
+                <dt>제목</dt><dd className="strong">{out.subject}</dd>
+                {out.attachments.length > 0 && <>
+                  <dt>첨부</dt>
+                  <dd className="ml-files">
+                    <AttachmentButtons files={out.attachments} onOpen={setViewing} />
+                  </dd>
+                </>}
+              </dl>
+              <MailBody text={out.body} plan={plan} />
+            </article>
           </div>
-        } pad>
-          <dl className="ml-head small">
-            <dt>받는 사람</dt><dd>{group.name} &lt;{group.to}&gt; <span className="muted">(가상)</span></dd>
-            <dt>제목</dt><dd className="strong">{out.subject}</dd>
-            <dt>첨부</dt>
-            <dd className="ml-files">
-              {out.attachments.length ? out.attachments.map((f) => (
-                <button type="button" key={f.name} className="ml-file" onClick={() => setViewing(f)} title="첨부 열어 보기">
-                  <Icon icon={f.kind === 'report' ? 'document' : 'th'} size={12} />{f.name}
-                </button>
-              )) : <span className="muted">없음. 이 부서는 본문만 받습니다.</span>}
-            </dd>
-          </dl>
-          <MailBody text={out.body} plan={plan} />
-        </Panel>
+        </section>
       </div>
 
-      <Dialog isOpen={!!viewing} onClose={() => setViewing(null)} title={viewing?.name} icon={viewing?.kind === 'report' ? 'document' : 'th'} className="ml-dialog wide">
-        <DialogBody>
-          {viewing?.kind === 'xlsx' && <XlsxSheet file={viewing} plan={plan} />}
-          {viewing?.kind === 'report' && (model ? <ReportDoc m={model} /> : <p className="small muted">후보 계산 결과가 없어 보고서를 만들 수 없습니다.</p>)}
-        </DialogBody>
-      </Dialog>
+      <AttachmentDialog file={viewing} plan={plan} onClose={() => setViewing(null)} />
     </Screen>
   )
 }

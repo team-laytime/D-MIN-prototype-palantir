@@ -1,6 +1,6 @@
 // 후보안 비교 보고서 (11-24 실데이터). 화면(ReportDoc), 마크다운, 메일 초안이 같은 모델을 쓴다.
 // 금액은 엔진 계산값(센트)을 그대로 쓰고, 문서 속 금액은 useReport의 대조로 엔진 값에서 나왔는지 확인한다.
-// 화면에서 체선료를 다시 계산하지 않는다. 차액(후보끼리, 실제 계획 대비)만 뺄셈으로 보인다.
+// 화면에서 체선료를 다시 계산하지 않는다. 차액(후보끼리)만 뺄셈으로 보인다. 실제 접안 실적과는 비교하지 않는다(11-25).
 import { changedVs, risksOf } from './plan.js'
 import { fmt, fmtDur, fmtFull, money } from './time.js'
 import { reportPeriod } from './report.js'
@@ -43,7 +43,6 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
     return {
       id: sim.id, label: sim.label, preset: sim.preset, total: sim.total,
       extra: sim.total - best.total, extraPct: pct1(sim.total - best.total, best.total),
-      vsBase: base ? { saved: base.total - sim.total, pct: signedPct(sim.total, base.total) } : null,
       moves: sim.moves, changedVsBest: sim.id === best.id ? 0 : changedVs(sim, best).length,
       dem: sim.placements.filter((p) => p.dem.cents > 0).length,
       night: sim.placements.filter((p) => p.night).length,
@@ -62,7 +61,7 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
   }))
   const demCount = sel.placements.filter((p) => p.dem.cents > 0).length
 
-  // 실제 계획 대비 바뀐 선박 중 체선료가 달라진 배 (차이 큰 순)
+  // (실적 비교를 빼서 base가 없으므로 비어 있다. 보고서에 쓰지 않음)
   const changes = base ? changedVs(sel, base) : []
   const changed = changes.filter((c) => c.saving !== 0).sort((a, b) => Math.abs(b.saving) - Math.abs(a.saving)).slice(0, TOP_N).map((c) => ({
     vid: c.p.vid, name: vname(c.p.vid),
@@ -82,10 +81,10 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
     key: k, label: stateOf(items[0], k).label, per: items.map((it) => ({ id: it.id, label: it.label, state: stateOf(it, k).state })),
   }))
 
-  // 차트: 안별 합계(실제 계획 포함), 체선료 상위 선박(실제 계획과 후보들)
-  const totals = [...(base ? [{ id: 'BASE', label: '실제 계획', total: base.total, baseline: true }] : []), ...items.map((it) => ({ id: it.id, label: it.label, total: it.total }))]
-  const series = [...(base ? [{ id: 'BASE', label: '실제 계획' }] : []), ...items.map((it) => ({ id: it.id, label: it.label }))]
-  const sources = [...(base ? [{ id: 'BASE', placements: base.placements }] : []), ...cands]
+  // 차트: 안별 합계, 체선료 상위 선박(후보끼리). 실제 접안 실적과는 비교하지 않는다(11-25)
+  const totals = [...items.map((it) => ({ id: it.id, label: it.label, total: it.total }))]
+  const series = [...items.map((it) => ({ id: it.id, label: it.label }))]
+  const sources = [...cands]
   const centsOf = (src, vid) => src.placements.find((p) => p.vid === vid)?.dem.cents ?? 0
   const vids = [...new Set(sources.flatMap((s) => s.placements.filter((p) => p.dem.cents > 0).map((p) => p.vid)))]
     .map((vid) => ({ vid, max: Math.max(...sources.map((s) => centsOf(s, vid))) }))
@@ -108,24 +107,21 @@ export function buildCandidateReport({ result, scen, selId, judgment, plan }) {
 }
 
 const vsBest = (m) => (m.sel.extra ? `최저안(${m.best.label}) ${money(m.best.total)}보다 ${money(m.sel.extra)}(${m.sel.extraPct}%) 많습니다.` : '세 후보 중 가장 낮습니다.')
-const vsBaseLine = (m) => (m.baseTotal !== null && m.sel.vsBase ? `실제 계획 ${money(m.baseTotal)} 대비 ${m.sel.vsBase.pct}입니다.` : '')
+const vsBaseLine = () => ''
 
 export function candidateReportMarkdown(m) {
   const L = []
-  L.push(`# 울산 SK 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용, 계약 조건은 가상 값이라 금액은 비교용`, '')
+  L.push(`# 울산 SK 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용`, '')
   L.push('## 1. 결론', `${m.confirmed ? '확정한' : '선택한'} 안은 ${m.sel.label}(${m.sel.preset?.label ?? '-'})입니다. 총 예상 체선료는 ${money(m.sel.total)}이며, ${vsBest(m)} ${vsBaseLine(m)}`, '')
   L.push('### 판단근거', m.judgment || '(아직 작성하지 않음)', '')
-  L.push('## 2. 후보 비교', '| 안 | 무엇을 바꾼 안 | 총 예상 체선료 | 최저안 대비 | 실제 계획 대비 | 부두가 다른 배 | 체선 | 야간 접안 | 남은 리스크 | 엔진 |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |')
+  L.push('## 2. 후보 비교', '| 안 | 무엇을 바꾼 안 | 총 예상 체선료 | 최저안 대비 | 체선 | 야간 접안 | 남은 리스크 | 엔진 |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |')
   for (const it of m.items) {
-    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${it.preset?.label ?? '-'} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.vsBase ? it.vsBase.pct : '-'} | ${it.moves ?? '-'}척 | ${it.dem}척 | ${it.night}척 | ${it.active.length}건 | ${it.engine}, ${it.solveSec ?? '-'}초 |`)
+    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${it.preset?.label ?? '-'} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.dem}척 | ${it.night}척 | ${it.active.length}건 | ${it.engine}, ${it.solveSec ?? '-'}초 |`)
   }
-  if (m.baseTotal !== null) L.push('', `실제 계획(실제 부두, 실제 접안 시각)의 예상 체선료는 ${money(m.baseTotal)}입니다.`)
-  L.push('', `## 3. ${m.sel.label} 선박별 체선료 상위`, `체선이 생기는 선박 ${m.demCount}척 중 큰 순서 ${m.top.length}척`, '', '| 선박 | 화물 | 선석 | 접안 | 초과 시간 | 기상 공제 | 체선료 | 실제 계획 체선료 |', '| --- | --- | --- | --- | ---: | ---: | ---: | ---: |')
-  for (const r of m.top) L.push(`| ${r.name} | ${r.product}, ${r.dir} | ${r.berth} | ${fmt(r.etb)} | ${fmtDur(r.excessMin)} | ${fmtDur(r.weatherMin)} | ${money(r.cents)} | ${r.baseCents === null ? '-' : money(r.baseCents)} |`)
+  L.push('', `## 3. ${m.sel.label} 선박별 체선료 상위`, `체선이 생기는 선박 ${m.demCount}척 중 큰 순서 ${m.top.length}척`, '', '| 선박 | 화물 | 선석 | 접안 | 초과 시간 | 기상 공제 | 체선료 |', '| --- | --- | --- | --- | ---: | ---: | ---: |')
+  for (const r of m.top) L.push(`| ${r.name} | ${r.product}, ${r.dir} | ${r.berth} | ${fmt(r.etb)} | ${fmtDur(r.excessMin)} | ${fmtDur(r.weatherMin)} | ${money(r.cents)} |`)
   if (!m.top.length) L.push('| 체선 없음 | | | | | | | |')
-  L.push('', '## 4. 실제 계획 대비 바뀐 선박', `바뀐 배 ${m.changeSummary.total}척(부두가 바뀐 배 ${m.changeSummary.berth}척), 그중 체선료가 달라진 배 ${m.changeSummary.money}척. 차이 큰 순서 ${m.changed.length}척`, '', '| 선박 | 바뀐 것 | 효과 | 실제 계획 | 이 안 | 차이 |', '| --- | --- | --- | ---: | ---: | ---: |')
-  for (const c of m.changed) L.push(`| ${c.name} | ${c.what} | ${c.effect} | ${money(c.baseCents)} | ${money(c.cents)} | ${c.saving > 0 ? '−' : '+'}${money(Math.abs(c.saving))} |`)
-  L.push('', '## 5. 남은 리스크', '### 공통 (어느 안을 골라도 남음)')
+  L.push('', '## 4. 남은 리스크', '### 공통 (어느 안을 골라도 남음)')
   if (!m.common.length) L.push('- 없음')
   for (const c of m.common) L.push(`- ${c.label}: ${c.per.find((p) => p.id === m.sel.id)?.evidence ?? ''}. 대응: ${c.alternative}`)
   if (m.differing.length) {
@@ -135,8 +131,7 @@ export function candidateReportMarkdown(m) {
   L.push('', '## 계산 기준',
     `- 엔진: 팀 엔진 berth_sim (CP-SAT). 후보마다 파라미터 묶음이 다름: ${m.basis.presets.join(' / ')}`,
     `- 데이터: ${m.basis.dataset}${m.basis.bundle ? ` (${m.basis.bundle})` : ''}, ${m.basis.vessels}척, 선석 ${m.basis.berths}곳`,
-    `- 기준 시각: ${m.basis.start} (계획 구간 끝 ${m.basis.end})`,
-    `- 계약 조건(정박시간, 체선료율)은 가상 값이라 금액은 후보끼리 비교하는 용도입니다.`,
+    `- 계획 시각: ${m.basis.start} (계획 구간 끝 ${m.basis.end})`,
     '- 후보는 체선료가 낮은 순서로 A, B, C이며 A가 기본 선택입니다.')
   return L.join('\n')
 }
@@ -149,13 +144,11 @@ export function candidateMailDraft(m) {
     `${m.period} 접안 계획으로 ${m.sel.label}(${m.sel.preset?.label ?? '-'})을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,
     '',
     `- 총 예상 체선료: ${money(m.sel.total)} (${m.sel.extra ? `최저안 ${m.best.label}보다 ${money(m.sel.extra)} 많음` : '세 후보 중 가장 낮음'})`,
-    ...(m.baseTotal !== null && m.sel.vsBase ? [`- 실제 계획 대비: ${money(m.baseTotal)} → ${money(m.sel.total)}, ${m.sel.vsBase.pct}`] : []),
     `- 비교한 후보: ${m.items.map((it) => `${it.label} ${money(it.total)}`).join(', ')}`,
     `- 공통 리스크: ${m.common.map((c) => c.label).join(', ') || '없음'}`,
     `- 판단근거: ${m.judgment || '(작성 전)'}`,
     '',
     '후보 비교, 선박별 체선료, 바뀐 선박은 첨부 보고서를 참고해 주십시오.',
-    '계약 조건은 가상 값이라 금액은 비교용입니다.',
   ].join('\n')
   return { subject, body }
 }

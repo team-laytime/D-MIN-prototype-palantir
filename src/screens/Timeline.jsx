@@ -13,12 +13,12 @@ export const demCents = (p) => (typeof p.dem === 'number' ? p.dem : p.dem?.cents
  * @param {object} props.scen  시나리오(berths, vessels, blocks)
  * @param {{ start: number, end: number }} props.range  보통 spanOf(sims)
  * @param {boolean} [props.groupByPier]  부두 묶음 머리줄을 넣는다
- * @param {Set<string>|string[]} [props.highlight]  테두리로 표시할 선박(예: 실제 계획과 부두가 다른 배)
+ * @param {Set<string>|string[]} [props.highlight]  테두리로 표시할 선박
  * @param {string} [props.highlightLabel]  막대 설명에 붙일 말
  * @param {string[]} [props.berthIds]  이 선석만 그린다
  * @param {boolean} [props.now]  지금 시각 선
  */
-export default function Timeline({ sim, scen, range, groupByPier = true, highlight, highlightLabel = '표시한 선박', berthIds, activeVid, onPick, compact = false, now = true }) {
+export default function Timeline({ sim, scen, range, groupByPier = true, highlight, highlightLabel = '표시한 선박', berthIds, activeVid, onPick, compact = false, now = true, cursor, showWait = false, hlPier = null, hlBerth = null }) {
   const span = Math.max(1, range.end - range.start)
   const pos = (t) => `${((t - range.start) / span) * 100}%`
   const seg = (a, b) => {
@@ -53,11 +53,13 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
 
   const blocksOf = (bid) => (scen.blocks ?? []).filter((b) => !b.berths || b.berths.includes(bid))
   const nowStyle = now && NOW >= range.start && NOW <= range.end ? { left: pos(NOW) } : null
+  // 11-25 운영 현황: 재생 중인 시각(시뮬레이션 시각)을 따라가는 세로선
+  const cursorStyle = cursor != null && cursor > range.start && cursor <= range.end ? { left: pos(cursor) } : null
 
   const lane = ({ berth, bars }) => (
-    <div className="gt-lane" key={berth.id}>
+    <div className={`gt-lane ${hlPier === berth.pier || hlBerth === berth.id ? 'hl' : ''}`} key={berth.id}>
       <div className="gt-label" title={`${berth.name}, 최대 ${berth.maxDwt?.toLocaleString() ?? '-'} DWT`}>
-        <span className="gt-code mono">{berth.code}</span>
+        <span className="gt-code">{berth.label ?? berth.code}</span>
         <span className="gt-count tiny faint num">{bars.length || ''}</span>
       </div>
       <div className="gt-track">
@@ -65,7 +67,17 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
         {ticks.map((k) => <span key={k.t} className={`gt-grid ${k.day ? 'day' : ''}`} style={{ left: pos(k.t) }} aria-hidden="true" />)}
         {blocksOf(berth.id).map((b, i) => {
           const s = seg(b.start, b.end)
-          return s && <div key={i} className="gt-block" style={s} title={`${b.kind === 'WEATHER' ? '접안 금지' : '사용 불가'} ${fmt(b.start)} ~ ${fmt(b.end)}${b.source ? `, ${b.source}` : ''}`} />
+          return s && <div key={i} className="gt-block" style={s} title={`${b.kind === 'WEATHER' ? '접안 금지' : '사용 불가'} ${fmt(b.start)} ~ ${fmt(b.end)}${b.source ? `, ${b.source}` : ''}`}><em>{b.kind === 'WEATHER' ? '접안 금지' : '사용 불가'}</em></div>
+        })}
+        {/* 11-25 운영 현황: 도착부터 접안까지 기다린 시간(정박지 대기)을 막대 앞에 점선으로 */}
+        {showWait && bars.map((p) => {
+          const eta = p.eta ?? vById[p.vid]?.eta
+          const w = eta != null && eta < p.etb ? seg(eta, p.etb) : null
+          return w && <span key={`w-${p.vid}`} className="gt-wait" style={w} title={`${vById[p.vid]?.name ?? p.vid} 정박지 대기 ${fmt(eta)} ~ ${fmt(p.etb)}`}>{parseFloat(w.width) >= 6 && <em>대기 {Math.round((p.etb - eta) / 60)}시간</em>}</span>
+        })}
+        {showWait && bars.map((p) => {
+          const w = demCents(p) > 0 && p.le != null && p.le < p.etb ? seg(Math.max(p.le, p.eta ?? vById[p.vid]?.eta ?? p.le), Math.min(p.etb, p.hose ?? p.etb)) : null
+          return w && <span key={`wd-${p.vid}`} className="gt-wait-dem" style={w} aria-hidden="true" />
         })}
         {bars.map((p) => {
           const s = seg(p.etb, p.etu)
@@ -73,7 +85,14 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
           const v = vById[p.vid]
           const name = p.name ?? v?.name ?? p.vid
           const cents = demCents(p)
-          const cls = ['gt-bar', cents > 0 && 'dem', p.night && 'night', hl.has(p.vid) && 'hl', p.fixed && 'fixed', activeVid === p.vid && 'active'].filter(Boolean).join(' ')
+          // 11-25 체선이 생기는 구간(정박시간 종료 ~ 호스 분리)만 칠하고 나머지는 칠하지 않는다
+          const demA = cents > 0 && p.le != null && p.hose != null ? Math.max(p.le, p.etb) : null
+          const demB = demA != null ? Math.min(p.hose, p.etu) : null
+          const fill = demA != null && demB > demA
+            ? (() => { const a = ((demA - p.etb) / (p.etu - p.etb)) * 100, b = ((demB - p.etb) / (p.etu - p.etb)) * 100
+                return { background: `linear-gradient(to right, transparent ${a}%, var(--dem-fill) ${a}%, var(--dem-fill) ${b}%, transparent ${b}%), var(--gt-base)` } })()
+            : null
+          const cls = ['gt-bar', cents > 0 && !fill && p.le == null && 'dem', p.night && 'night', hl.has(p.vid) && 'hl', p.fixed && 'fixed', activeVid === p.vid && 'active'].filter(Boolean).join(' ')
           const tip = [
             `${name}${v ? ` (${v.product}, ${v.dir})` : ''}`,
             berth.name,
@@ -84,13 +103,14 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
             p.fixed ? '고정한 선박' : null,
           ].filter(Boolean).join('\n')
           return (
-            <button type="button" key={p.vid} className={cls} style={s} title={tip} onClick={() => onPick?.(p.vid)}
+            <button type="button" key={p.vid} className={cls} style={fill ? { ...s, ...fill } : s} title={tip} onClick={() => onPick?.(p.vid)}
               aria-label={`${name}, ${berth.name}, ${fmt(p.etb)}부터 ${fmt(p.etu)}까지`}>
-              <span className="gt-bar-t">{v?.callSign ?? p.callSign ?? name.split(' ')[0]}</span>
+              <span className="gt-bar-t">{name}{cents > 0 ? <em className="gt-tag dem">체선</em> : p.night ? <em className="gt-tag night">야간</em> : null}</span>
             </button>
           )
         })}
         {nowStyle && <span className="gt-now" style={nowStyle} aria-hidden="true" />}
+        {cursorStyle && <span className="gt-cursor" style={cursorStyle} aria-hidden="true" />}
       </div>
     </div>
   )
@@ -101,7 +121,9 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
         <div className="gt-label"><span className="mono tiny faint">KST</span></div>
         <div className="gt-track">
           {ticks.map((k) => <span key={k.t} className={`gt-tick num ${k.day ? 'day' : ''}`} style={{ left: pos(k.t) }}>{k.day ? fmt(k.t).slice(0, 5) : String(hourOf(k.t)).padStart(2, '0')}</span>)}
+          {nights.map((n) => <span key={`nl-${n.key}`} className="gt-night-label" style={n.style}>밤</span>)}
           {nowStyle && <span className="gt-now-label tiny" style={nowStyle}>지금</span>}
+          {cursorStyle && <span className="gt-cursor-label tiny num" style={cursorStyle}>{fmt(cursor)}</span>}
         </div>
       </div>
       {groups.map((g) => (
@@ -115,9 +137,9 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
 }
 
 /** 간트 범례. keys: work, dem, night, hl, fixed, block, nightBand */
-export function TimelineLegend({ hlLabel = '실제 계획과 부두가 다른 배', keys = ['work', 'dem', 'night', 'hl', 'fixed', 'nightBand', 'block'], hint = '막대를 누르면 산출 근거' }) {
+export function TimelineLegend({ hlLabel = '표시한 배', keys = ['work', 'dem', 'night', 'hl', 'fixed', 'nightBand', 'block'], hint = '막대를 누르면 계획 일정' }) {
   const L = {
-    work: ['gt-key', '작업(접안~이안)'], dem: ['gt-key dem', '체선 발생'], night: ['gt-key night', '야간 접안'],
+    work: ['gt-key', '작업(접안~이안)'], wait: ['gt-key wait', '도착 후 대기'], dem: ['gt-key dem', '체선 발생'], night: ['gt-key night', '야간 접안'],
     hl: ['gt-key hl', hlLabel], fixed: ['gt-key fixed', '고정한 배'], nightBand: ['gt-key band', '야간 20~06시'], block: ['gt-key block', '사용 불가'],
   }
   return <div className="gt-legend">{keys.map((k) => <span key={k}><i className={L[k][0]} />{L[k][1]}</span>)}{hint && <span className="faint">{hint}</span>}</div>

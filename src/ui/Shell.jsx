@@ -45,9 +45,9 @@ export function Brand({ size = 15 }) {
 function Clock() {
   const { scen } = useApp()
   return (
-    <Tooltip content="데이터셋 기준 시각 T. 화면의 「지금」이며, 엔진은 이 시각 뒤의 일을 보지 않습니다" placement="bottom">
+    <Tooltip content="현재 시각. 엔진은 이 시각 뒤의 일을 보지 않습니다" placement="bottom">
       <span className="clock mono">
-        <span className="faint">기준</span> <b>{scen ? fmtFull(0) : '-'}</b> <span className="faint">KST</span>
+        <span className="faint">현재</span> <b>{scen ? fmtFull(0) : '-'}</b> <span className="faint">KST</span>
       </span>
     </Tooltip>
   )
@@ -69,7 +69,6 @@ export function Shell({ children }) {
           <Brand />
           <span className="topbar-sub">체선료 최적화 콘솔</span>
         </button>
-        <span className="topbar-op mono">ULSAN SK · {scen ? `${scen.berths.length} BERTHS / ${scen.vessels.length} VESSELS` : 'LOADING'}</span>
         <div className="topbar-right">
           {isScheduler && (
             <label className="scen-select" id="scen" data-tour="scen">
@@ -79,7 +78,6 @@ export function Shell({ children }) {
             </label>
           )}
           <Clock />
-          <FontScale />
           <ThemeToggle />
           {isScheduler && (
             <Tooltip content="화면을 하나씩 짚는 안내" placement="bottom">
@@ -95,7 +93,7 @@ export function Shell({ children }) {
             </Menu>
           )}>
             <Button variant="minimal" size="small" endIcon="caret-down" className="who">
-              <span className="who-dot" />{role.name}
+              {role.name}
             </Button>
           </Popover>
         </div>
@@ -119,28 +117,12 @@ export function Shell({ children }) {
             ] : [])}
           </div>
         ))}
-        <div className="rail-status">
-          <div className="rail-head">계획 상태</div>
-          {current ? (
-            <p className={stale ? 'c-amber' : 'c-green'}>
-              <span className="strong">{current.label} {current.status}</span>
-              {stale && <span className="small block">입력 바뀜 · 재확인 필요</span>}
-            </p>
-          ) : <p className="muted strong">확정 전</p>}
-        </div>
       </nav>
 
       <main className="work">{children}</main>
 
-      <footer className="statusbar mono">
-        <span className="st live">{isScheduler ? scenarioId : 'SCHEDULE'}</span>
-        {isScheduler && <span>INPUT v{version}</span>}
-        {isScheduler && best && <span>ENGINE CP-SAT · {result.candidates.length} PLANS · {best.status}{result.running ? ' · RECALCULATING' : result.stale ? ' · STALE' : ''}</span>}
-        {isScheduler && result.baseline && <span>ACTUAL {money(result.baseline.total)}</span>}
-        {isScheduler && best && <span>BEST {best.label.replace('후보 ', 'CAND-')} {money(best.total)}</span>}
-        <span>PLAN {current ? `${current.label.replace('후보 ', 'CAND-')} v${current.planNo}` : 'NOT FIXED'}</span>
-        <span className="statusbar-right">{scen ? `${scen.bundle} · 실제 접안 실적 + 합성 값, 계약은 가상` : ''} · 지도 © OpenStreetMap contributors</span>
-      </footer>
+      {/* 11-25 아래 상태 줄의 데이터셋, 엔진, 금액 표시를 빼고 임시 문구만 (나중에 바꿈) */}
+      <footer className="statusbar"><span className="statusbar-credit">Made by Minkyu</span></footer>
     </div>
   )
 }

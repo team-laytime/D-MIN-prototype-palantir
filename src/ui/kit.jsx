@@ -49,13 +49,11 @@ export function Steps({ now }) {
 
 /** 화면 틀: 머리(경로 · 제목 · 설명 · 단계 · 동작) + 스크롤되는 본문. */
 export function Screen({ tab, title, desc, step, actions, bodyClass = '', children }) {
-  const g = groupOf(tab)
   const item = itemOf(tab)
   return (
     <div className="screen">
       <div className="screen-head">
         <div>
-          <div className="screen-path">{g?.label}{item?.no ? ` · ${item.no}단계` : ''}</div>
           <h1 className="screen-title">{title ?? item?.label}</h1>
         </div>
         {desc && <p className="screen-desc">{desc}</p>}

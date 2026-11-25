@@ -43,7 +43,7 @@ export function risksOf(sim, scen) {
   ]
 }
 
-/** ref(최저안 또는 실제 계획)와 비교해 부두나 접안 시각이 바뀐 선박 */
+/** ref(보통 최저안)와 비교해 부두나 접안 시각이 바뀐 선박 */
 export function changedVs(sim, ref) {
   if (!ref) return []
   const base = Object.fromEntries(ref.placements.map((p) => [p.vid, p]))

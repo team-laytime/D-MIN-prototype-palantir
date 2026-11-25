@@ -5,7 +5,7 @@ const PIERS = ['1', '2', '3', '4', '5', '6', '7', '8', 'BUOY', 'GAS']
 export const PIER_TEAMS = Object.fromEntries(PIERS.map((p, i) => [p, {
   pier: p,
   team: `${pierName(p)} 하역팀`,
-  lead: '담당 반장 (가상)',
+  lead: '담당 반장',
   tel: `052-000-${String(1000 + i * 111).slice(0, 4)}`,
   mail: `${p === 'BUOY' ? 'buoy' : p === 'GAS' ? 'gas' : `sk${p}`}-ops@example.com`,
 }]))
