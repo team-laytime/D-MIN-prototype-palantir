@@ -52,4 +52,10 @@ export function setFontScale(id) {
   applyFont()
   for (const l of fontListeners) l()
 }
+/** 11-25 로그인 화면은 글씨 크기 배율(zoom)을 받지 않는다. 화면 전체가 커지면 카드가 아래로 밀리고 푸터가 잘린다.
+ *  로그인 화면이 떠 있는 동안 1로 두고, 사라지면 고른 배율로 되돌린다. */
+export function suspendFontZoom() {
+  document.documentElement.style.zoom = '1'
+  return applyFont
+}
 export const useFontScale = () => useSyncExternalStore((l) => { fontListeners.add(l); return () => fontListeners.delete(l) }, () => font)

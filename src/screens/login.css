@@ -19,7 +19,7 @@ body:has(.login-page) { min-width: 0; overflow: hidden; }
 .login-side { position: relative; flex: 0 0 auto; width: 400px; max-width: 100%; padding: 30px 30px 32px; background: #fff; border-radius: 12px; box-shadow: 0 18px 48px rgba(60, 20, 10, 0.18), 0 2px 6px rgba(0, 0, 0, 0.06); }
 .login-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
 .login-logo img { width: 44px; height: 44px; }
-.login-word { font-family: var(--sans); font-size: calc(22px * var(--fs)); font-weight: 800; letter-spacing: 0.04em; color: var(--lg-ink); }
+.login-word { font-family: var(--sans); font-size: calc(22px * var(--fs)); font-weight: 700; letter-spacing: 0.04em; color: var(--lg-ink); }
 .login-side .login-card { width: 100%; background: #fff; border: 0; box-shadow: none; }
 .login-side .panel-head { height: auto; min-height: 0; padding: 0 0 10px; gap: 12px; background: transparent; border-bottom: 2px solid var(--lg-red); }
 .login-side .panel-code { color: var(--lg-red); font-size: calc(12px * var(--fs)); }
@@ -80,6 +80,48 @@ body:has(.login-page) { min-width: 0; overflow: hidden; }
 .login-alt { height: 1px; margin: 22px 0 16px; background: var(--lg-line); }
 .login-footer { flex: 0 0 auto; padding: 14px 16px 18px; text-align: center; color: #5f6670; font-size: calc(13px * var(--fs)); letter-spacing: 0.02em; }
 
-/* 큰 화면에서는 카드를 통째로 키운다(높이도 넉넉할 때만) */
+/* 카드 크기는 창 높이에 맞춘다: 카드 + 위아래 여백 + 푸터가 항상 한 화면에 들어오게.
+   (로그인 카드 약 484px, 회원가입 카드 약 526px 기준으로 단계를 나눔. 브라우저 확대, 축소에도 같이 맞춰짐) */
 @media (min-width: 1400px) and (min-height: 800px) { .login-side { zoom: 1.2; } }
-@media (min-width: 1800px) and (min-height: 980px) { .login-side { zoom: 1.35; } }
+@media (min-width: 1800px) and (min-height: 880px) { .login-side { zoom: 1.35; } }
+@media (max-height: 690px) { .login-side { zoom: 0.9; } }
+@media (max-height: 635px) { .login-side { zoom: 0.8; } }
+@media (max-height: 580px) { .login-side { zoom: 0.7; } }
+
+/* 11-25 회원가입: 로그인 카드와 같은 입력칸, 버튼 크기로 맞추고 문구는 덜어 냄 */
+.login-req { color: var(--lg-red); font-weight: 700; margin-left: 2px; }
+.login-main .bp6-form-group label.bp6-label { display: flex; align-items: baseline; gap: 2px; }
+.login-main .bp6-label .bp6-text-muted { color: var(--lg-red); }
+.login-2col { gap: 12px; }
+.login-signup-form .bp6-form-group { margin-bottom: 14px; }
+.login-main .bp6-html-select select { height: 42px; padding: 0 30px 0 12px; font-size: calc(14px * var(--fs)); border-radius: 4px; }
+.login-main .bp6-html-select .bp6-icon { top: 13px; right: 10px; color: var(--lg-sub); }
+.bp6-dark .login-side .bp6-html-select select:focus { box-shadow: inset 0 0 0 2px var(--lg-orange); }
+.login-actions { margin-top: 30px; }
+.login-actions .bp6-button { min-height: 44px; }
+.login-main .bp6-input:invalid:not(:placeholder-shown) { box-shadow: inset 0 0 0 1px var(--lg-line); }
+
+/* 요청 역할: 둘 중 하나를 누르는 선택 버튼 */
+.login-role { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.login-role button { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid var(--lg-line); border-radius: 6px; background: #fff; color: var(--lg-sub); font: inherit; font-size: calc(14px * var(--fs)); font-weight: 500; cursor: pointer; transition: border-color 0.12s, background 0.12s, color 0.12s; }
+.login-role button .bp6-icon { color: #a3a8b0; }
+.login-role button:hover { border-color: #c4c9d0; color: var(--lg-ink); }
+.login-role button.on { border: 2px solid var(--lg-orange); background: #fff5f0; color: var(--lg-ink); font-weight: 700; }
+.login-role button.on .bp6-icon { color: var(--lg-orange); }
+.login-role button:focus-visible { outline: 2px solid var(--lg-orange); outline-offset: 2px; }
+/* 담당 부두, 팀: 다른 입력칸과 같은 모양의 목록 */
+.login-select { position: relative; }
+.login-select select { width: 100%; height: 42px; padding: 0 36px 0 12px; border: 0; border-radius: 4px; background: #fff; color: var(--lg-ink); box-shadow: inset 0 0 0 1px var(--lg-line); font: inherit; font-size: calc(14px * var(--fs)); appearance: none; -webkit-appearance: none; cursor: pointer; }
+.login-select select:hover { box-shadow: inset 0 0 0 1px #c4c9d0; }
+.login-select select:focus { outline: none; box-shadow: inset 0 0 0 2px var(--lg-orange); }
+.login-select .bp6-icon { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); color: var(--lg-sub); pointer-events: none; }
+
+/* 회원가입 카드(약 693px)는 로그인보다 높아서 단계를 따로 둔다. 카드 + 여백 + 푸터가 한 화면에 들어오게 */
+.login-side.is-signup { zoom: 1; }
+@media (min-width: 1400px) and (min-height: 1070px) { .login-side.is-signup { zoom: 1.2; } }
+@media (min-width: 1800px) and (min-height: 1185px) { .login-side.is-signup { zoom: 1.35; } }
+@media (max-height: 914px) { .login-side.is-signup { zoom: 0.9; } }
+@media (max-height: 838px) { .login-side.is-signup { zoom: 0.8; } }
+@media (max-height: 762px) { .login-side.is-signup { zoom: 0.7; } }
+@media (max-height: 686px) { .login-side.is-signup { zoom: 0.6; } }
+.bp6-dark .login-side .bp6-button:not(.bp6-intent-primary) .bp6-icon { color: var(--lg-ink); }
