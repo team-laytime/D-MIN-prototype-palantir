@@ -3,6 +3,7 @@
 //  - request = 팀 엔진 PlanRequest 그대로, results[] = 프리셋마다 엔진 PlanResponse
 //  - 계획 조건을 고치면 request를 고쳐 엔진 API(/engine/plans, vite가 127.0.0.1:8000으로 넘김)에 다시 보낸다.
 import { toIso, toMin } from './time.js'
+import { BERTH_GEO } from './seaRoutes.js'
 
 export async function loadIndex() {
   const r = await fetch(`${import.meta.env.BASE_URL}data/index.json`)
@@ -85,12 +86,15 @@ export function buildScen(ds) {
     const pier = pierOf(b.berth)
     const k = (piers[pier] = (piers[pier] ?? -1) + 1)
     const base = PIER_POS[pier] ?? PIER_POS[8]
-    const pos = pier === 'BUOY' ? (b.berth === 'BUOY2' ? [35.4483, 129.4236] : [35.44, 129.43]) : [base[0] - k * 0.0011, base[1]]
+    const pos0 = pier === 'BUOY' ? (b.berth === 'BUOY2' ? [35.4483, 129.4236] : [35.44, 129.43]) : [base[0] - k * 0.0011, base[1]]
+    // 11-25 지도 위치는 바다 경로와 같은 표(seaRoutes.js BERTH_GEO): 계류점(moor)은 늘 물 위
+    const geo = BERTH_GEO[b.berth]
+    const pos = geo?.pos ?? pos0
     return {
       id: b.berth, name: berthName(b.berth), code: berthCode(b.berth), label: berthLabel(b.berth), pier, pierName: pierName(pier),
       maxDwt: b.max_dwt, maxDraft: b.max_draft, maxLoa: b.max_loa, minLoa: b.min_loa, size: b.size,
       products: [...new Set(prods.filter((p) => p.berth === b.berth).map((p) => cargoName(p.group)))],
-      pos, moor: [pos[0], pos[1] + 0.0019], approxPos: pier === 'GAS',
+      pos, moor: geo?.moor ?? [pos[0], pos[1] + 0.0019], approxPos: pier === 'GAS',
     }
   })
   const refs = ds.vesselRef ?? {}

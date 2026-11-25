@@ -4,7 +4,7 @@
 //   접안 전 : 접안(ETB) 전 APPROACH분 동안 정박지 자리 → 배정 선석 (대기가 그보다 짧으면 대기 시간 전부)
 //   이안 뒤 : 이안(ETU) 뒤 DEPART분 동안 선석 → 바다 출구
 // 배 방향(cog)은 지금 지나는 구간의 진행 방향, 멈춰 있을 때는 마지막으로 움직인 방향을 쓴다.
-import { SEA_IN, SEA_OUT, seaRoute } from './seaRoutes.js'
+import { arriveRoute, leaveRoute, seaRoute } from './seaRoutes.js'
 
 export const STEP_MIN = 5
 const ARRIVE = 45
@@ -44,10 +44,11 @@ export function along(path, f) {
  */
 export function poseAt({ p, v }, t, spot, anchId, berth) {
   const eta = p.eta ?? v.eta
-  const arrive = [SEA_IN, spot]
+  // 11-25 세 구간 모두 미리 구한 물길(seaRoutes.js)만 따른다: 육지 금지
+  const arrive = arriveRoute(spot)
   const toBerth = seaRoute(spot, anchId, berth)
-  const leave = [...seaRoute(spot, anchId, berth)].reverse().slice(0, -1).concat([SEA_OUT])
-  const lastArriveCog = bearing(arrive[0], arrive[1])
+  const leave = leaveRoute(berth)
+  const lastArriveCog = bearing(arrive.at(-2), arrive.at(-1))
   const lastApproachCog = bearing(toBerth.at(-2), toBerth.at(-1))
   // 입항
   if (t < eta) {

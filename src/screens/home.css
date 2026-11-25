@@ -624,8 +624,14 @@ body:has(.home-console) { min-width: 0; }
 .home-gantt-tabs button { height: 30px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--fg-2); font: inherit; font-size: calc(13px * var(--fs)); font-weight: 600; cursor: pointer; }
 .home-gantt-tabs button:hover { color: var(--fg); }
 .home-gantt-tabs button.on { color: var(--fg); border-bottom-color: var(--accent); }
-/* 배 움직임 애니메이션: 재생 한 칸(60ms) 동안 다음 위치로 미끄러지게 */
-.home-map.anim .leaflet-marker-icon.home-map-vessel-wrap { transition: transform 60ms linear; }
+/* 11-25 배 움직임: 칸 사이를 직선으로 미끄러지게 하면 물길이 꺾이는 곳에서 육지를 가로질러 보였다.
+   위치는 매 칸 물길 위 점(seaRoutes.js)으로만 옮기고, 칸 사이 직선 이동은 하지 않는다 */
+.home-map.anim .leaflet-marker-icon.home-map-vessel-wrap { transition: none; }
 .home-gantt .gt-bar { --gt-base: var(--bg-3); background: var(--gt-base); }
 .home-gantt .gt-bar.night { --gt-base: color-mix(in srgb, var(--amber) 22%, var(--bg-3)); }
 .home-gantt .gt-wait-dem { z-index: 1; }
+
+/* 11-25 재생 중 입항 예정 카드가 꿈틀대던 것: 「n시간 m분 후」 글자 폭이 바뀔 때마다 화물, 선석 칸이 밀렸다.
+   남은 시간 칸 폭을 고정하고 숫자 폭을 같게 해서 옆 칸이 움직이지 않게 한다 */
+.home-arr-left { flex: none; min-width: 7.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.home-arr-time b { font-variant-numeric: tabular-nums; }

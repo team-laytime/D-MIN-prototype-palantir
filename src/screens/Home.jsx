@@ -7,7 +7,7 @@ import { useApp } from '../state/app.jsx'
 import { Panel, St } from '../ui/kit.jsx'
 import { berthStatus as berthStatusOf, isNight as isNightAt, spanOf, stateAt } from '../lib/plan.js'
 import { MAP_CONTEXT, anchorageFor } from '../lib/vesselState.js'
-import { seaRoute } from '../lib/seaRoutes.js'
+import { arriveRoute, seaRoute } from '../lib/seaRoutes.js'
 import { STEP_MIN, poseAt } from '../lib/vesselMotion.js'
 import { NOW, dayStart, fmt, fmtDur, fmtFull, money } from '../lib/time.js'
 import Timeline, { demCents } from './Timeline.jsx'
@@ -416,7 +416,11 @@ function HomeMap() {
       if ((state.v.id !== selected && state.v.id !== hoverVessel?.v.id) || !(state.phase === 'waiting' || state.phase === 'coming')) continue
       const berth = bById[state.p.bid]
       if (!berth) continue
-      const path = seaRoute(placeOf[state.v.id] ?? null, anchorageFor(state.v).id, berth)
+      // 11-25 정박지 자리에서 선석까지 물길. 아직 들어오는 중이면 입구 → 정박지 자리 물길을 앞에 붙인다
+      const spot = spotOf[state.v.id]
+      if (!spot) continue
+      const toBerth = seaRoute(spot, anchorageFor(state.v).id, berth)
+      const path = state.phase === 'coming' ? [...arriveRoute(spot), ...toBerth.slice(1)] : toBerth
       const sel = state.v.id === selected
       const color = sel ? '#ff7043' : '#ffab8f'
       const op = sel ? 0.95 : 0.6
