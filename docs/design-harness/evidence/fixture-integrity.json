@@ -1,0 +1,7 @@
+{
+  "baselineCommit": "e4c9086",
+  "datasetHash": "80ef97b75981738a169444f31b9a41250058efc20d7a5a706bd36679324fcdcc",
+  "sameAccountRecords": true,
+  "accounts": 12,
+  "note": "Hash covers existing account records and history, excluding storage health metadata. No live account API is connected."
+}
