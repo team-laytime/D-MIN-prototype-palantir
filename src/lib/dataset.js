@@ -4,6 +4,8 @@
 //  - 계획 조건을 고치면 request를 고쳐 엔진 API(/engine/plans, vite가 127.0.0.1:8000으로 넘김)에 다시 보낸다.
 import { toIso, toMin } from './time.js'
 import { BERTH_GEO } from './seaRoutes.js'
+import { seedIncidents } from './incidents.js'
+import { tankMargin } from './presets.js'
 
 export async function loadIndex() {
   const r = await fetch(`${import.meta.env.BASE_URL}data/index.json`)
@@ -142,12 +144,15 @@ export function buildScen(ds) {
     .sort((a, b) => a.etu - b.etu)
   return {
     id: ds.id, name: ds.label, summary: ds.source, bundle: ds.bundle, start: ds.start, days: ds.days, builtAt: ds.built_at,
+    // 11-25 계획 대상이 아닌 배(기준 시각에 작업 중인 배 등)도 리스크 문구에 나온다. 호출부호 → 선박명
+    nameByCall: Object.fromEntries(Object.entries(refs).map(([cs, r]) => [cs, r.nameKo ?? r.nameEn]).filter(([, n]) => n)),
     meta: ds.meta, berths, vessels, wind, tanks, occupied, nightPilot: first.params?.night_pilot ?? null,
     windDefault: first.params?.weather?.thresholds_ms ?? null,
     window: { start: t0, end: toMin(first.window.end) },
     // 스케줄러가 고치는 값: 선박 ETA(vessels[].eta), 부두 사용 불가(blocks), 고정 선박(fixes), 엔진 파라미터(params)
     blocks: [], fixes: [], params: {},
-    incidents: [], // 현장 돌발 상황은 실데이터에 없다. 메일·등록으로 들어온 것만 쌓인다.
+    // 11-25 계획 조건을 바꾸는 받은 메일(시연용, 실제 선박 · 부두로 만듦). 「반영」하면 계획 조건에 들어간다(lib/incidents.js)
+    incidents: seedIncidents({ vessels, berths, window: { start: t0, end: toMin(first.window.end) } }, first.plan.vessels, first.baseline?.vessels ?? []),
     request: req,
     presets: ds.results.map((r) => r.preset),
   }

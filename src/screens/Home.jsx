@@ -470,10 +470,10 @@ function HomeMap() {
               <span className="home-arr-title">입항 예정</span>
               <b className="home-arr-count num">{coming.length}</b>
             </header>
-            {isScheduler && incidents.length > 0 && <div className="home-arr-incidents" role="region" aria-label="돌발 상황">
+            {isScheduler && incidents.length > 0 && <div className="home-arr-incidents" role="region" aria-label="조건 변경 요청">
               {incidents.map((a) => <button type="button" key={a.id} onClick={() => { setMailFilter('incident'); go('inbox') }}>
                 <Icon icon="warning-sign" size={12} />
-                <span><strong>{a.title.match(/^\[(.+?)\]/)?.[1] ?? '돌발 상황'}</strong> {a.title.replace(/^\[.+?\]\s*/, '')}</span>
+                <span><strong>{a.title.match(/^\[(.+?)\]/)?.[1] ?? '조건 변경'}</strong> {a.title.replace(/^\[.+?\]\s*/, '')}</span>
               </button>)}
             </div>}
             <div className="home-arr-list">

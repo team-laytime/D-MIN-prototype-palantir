@@ -4,12 +4,13 @@
 // 11-24 실데이터: 가상 돌발 상황은 없다. 돌발 상황은 scen.incidents에 들어온 것만 보이고, 반영하면 incident.block이 부두 사용 불가로 들어간다.
 import { BLOCK_KINDS } from './scenDiff.js'
 import { fmt } from './time.js'
+import { changeText } from './incidents.js'
 
 export const CHANNELS = [
   { id: 'all', label: '전체', icon: 'inbox' },
   { id: 'weather', label: '기상', icon: 'cloud' },
   { id: 'eta', label: 'ETA, 입력 변경', icon: 'time' },
-  { id: 'incident', label: '돌발 상황', icon: 'warning-sign' },
+  { id: 'incident', label: '조건 변경 요청', icon: 'warning-sign' },
   { id: 'plan', label: '확정', icon: 'endorsed' },
 ]
 
@@ -86,11 +87,11 @@ export function deriveAlerts({ ws, roleId, userAddr, scenarioId, scen }) {
 
   // 현장에서 메일로 들어온 돌발 상황. incident = { id, kind, title, effect?, at, from, block? }
   for (const inc of scen.incidents ?? []) {
-    const effect = inc.effect ?? (inc.block ? `부두 사용 불가 ${blockText(scen, inc.block)}` : '-')
+    const effect = inc.change ? changeText(scen, inc) : inc.effect ?? (inc.block ? `부두 사용 불가 ${blockText(scen, inc.block)}` : '-')
     out.push({ id: `inc:${scenarioId}:${inc.id}`, incId: inc.id, channel: 'incident', tone: 'warn', title: `[${inc.kind}] ${inc.title}`, detail: `영향: ${effect}`,
       at: typeof inc.at === 'number' ? fmt(inc.at) : inc.at ?? '-', by: inc.from ?? '현장', action: { tab: 'input' },
       from: inc.from ?? '현장', fromAddr: inc.fromAddr ?? (inc.from === '생산계획팀' ? 'production@example.com' : 'facility@example.com'),
-      body: `스케줄러님,\n\n${inc.title}.\n\n영향: ${effect}\n\n반영 여부를 회신 부탁드립니다.\n${inc.from ?? '현장'} 드림` })
+      body: inc.body ?? `스케줄러님,\n\n${inc.title}.\n\n영향: ${effect}\n\n반영 여부를 회신 부탁드립니다.\n${inc.from ?? '현장'} 드림` })
   }
   return out.map(asMail).reverse()
 }

@@ -112,7 +112,7 @@ export function Shell({ children }) {
             )).concat(g.key === 'MAIL' && isScheduler && incidents.length > 0 ? [
               // 11-24 최최종: 돌발 상황은 지금 있을 때만 켜진다. 없으면 이 줄 자체가 없다.
               <button key="incident" className="rail-item rail-sub hot" onClick={() => { setMailFilter('incident'); go('inbox') }}>
-                <Icon icon="warning-sign" size={12} /><span>돌발 상황</span><span className="rail-badge num hot" aria-label={`돌발 상황 ${incidents.length}건`}>{incidents.length}</span>
+                <Icon icon="warning-sign" size={12} /><span>조건 변경 요청</span><span className="rail-badge num hot" aria-label={`조건 변경 요청 ${incidents.length}건`}>{incidents.length}</span>
               </button>,
             ] : [])}
           </div>

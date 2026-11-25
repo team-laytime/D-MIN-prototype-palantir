@@ -7,6 +7,7 @@ import { Alert, Button, Dialog, DialogBody, DialogFooter, HTMLSelect, Icon, Inpu
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { CHANNELS } from '../lib/inbox.js'
+import { changeText } from '../lib/incidents.js'
 import { GROUPS } from '../lib/mailGroups.js'
 import { markRead, sendMail, setAlertStatus, useWorkspace, ws } from '../lib/workspace.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
@@ -67,8 +68,9 @@ export default function Inbox() {
   const list = folder === 'in' ? inbox : sent
   const sel = list.find((m) => String(m.id) === String(selId)) ?? list[0] ?? null
   const applied = alerts.filter((a) => a.channel === 'incident' && a.status === 'applied')
-  // 돌발 상황 메일을 「반영」하면 이 구간이 계획 조건의 부두 사용 불가(blocks)로 들어간다.
-  const incBlock = sel?.incId ? scen?.incidents.find((i) => i.id === sel.incId)?.block : null
+  // 조건 변경 요청 메일을 「반영」하면 그 change(ETA · 부두 사용 불가 · 고정 · 조절값)가 계획 조건에 들어간다.
+  const selInc = sel?.incId ? scen?.incidents.find((i) => i.id === sel.incId) : null
+  const selChange = selInc?.change ? changeText(scen, selInc) : null
 
   useEffect(() => { if (folder === 'in' && sel && sel.status === 'new') markRead(sel.id) }, [folder, sel?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -79,12 +81,12 @@ export default function Inbox() {
     <Screen tab="inbox" title="메일함" bodyClass="inbox-page">
       {isScheduler && incidents.length > 0 && (
         <button type="button" className="mb-strip warn" onClick={() => pickChannel('incident')}>
-          <Icon icon="warning-sign" size={14} /><b>돌발 상황 {incidents.length}건</b><span>반영할지 아직 정하지 않았습니다. 눌러서 보기</span>
+          <Icon icon="warning-sign" size={14} /><b>조건 변경 요청 {incidents.length}건</b><span>반영할지 아직 정하지 않았습니다. 눌러서 보기</span>
         </button>
       )}
       {isScheduler && applied.length > 0 && (
         <div className="mb-strip ok">
-          <Icon icon="tick-circle" size={14} /><b>돌발 상황 {applied.length}건이 계획 조건에 반영됨</b><span>부두 사용 불가 구간으로 들어갔습니다. 계획 조건에서 「다시 계산」을 눌러야 후보에 반영됩니다.</span>
+          <Icon icon="tick-circle" size={14} /><b>조건 변경 요청 {applied.length}건이 계획 조건에 반영됨</b><span>계획 조건에서 「다시 계산」을 눌러야 후보에 반영됩니다.</span>
           <Button size="small" intent="primary" icon="properties" onClick={() => go('input')}>계획 조건에서 확인, 수정</Button>
         </div>
       )}
@@ -153,15 +155,15 @@ export default function Inbox() {
                 <div className={`mb-decide ${sel.status === 'applied' ? 'ok' : sel.status === 'dismissed' ? 'idle' : ''}`}>
                   {sel.status === 'applied' || sel.status === 'dismissed' ? (
                     <>
-                      <span>{sel.status === 'applied' ? '계획 조건의 부두 사용 불가 구간에 넣었습니다. 「다시 계산」을 눌러야 후보에 반영됩니다.' : '이번 계획에는 반영하지 않기로 했습니다.'} <span className="tiny muted">{sel.doneBy} · {sel.doneAt}</span></span>
+                      <span>{sel.status === 'applied' ? `계획 조건에 넣었습니다: ${selChange ?? '-'}. 「다시 계산」을 눌러야 후보에 반영됩니다.` : '이번 계획에는 반영하지 않기로 했습니다.'} <span className="tiny muted">{sel.doneBy} · {sel.doneAt}</span></span>
                       <Button size="small" variant="minimal" icon="undo" onClick={() => { if (sel.status === 'applied') applyIncident(sel.incId, false); setAlertStatus(sel.id, 'read', sel.title) }}>되돌리기</Button>
                     </>
                   ) : (
                     <>
-                      <span><span className="strong">이 돌발 상황을 계획 조건에 반영할까요?</span><span className="tiny muted block">반영하면 부두 사용 불가 구간이 계획 조건에 들어갑니다. 후보는 「다시 계산」을 눌러야 바뀝니다.</span></span>
+                      <span><span className="strong">이 내용을 계획 조건에 반영할까요?</span><span className="tiny muted block">{selChange ? `반영: ${selChange}. ` : ''}후보는 「다시 계산」을 눌러야 바뀝니다.</span></span>
                       <div className="mb-decide-btns">
                         <Button size="small" icon="cross" onClick={() => setAlertStatus(sel.id, 'dismissed', sel.title)}>반영 안 함</Button>
-                        <Button size="small" intent="primary" icon="tick" disabled={!incBlock} title={incBlock ? undefined : '이 메일에는 부두 사용 불가 구간이 없어 자동으로 넣을 수 없습니다'} onClick={() => { applyIncident(sel.incId, true); setAlertStatus(sel.id, 'applied', sel.title) }}>반영</Button>
+                        <Button size="small" intent="primary" icon="tick" disabled={!selChange} title={selChange ? undefined : '이 메일에는 계획 조건으로 넣을 값이 없습니다'} onClick={() => { applyIncident(sel.incId, true); setAlertStatus(sel.id, 'applied', sel.title) }}>반영</Button>
                       </div>
                     </>
                   )}

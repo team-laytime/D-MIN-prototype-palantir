@@ -128,7 +128,13 @@ export function removeNote(scenarioId, vid, vesselName, id) {
 export function setAlertStatus(id, status, title) {
   if (status) ws.inbox[id] = { status, at: nowText(), who: role()?.name }
   else delete ws.inbox[id]
-  if (status !== 'read') addLog('메일', status === 'applied' ? '돌발 상황 반영' : status === 'dismissed' ? '돌발 상황 반영 안 함' : '안 읽음으로', title)
+  if (status !== 'read') addLog('메일', status === 'applied' ? '조건 변경 반영' : status === 'dismissed' ? '조건 변경 반영 안 함' : '안 읽음으로', title)
+  emit()
+}
+/** 11-25 조건 변경 결정 되돌리기: 메일 상태를 결정 전 값으로 그대로 돌린다(기록은 부르는 쪽에서 한 번만). */
+export function restoreAlertStatus(id, prev) {
+  if (prev) ws.inbox[id] = prev
+  else delete ws.inbox[id]
   emit()
 }
 /** 읽음 표시는 기록을 남기지 않는다(열 때마다 쌓이지 않게). */

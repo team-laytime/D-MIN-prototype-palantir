@@ -6,6 +6,10 @@ import { Alert, Button, Callout, Icon, InputGroup, NonIdealState, Spinner } from
 import { BLOCK_KINDS, PARAM_FIELDS, TANK_RULE, WIND_GROUPS, getIn } from '../lib/scenDiff.js'
 import { fmt, fmtFull, fromInput, toInput, toMin } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
+import { useInbox } from '../state/useInbox.js'
+import { changeText } from '../lib/incidents.js'
+import { setAlertStatus } from '../lib/workspace.js'
+import { St } from '../ui/kit.jsx'
 import { vesselIdOf } from '../lib/dataset.js'
 import { Screen } from '../ui/kit.jsx'
 import './plan.css'
@@ -96,8 +100,6 @@ export default function ScenarioInput() {
     if (t !== null && t !== scen.blocks[i][field]) editBlock(i, (b) => { b[field] = t })
   }
 
-  // 돌발 상황(메일)에서 들어온 구간
-  const incBlocks = scen.blocks.filter((b) => b.incId)
   const blocksOf = (bid) => scen.blocks.filter((b) => !b.berths || b.berths.includes(bid))
 
   // 부두를 부두(pier)별로 묶는다
@@ -143,15 +145,7 @@ export default function ScenarioInput() {
         )}
       </div>}
 
-      {incBlocks.length > 0 && (
-        <div className="pi-inc-strip">
-          <Icon icon="warning-sign" size={14} />
-          <b>돌발 상황 {new Set(incBlocks.map((b) => b.incId)).size}건이 부두 사용 불가로 들어와 있음</b>
-          <span>{incBlocks.map((b) => `${berthsText(b, berthById)} ${fmt(b.start)}~${fmt(b.end)} ${BLOCK_KINDS[b.kind] ?? b.kind}`).join(', ')}</span>
-          <span className="muted small">아래 「부두 사용 불가」에서 고칠 수 있습니다.</span>
-          <Button size="small" variant="minimal" icon="inbox" onClick={() => go('inbox')}>메일 보기</Button>
-        </div>
-      )}
+      <MailChanges scen={scen} />
 
       {errors.length > 0 && (
         <Callout intent="danger" icon="error" title={`입력 오류 ${errors.length}건, 고쳐야 다시 계산할 수 있습니다`} className="plan-errors">
@@ -690,5 +684,54 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
       <path d={path} className="pi-wind-line" />
       {wind.filter((w) => w.thunder || w.typhoon).map((w) => <circle key={w.t} cx={x(w.t)} cy={y(w.ms)} r={2.5} className="pi-wind-alert" />)}
     </svg>
+  )
+}
+
+/** 11-25 받은 메일의 조건 변경 요청: 여기서 바로 반영하거나 반영하지 않기로 정한다. 반영하면 계획 조건에 들어가고, 후보는 「다시 계산」해야 바뀐다 */
+function MailChanges({ scen }) {
+  const { applyIncident, isScheduler, go, setMailFilter } = useApp()
+  const { alerts } = useInbox()
+  const rows = alerts.filter((a) => a.channel === 'incident' && a.incId)
+  if (!rows.length) return null
+  const pending = rows.filter((a) => a.status === 'new' || a.status === 'read').length
+  const decide = (a, status) => {
+    if (status === 'applied') applyIncident(a.incId, true)
+    if (status === 'read' && a.status === 'applied') applyIncident(a.incId, false)
+    setAlertStatus(a.id, status, a.title)
+  }
+  return (
+    <section className="pi-mail" data-tour="mail-changes">
+      <header className="pi-mail-head">
+        <Icon icon="envelope" size={14} />
+        <b>받은 메일의 조건 변경</b>
+        <span className={pending ? 'c-amber' : 'c-green'}>{pending ? `반영 여부를 정하지 않은 메일 ${pending}건` : '모두 정함'}</span>
+        <Button size="small" variant="minimal" icon="inbox" onClick={() => { setMailFilter('incident'); go('inbox') }}>메일함에서 보기</Button>
+      </header>
+      <ul>
+        {rows.map((a) => {
+          const inc = scen.incidents.find((i) => i.id === a.incId)
+          const done = a.status === 'applied' || a.status === 'dismissed'
+          return (
+            <li key={a.id} className={a.status}>
+              <span className="pi-mail-kind">{inc?.kind ?? '변경'}</span>
+              <span className="pi-mail-body">
+                <b>{inc ? changeText(scen, inc) : a.title}</b>
+                <small>{a.from} · {a.at} · {a.title.replace(/^\[.+?\]\s*/, '')}</small>
+              </span>
+              <span className="pi-mail-act">
+                {a.status === 'applied' && <St tone="ok">반영함</St>}
+                {a.status === 'dismissed' && <St tone="idle">반영 안 함</St>}
+                {done
+                  ? <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={() => decide(a, 'read')}>되돌리기</Button>
+                  : <>
+                    <Button size="small" icon="cross" disabled={!isScheduler} onClick={() => decide(a, 'dismissed')}>반영 안 함</Button>
+                    <Button size="small" intent="primary" icon="tick" disabled={!isScheduler || !inc?.change} onClick={() => decide(a, 'applied')}>반영</Button>
+                  </>}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
