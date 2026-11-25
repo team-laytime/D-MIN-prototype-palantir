@@ -164,7 +164,7 @@ export default function ScenarioInput() {
         {[
           { id: 'vessel', label: '선박', meta: `${scen.vessels.length}척` },
           { id: 'berth', label: '부두(선석)', meta: `${scen.berths.length}곳${scen.blocks.length ? `, 사용 불가 ${scen.blocks.length}` : ''}` },
-          { id: 'weather', label: '운영 여건', meta: `생산계획, 풍속${maxWind ? ` 최대 ${maxWind.ms} m/s` : ''}` },
+          { id: 'weather', label: '운영 여건', meta: '생산계획, 날씨 등' },
         ].map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={piTab === t.id} className={piTab === t.id ? 'on' : ''} onClick={() => setPiTab(t.id)}>
             <TabIcon kind={t.id} /><b>{t.label}</b><span>{t.meta}</span>
