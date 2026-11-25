@@ -2,6 +2,7 @@ import { Callout } from '@blueprintjs/core'
 import { useApp } from './state/app.jsx'
 import { Shell } from './ui/Shell.jsx'
 import Login from './screens/Login.jsx'
+import Admin from './screens/Admin.jsx'
 import Home from './screens/Home.jsx'
 import ScenarioInput from './screens/ScenarioInput.jsx'
 import Compare from './screens/Compare.jsx'
@@ -19,6 +20,8 @@ const NEEDS_CANDIDATE = ['mail']
 
 export default function App() {
   const { role, tab, result, resetKey, drawer, drawerSim, tour } = useApp()
+  // 관리자 시연은 별도 주소에서만 연다. 기존 로그인/업무 흐름은 유지한다.
+  if (new URLSearchParams(window.location.search).get('view') === 'admin') return <Admin onLogout={() => { const url = new URL(window.location.href); url.searchParams.delete('view'); window.location.assign(url) }} />
   if (!role) return <Login />
   let screen
   if (result.loading && tab !== 'ops') {
