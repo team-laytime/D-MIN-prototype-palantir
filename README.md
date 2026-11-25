@@ -22,9 +22,10 @@ bun install && bun run dev   # http://localhost:5175
     --start "2025-11-09 09:00" --days 3 --id real-2025-11-09
   ```
 
-  - 팀 전처리(`berth_prep request`)로 엔진 요청을 만들고, 프리셋 3개(기본, 안전재고 25~75%, 계획 여유 1시간)를 엔진으로 계산해 `public/data/<id>.json`에 담는다.
+  - 팀 전처리(`berth_prep request`)로 엔진 요청을 만들고(묶음 `buffer/`의 배별 여유 포함), 후보 A 기본 · B 상황형 · C 배별 지연 대비를 엔진으로 계산해 `public/data/<id>.json`에 담는다. 그 뒤 `bun tools/real-data/build_whatif.mjs <id>`로 조건 변경 메일별 「단독 반영 시」 결과를 넣는다. 자세한 것은 [docs/front-feedback-1125.md](docs/front-feedback-1125.md).
   - **비공개 데이터라 `public/data/`는 저장소에 올리지 않는다**(.gitignore). 그래서 GitHub Pages 배포본에는 데이터가 없다.
 - 다시 계산: 계획 조건(ETA, 부두 사용 불가, 선박 고정, 엔진 조절값)을 고치면 「다시 계산」이 엔진 API로 보낸다. 개발 서버가 `/engine`을 `127.0.0.1:8000`(엔진 저장소에서 `BERTH_API_HOST=127.0.0.1 BERTH_API_WORKERS=3 .venv/bin/python -m berth_sim.api`)으로 넘긴다. 다른 주소는 `ENGINE_URL`.
+- 리스크: 개발 서버가 `/risk`를 팀 리스크 모델 `127.0.0.1:8002`(엔진 저장소에서 `.venv/bin/python -m uvicorn berth_risk.api:app --host 127.0.0.1 --port 8002 --workers 3`)로 넘긴다. 다른 주소는 `RISK_URL`.
 - 금액은 데이터 팀 가상 계약 기준이라 안끼리 비교하는 값이다. 부두 하역팀 연락처도 가상이다.
 - 원본의 실시간 AIS 모드(로컬 demo 서버 필요)는 옮기지 않았다.
 - `main`에 푸시하면 GitHub Actions가 Pages로 배포한다.
