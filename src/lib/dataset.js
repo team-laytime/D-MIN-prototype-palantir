@@ -179,13 +179,48 @@ function placement(v) {
   }
 }
 
-/** 프리셋별 응답들 → 체선료 낮은 순서로 후보 A·B·C */
+/**
+ * 프리셋별 응답들 → 후보 A · B · C (11-25: 체선료 순이 아니라 자리 고정 — A 기본, B 상황형, C 배별 지연 대비).
+ * A 동점 규칙: B가 A와 체선료가 같고 탱크가 더 안전하면, A는 B의 계획을 쓴다(같은 돈이면 더 안전한 쪽). B에는 그 사실을 적는다.
+ * request가 있으면 같이 둔다(리스크 모델에 그대로 보냄).
+ */
 export function rankSims(results) {
-  return results
-    .map((r) => ({ r, total: r.response.plan.total_cents }))
-    .sort((a, b) => a.total - b.total || (a.r.response.plan.moves - b.r.response.plan.moves))
-    .map(({ r }, i) => toSim(r.response, r.preset, String.fromCharCode(65 + i)))
+  const sims = results.map((r, i) => ({ ...toSim(r.response, r.preset, String.fromCharCode(65 + i)), req: r.request ?? null, resp: r.response }))
+  const [a, b] = sims
+  if (a && b && a.total === b.total && tankMargin(b) > tankMargin(a) + 0.05) {
+    const merged = { ...toSim(b.resp, a.preset, 'A'), req: b.req, resp: b.resp }
+    merged.notes = [...merged.notes, `체선료가 같은 후보 B(${b.preset.label}) 계획이 탱크가 더 안전해 그 계획을 씀`]
+    sims[0] = merged
+    sims[1] = { ...b, notes: [...b.notes, '후보 A와 체선료 · 계획이 같음 (A가 이 계획을 씀)'], sameAsA: true }
+  }
+  return sims
 }
+
+/**
+ * 11-25 리스크 모델 API(POST /risk/risks, 팀 berth_risk): 엔진에 보낸 요청과 받은 응답을 그대로 보내 리스크 목록을 받는다.
+ * 응답 {counts: {HIGH, MEDIUM, LOW}, risks[]: {id, kind, severity, title, vessel_ids, berth, tank, start, end, evidence, cost_per_hour}, notes[]}
+ */
+//   탱크 리스크는 리스크 모델이 고정 마지노선(기본 20/80%, 1·4·7%p)으로 판정한다(계획의 안전 범위와 무관).
+//   요청이 1년치 실적을 담아 6MB가 넘고(지연 규칙이 1/1부터 탱크 재고를 다시 센다) 후보 하나에 5초 이상 걸린다.
+//   같은 요청의 결과는 이 브라우저 세션에 저장해 두고 다시 쓴다(새로고침·화면 이동 때 기다리지 않게).
+const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return (h >>> 0).toString(36) + s.length.toString(36) }
+export async function fetchRisks(req, resp, signal) {
+  const payload = JSON.stringify({ plan_request: req, plan_response: resp, rates: null })
+  const key = `dmin-risk2:${hash(payload)}` // 2: 탱크 리스크가 마지노선 20/80 기준으로 바뀐 리스크 모델(11-25)
+  const hit = sessionStorage.getItem(key)
+  if (hit) return JSON.parse(hit)
+  const r = await fetch('/risk/risks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, signal })
+    .catch((e) => { if (e.name === 'AbortError') throw e; return null })
+  if (!r) throw new Error('리스크 서버(127.0.0.1:8002)에 연결되지 않았습니다')
+  const body = await r.json().catch(() => null)
+  if (!r.ok) throw new Error(body?.detail ?? body?.title ?? `리스크 서버 오류 ${r.status}${r.status >= 500 ? ' (리스크 서버가 꺼져 있을 수 있습니다)' : ''}`)
+  try { sessionStorage.setItem(key, JSON.stringify(body)) } catch { /* 저장 공간이 차면 저장 없이 쓴다 */ }
+  return body
+}
+
+// 11-25 프론트 작업 중에만: 엔진 계산 제한 시간을 60초 → 5초로 줄인다(다시 계산 · 「반영하면?」 미리 계산이 빨리 끝나게).
+//   작업이 끝나면 null로 돌려 데이터셋 요청 값(60초)을 쓴다.
+export const DEV_TIME_LIMIT_S = null
 
 /** 계획 조건(scen)으로 엔진 요청을 다시 만든다: ETA·부두 사용 불가·고정·파라미터 반영 */
 export function buildRequest(scen, preset) {
@@ -198,21 +233,39 @@ export function buildRequest(scen, preset) {
   req.blocks = scen.blocks.map((b) => ({ berths: b.berths, start: toIso(b.start), end: toIso(b.end), kind: b.kind }))
   req.fixes = scen.fixes.map((f) => ({ vessel_id: f.vid, berth: f.bid, etb: toIso(f.etb) }))
   req.params = merge(merge(req.params ?? {}, preset.params ?? {}), scen.params ?? {})
+  if (DEV_TIME_LIMIT_S) req.params = merge(req.params, { solver: { time_limit_s: DEV_TIME_LIMIT_S } })
   req.name = preset.label
   req.request_id = preset.id
   return req
 }
 const merge = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(b)) o[k] = v && typeof v === 'object' && !Array.isArray(v) ? merge(o[k] ?? {}, v) : v; return o }
 
+/** 엔진에 계획 하나 (프리셋 하나). 「반영하면?」 미리 계산에 쓴다 */
+export async function solveOne(scen, preset, signal) {
+  const request = buildRequest(scen, preset)
+  const r = await fetch('/engine/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal })
+  const body = await r.json().catch(() => null)
+  if (!r.ok) throw new Error(body?.detail ?? body?.title ?? `엔진 오류 ${r.status}`)
+  return { preset, request, response: body }
+}
+
 /** 엔진 API로 다시 계산 (후보 프리셋마다 한 번, 동시에) */
-export async function recalc(scen, signal) {
+export async function recalc(scen, signal, presets = scen.presets) {
   const health = await fetch('/engine/health', { signal }).catch(() => null)
   if (!health?.ok) throw new Error('엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.')
-  const results = await Promise.all(scen.presets.map(async (preset) => {
-    const r = await fetch('/engine/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buildRequest(scen, preset)), signal })
+  // 11-25 계획을 못 찾으면(NO_PLAN, 제한 시간이 짧거나 엔진이 바쁠 때) 그 후보만 제한 시간을 20초로 늘려 한 번 더 푼다
+  const solve = async (preset, retry) => {
+    const request = buildRequest(scen, preset)
+    if (retry) request.params = merge(request.params, { solver: { time_limit_s: Math.max(20, request.params.solver?.time_limit_s ?? 0) } })
+    const r = await fetch('/engine/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal })
     const body = await r.json()
     if (!r.ok) throw new Error(`${preset.label}: ${body.detail ?? body.title ?? r.status}`)
-    return { preset, response: body }
+    return { preset, request, response: body }
+  }
+  return Promise.all(presets.map(async (preset) => {
+    let out = await solve(preset, false)
+    if (!out.response.plan) out = await solve(preset, true)
+    if (!out.response.plan) throw new Error(`${preset.label}: 엔진이 이 조건으로 계획을 찾지 못했습니다 (${out.response.status})`)
+    return out
   }))
-  return results
 }
