@@ -29,8 +29,8 @@
   --blue: #6aa2ff;
   --night: rgba(0, 0, 0, 0.28);
 
-  --sans: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --radius: 2px;
 
   /* Blueprint 토큰 덮어쓰기: 주 동작은 빨강에 가까운 주황. */

@@ -1,12 +1,14 @@
 // 시연용 로그인. 실제 인증이 아니라 화면에 적힌 시연 계정과 맞는지만 본다. 로그인한 계정이 곧 역할이다.
-import { useRef, useState } from 'react'
-import { Button, Callout, FormGroup, HTMLSelect, InputGroup } from '@blueprintjs/core'
+import { useEffect, useRef, useState } from 'react'
+import { Button, Callout, FormGroup, Icon, InputGroup } from '@blueprintjs/core'
 import { PASSWORD, ROLES } from '../lib/workspace.js'
 import { useApp } from '../state/app.jsx'
+import { suspendFontZoom } from '../state/theme.js'
 import './login.css'
 
 export default function Login() {
   const { login } = useApp()
+  useEffect(() => suspendFontZoom(), [])
   // 11-20 피드백: 역할을 고르는 카드를 없앴다. 들어온 아이디가 곧 역할이다.
   const [id, setId] = useState('')
   const [pw, setPw] = useState('')
@@ -23,7 +25,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <main className="login-stage">
-      <div className="login-side">
+      <div className={`login-side${mode === 'login' ? '' : ' is-signup'}`}>
         <div className="login-logo">
           <img src="/brand/dmin-logo.png" alt="" width="44" height="44" />
           <span className="login-word">D-MIN</span>
@@ -60,36 +62,50 @@ function Signup({ sent, onSent, onBack }) {
   const [role, setRole] = useState('user')
   if (sent) {
     return (
-      <div className="login-card panel">
+      <div className="login-card login-main panel">
         <header className="panel-head"><h2 className="panel-title">신청 완료</h2></header>
         <div className="panel-body pad">
           <Callout intent="success" icon="tick-circle" title="계정 신청을 받았습니다">관리자가 소속과 역할을 확인한 뒤 승인하면 메일로 알려 드립니다. 승인 전에는 로그인할 수 없습니다.</Callout>
-          <Button fill style={{ marginTop: 14 }} icon="arrow-left" text="로그인으로" onClick={onBack} />
+          <Button fill size="large" style={{ marginTop: 24 }} icon="arrow-left" text="로그인으로" onClick={onBack} />
         </div>
       </div>
     )
   }
+  const req = <span className="login-req">*</span>
   return (
-    <form className="login-card panel" onSubmit={(e) => { e.preventDefault(); onSent() }}>
-      <header className="panel-head"><h2 className="panel-title">회원가입 (계정 신청)</h2><span className="panel-desc">관리자 승인 뒤 사용</span></header>
+    <form className="login-card login-main panel" onSubmit={(e) => { e.preventDefault(); onSent() }}>
+      <header className="panel-head"><h2 className="panel-title">회원가입 (계정 신청)</h2></header>
       <div className="panel-body pad login-signup-form">
         <div className="login-2col">
-          <FormGroup label="이름 *"><InputGroup required placeholder="홍길동" /></FormGroup>
-          <FormGroup label="사번 *"><InputGroup required placeholder="SK00000" /></FormGroup>
+          <FormGroup label="이름" labelInfo={req}><InputGroup required placeholder="홍길동" /></FormGroup>
+          <FormGroup label="사번" labelInfo={req}><InputGroup required placeholder="SK00000" /></FormGroup>
         </div>
-        <FormGroup label="회사 메일 *"><InputGroup required type="email" placeholder="name@example.com" /></FormGroup>
+        <FormGroup label="회사 메일" labelInfo={req}><InputGroup required type="email" placeholder="name@example.com" /></FormGroup>
+        <FormGroup label="요청 역할" labelInfo={req}>
+          <div className="login-role" role="radiogroup" aria-label="요청 역할">
+            {[{ value: 'scheduler', label: '선박 스케줄러', icon: 'timeline-events' }, { value: 'user', label: '일정 이용자', icon: 'calendar' }].map((o) => (
+              <button key={o.value} type="button" role="radio" aria-checked={role === o.value} className={role === o.value ? 'on' : ''} onClick={() => setRole(o.value)}>
+                <Icon icon={o.icon} size={16} />
+                <span>{o.label}</span>
+              </button>
+            ))}
+          </div>
+        </FormGroup>
+        <FormGroup label={role === 'user' ? '담당 부두 · 팀' : '소속 팀'} labelInfo={req}>
+          <div className="login-select">
+            <select key={role} required>
+              {(role === 'user' ? ['SK 3부두 하역 1팀', 'SK 5부두 하역 1팀', 'SK 6부두 하역 2팀', '선박 대리점'] : ['물류운영팀 선박 스케줄']).map((t) => <option key={t}>{t}</option>)}
+            </select>
+            <Icon icon="chevron-down" size={16} />
+          </div>
+        </FormGroup>
         <div className="login-2col">
-          <FormGroup label="요청 역할 *"><HTMLSelect fill value={role} onChange={(e) => setRole(e.target.value)} options={[{ value: 'scheduler', label: '선박 스케줄러' }, { value: 'user', label: '일정 이용자' }]} /></FormGroup>
-          <FormGroup label={role === 'user' ? '담당 부두 · 팀 *' : '소속 팀 *'}><HTMLSelect fill options={role === 'user' ? ['SK 3부두 하역 1팀', 'SK 5부두 하역 1팀', 'SK 6부두 하역 2팀', '선박 대리점'] : ['물류운영팀 선박 스케줄']} /></FormGroup>
+          <FormGroup label="비밀번호" labelInfo={req}><InputGroup required type="password" /></FormGroup>
+          <FormGroup label="비밀번호 확인" labelInfo={req}><InputGroup required type="password" /></FormGroup>
         </div>
-        <div className="login-2col">
-          <FormGroup label="비밀번호 *"><InputGroup required type="password" /></FormGroup>
-          <FormGroup label="비밀번호 확인 *"><InputGroup required type="password" /></FormGroup>
-        </div>
-        <p className="tiny muted">* 필수 · 역할에 따라 보이는 메뉴가 다릅니다. 스케줄러 권한은 팀장 승인이 필요합니다.</p>
-        <div className="login-2col">
-          <Button icon="arrow-left" text="로그인으로" onClick={onBack} />
-          <Button type="submit" intent="primary" text="신청하기" endIcon="send-message" />
+        <div className="login-2col login-actions">
+          <Button size="large" icon="arrow-left" text="로그인으로" onClick={onBack} />
+          <Button size="large" type="submit" intent="primary" text="신청하기" endIcon="send-message" />
         </div>
       </div>
     </form>
