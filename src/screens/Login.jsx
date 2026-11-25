@@ -1,7 +1,7 @@
 // 시연용 로그인. 실제 인증이 아니라 화면에 적힌 시연 계정과 맞는지만 본다. 로그인한 계정이 곧 역할이다.
 import { useEffect, useRef, useState } from 'react'
 import { Button, Callout, FormGroup, Icon, InputGroup } from '@blueprintjs/core'
-import { PASSWORD, ROLES } from '../lib/workspace.js'
+import { ADMIN_LOGIN_ID, PASSWORD, ROLES } from '../lib/workspace.js'
 import { useApp } from '../state/app.jsx'
 import { suspendFontZoom } from '../state/theme.js'
 import './login.css'
@@ -17,6 +17,10 @@ export default function Login() {
   const [mode, setMode] = useState('login') // 'login' | 'signup' | 'sent'
   const submit = (e) => {
     e.preventDefault()
+    // 시스템 관리자는 업무 화면이 아니라 관리자 화면(?view=admin)으로 보낸다
+    if (id.trim() === ADMIN_LOGIN_ID && pw === PASSWORD) {
+      const url = new URL(window.location.href); url.searchParams.set('view', 'admin'); window.location.assign(url); return
+    }
     const r = Object.values(ROLES).find((x) => x.loginId === id.trim())
     if (r && pw === PASSWORD) login(r.id)
     else setErr('아이디 또는 비밀번호가 맞지 않습니다.')

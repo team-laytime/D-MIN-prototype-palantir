@@ -5,6 +5,8 @@
 import { useSyncExternalStore } from 'react'
 
 export const PASSWORD = '1234'
+// 11-25 시스템 관리자 시연 계정: 로그인하면 관리자 화면(?view=admin)으로 간다. 비밀번호는 다른 시연 계정과 같다.
+export const ADMIN_LOGIN_ID = 'admin'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
   user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: 'SK 3부두 하역 1팀', mail: 'sk3-ops@example.com' },

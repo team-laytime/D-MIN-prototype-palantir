@@ -6,6 +6,9 @@ export const SCHEDULER_TEAM = '물류운영팀 선박 스케줄'
 const KST = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
 export const accountTime = (at) => Number.isFinite(new Date(at).getTime()) ? KST.format(new Date(at)).replace(',', '').replaceAll('-', '.') : '—'
 const stamp = (time) => new Date(`2026-11-25T${time}:00+09:00`).toISOString()
+// 11-25 가입 신청 시연: 오늘 기준 며칠 전(daysAgo)의 KST 시각. 오늘 들어온 요청과 쌓인 요청을 나눠 보이기 위해
+const kstDay = (daysAgo) => KST.format(new Date(Date.now() - daysAgo * 864e5)).slice(0, 10)
+const requestStamp = (daysAgo, time) => new Date(`${kstDay(daysAgo)}T${time}:00+09:00`).toISOString()
 const sample = [
   ['김민수', 'SK10248', 'user', TEAMS[0], 'minsu.kim@sk.com'],
   ['박서연', 'SK10315', 'scheduler', SCHEDULER_TEAM, 'seoyeon.park@sk.com'],
@@ -17,7 +20,7 @@ const sample = [
 const fresh = () => ({
   version: 1,
   accounts: [
-    ...sample.map(([name, id, role, team, email], i) => ({ id, name, role, team, email, status: 'pending', requestedAt: stamp(`09:${String(42 - i * 6).padStart(2, '0')}`), managerApproved: false, identityChecked: false, demo: true })),
+    ...sample.map(([name, id, role, team, email], i) => ({ id, name, role, team, email, status: 'pending', requestedAt: requestStamp(i < 3 ? 0 : i - 2, `09:${String(42 - i * 6).padStart(2, '0')}`), managerApproved: false, identityChecked: false, demo: true })),
     ...[
       ['김현우', 'SK10104', 'user', TEAMS[0], 'hyunwoo.kim@sk.com', 'active'],
       ['이수빈', 'SK10272', 'user', TEAMS[1], 'subin.lee@sk.com', 'active'],
@@ -76,7 +79,7 @@ export function changeAccount(id, action, options = {}) {
     patch = { identityChecked: Boolean(options.identityChecked ?? account.identityChecked), managerApproved: Boolean(options.managerApproved ?? account.managerApproved) }
   } else if (action === 'approve') {
     if (account.status !== 'pending') throw new Error('이미 처리된 신청입니다.')
-    if (account.identityChecked !== true || (account.role === 'scheduler' && account.managerApproved !== true)) throw new Error('사번 · 소속 · 담당 부두와 팀장 승인을 확인해 주세요.')
+    if (account.identityChecked !== true || (account.role === 'scheduler' && account.managerApproved !== true)) throw new Error('사번, 소속, 담당 부두와 팀장 승인을 확인해 주세요.')
     patch = { status: 'active', approvedAt: at }; label = '계정 승인'
   } else if (action === 'reject') {
     if (account.status !== 'pending') throw new Error('이미 처리된 신청입니다.')
@@ -93,7 +96,7 @@ export function changeAccount(id, action, options = {}) {
     patch = { status: account.status === 'active' ? 'inactive' : 'active' }; label = patch.status === 'active' ? '계정 활성화' : '계정 비활성화'
   } else throw new Error('지원하지 않는 계정 처리입니다.')
   const updated = { ...account, ...patch }
-  const event = { id: crypto.randomUUID(), accountId: id, name: account.name, action: label, at, who: '시스템 관리자', detail: action === 'role' ? `${ROLE_LABELS[updated.role]} · ${updated.team}` : action === 'reject' ? patch.reason : '', notifyRequested: ['approve', 'reject'].includes(action) && options.notify === true, email: account.email }
+  const event = { id: crypto.randomUUID(), accountId: id, name: account.name, action: label, at, who: '시스템 관리자', detail: action === 'role' ? `${ROLE_LABELS[updated.role]}, ${updated.team}` : action === 'reject' ? patch.reason : '', notifyRequested: ['approve', 'reject'].includes(action) && options.notify === true, email: account.email }
   save({ ...data, accounts: data.accounts.map(a => a.id === id ? updated : a), history: label ? [event, ...data.history] : data.history })
   return updated
 }

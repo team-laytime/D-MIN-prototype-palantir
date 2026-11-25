@@ -46,7 +46,7 @@ test('권한 변경은 승인된 계정에만 허용하고 소속과 팀장 승�
   assert.throws(() => changeAccount('user', 'role', { role: 'scheduler', team: SCHEDULER_TEAM }), /팀장 승인/)
   const account = changeAccount('user', 'role', { role: 'scheduler', team: SCHEDULER_TEAM, managerApproved: true })
   assert.equal(account.role, 'scheduler')
-  assert.equal(getAccounts().history[0].detail, `선박 스케줄러 · ${SCHEDULER_TEAM}`)
+  assert.equal(getAccounts().history[0].detail, `선박 스케줄러, ${SCHEDULER_TEAM}`)
 })
 
 test('잘못된 저장 내용은 원본을 보존하고 변경을 차단한다', () => {
@@ -89,7 +89,7 @@ test('감사 이력은 처리에 해당하는 사유와 안내 요청만 저장�
   assert.equal(getAccounts().history[0].detail, '')
   assert.equal(getAccounts().history[0].notifyRequested, false)
   changeAccount('SK10248', 'role', { role: 'user', team: TEAMS[1], notify: true })
-  assert.equal(getAccounts().history[0].detail, `일정 이용자 · ${TEAMS[1]}`)
+  assert.equal(getAccounts().history[0].detail, `일정 이용자, ${TEAMS[1]}`)
   assert.equal(getAccounts().history[0].notifyRequested, false)
   changeAccount('SK10315', 'reject', { reason: '팀장 승인 미확인', notify: false })
   assert.equal(getAccounts().history[0].detail, '팀장 승인 미확인')

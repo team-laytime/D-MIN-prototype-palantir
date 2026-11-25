@@ -19,7 +19,7 @@ const Badge = ({ status }) => <span className={`am-state am-${status}`}>{STATUS[
 
 function exportAccounts(accounts) {
   const quote = value => `"${String(value ?? '').replace(/^[=+@\-\t\r]/, "'$&").replaceAll('"', '""')}"`
-  const rows = [['이름', '사번', '회사 메일', '역할', '담당 부두 · 팀', '상태', '최근 로그인'], ...accounts.map(a => [a.name, a.id, a.email, ROLE_LABELS[a.role], a.team, STATUS[a.status], a.lastLoginAt ? accountTime(a.lastLoginAt) : ''])]
+  const rows = [['이름', '사번', '회사 메일', '역할', '담당 부두, 팀', '상태', '최근 로그인'], ...accounts.map(a => [a.name, a.id, a.email, ROLE_LABELS[a.role], a.team, STATUS[a.status], a.lastLoginAt ? accountTime(a.lastLoginAt) : ''])]
   const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(r => r.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }))
   const link = document.createElement('a')
   link.href = url; link.download = `D-MIN_전체계정_${today()}.csv`; link.click()
@@ -34,6 +34,7 @@ export default function Admin({ onLogout }) {
   const [roleFilter, setRoleFilter] = useState('')
   const [teamFilter, setTeamFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [folded, setFolded] = useState({}) // 11-25 오늘 들어온 요청 / 쌓인 요청 접기
   const [selectedId, setSelectedId] = useState(null)
   const [modal, setModal] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -47,13 +48,11 @@ export default function Admin({ onLogout }) {
   const [inspectorOpen, setInspectorOpen] = useState(false)
   const [inspectorId, setInspectorId] = useState(null)
   const unavailable = Boolean(data.storageIssue)
-  const receivedToday = data.accounts.filter(a => accountTime(a.requestedAt).startsWith(today())).length
   const pending = data.accounts.filter(a => a.status === 'pending')
   const active = data.accounts.filter(a => a.status === 'active')
   const inactive = data.accounts.filter(a => a.status === 'inactive')
   const rejected = data.accounts.filter(a => a.status === 'rejected')
   const registered = data.accounts.filter(a => ['active', 'inactive'].includes(a.status))
-  const handledToday = data.history.filter(h => accountTime(h.at).startsWith(today()) && ['계정 승인', '계정 신청 반려'].includes(h.action))
   const filtered = useMemo(() => data.accounts.filter(a => {
     const inView = view === 'accounts' ? ['active', 'inactive'].includes(a.status) && (status === 'all' || a.status === status) : status === 'approved' ? ['active', 'inactive'].includes(a.status) : a.status === status
     return inView && (!query.trim() || `${a.name} ${a.id} ${a.email}`.toLowerCase().includes(query.trim().toLowerCase())) && (!roleFilter || a.role === roleFilter) && (!teamFilter || a.team === teamFilter)
@@ -64,6 +63,10 @@ export default function Admin({ onLogout }) {
   const currentPage = Math.min(page, maxPage)
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
   const selected = visible.find(a => a.id === selectedId) ?? visible[0] ?? null
+  // 11-25 가입 신청(승인 대기)은 오늘 들어온 요청과 그 전부터 쌓인 요청으로 나눈다. 다른 목록은 묶지 않는다
+  const grouped = view === 'requests' && status === 'pending'
+    ? [{ key: 'today', label: '오늘 들어온 요청', rows: visible.filter(a => accountTime(a.requestedAt).startsWith(today())) }, { key: 'old', label: '쌓인 요청', rows: visible.filter(a => !accountTime(a.requestedAt).startsWith(today())) }].filter(g => g.rows.length)
+    : [{ key: 'all', label: null, rows: visible }]
   const modalAccount = data.accounts.find(a => a.id === modal?.id)
   const inspectedAccount = data.accounts.find(a => a.id === inspectorId)
   useEffect(() => { if (!compact) { setInspectorOpen(false); setInspectorId(null) } }, [compact])
@@ -80,7 +83,7 @@ export default function Admin({ onLogout }) {
       const account = changeAccount(id, action, options)
       if (action !== 'check') {
         finishAfterAction.current = true; setModalOpen(false)
-        setMessage(`${account.name} · ${action === 'approve' ? '승인했습니다.' : action === 'reject' ? '반려했습니다.' : action === 'role' ? '권한을 변경했습니다.' : `${STATUS[account.status]} 상태로 변경했습니다.`}`)
+        setMessage(`${account.name}, ${action === 'approve' ? '승인했습니다.' : action === 'reject' ? '반려했습니다.' : action === 'role' ? '권한을 변경했습니다.' : `${STATUS[account.status]} 상태로 변경했습니다.`}`)
       }
       return true
     } catch (e) { setError(e.message); return false }
@@ -93,7 +96,6 @@ export default function Admin({ onLogout }) {
   const title = view === 'accounts' ? '전체 계정' : view === 'history' ? '처리 이력' : '가입 신청'
 
   return <div className="dmin-admin">
-    <div className="am-brand-line" />
     <div className="am-layout">
       <aside className="am-sidebar">
         <div className="am-brand"><img src="/brand/dmin-logo.png" alt="" width="36" height="36" /><div><b>D-MIN</b><small>시스템 관리자</small></div></div>
@@ -101,20 +103,20 @@ export default function Admin({ onLogout }) {
         <div className="am-sidebar-bottom"><b>시스템 관리자</b><small>admin@sk.com</small><button type="button" aria-label="로그아웃" onClick={onLogout}><Icon icon="log-out" size={16} /><span className="am-nav-text">로그아웃</span></button></div>
       </aside>
       <main className={`am-main ${view === 'accounts' ? 'am-directory' : ''}`}>
-        <header className="am-page-heading"><div><h1 tabIndex={-1}>{title}</h1><span className="am-heading-count">{unavailable ? '—' : view === 'accounts' ? registered.length : view === 'history' ? data.history.length : pending.length}</span></div>{view === 'accounts' ? <Button disabled={unavailable} icon="download" text="목록 내보내기" onClick={() => exportAccounts(filtered)} /> : view === 'requests' && <p className="am-workload">오늘 접수 <b>{unavailable ? '—' : receivedToday}</b> · 처리 <b>{unavailable ? '—' : handledToday.length}</b></p>}</header>
+        <header className="am-page-heading"><div><h1 tabIndex={-1}>{title}</h1><span className="am-heading-count">{unavailable ? '—' : view === 'accounts' ? registered.length : view === 'history' ? data.history.length : pending.length}</span></div>{view === 'accounts' ? <Button disabled={unavailable} icon="download" text="목록 내보내기" onClick={() => exportAccounts(filtered)} /> : null}</header>
         {message && <div className="am-message" role="status">{message}<button type="button" aria-label="알림 닫기" onClick={() => setMessage('')}><Icon icon="cross" size={16} /></button></div>}
         {(data.storageIssue || (error && !modal)) && <div className="am-error am-storage-error" role="alert"><span>{data.storageIssue || error}</span><Button text="다시 확인" onClick={() => { refreshAccounts(); setError('') }} /></div>}
-        <div className="am-tabs" aria-label="계정 상태">{view !== 'history' && tabs.map(([id, label, count]) => <button type="button" key={id} aria-pressed={status === id} onClick={() => { setStatus(id); setSelectedId(null) }}>{label}<b>{unavailable ? '—' : count}</b></button>)}<div className="am-context"><span className="am-data-origin">시연 데이터</span><time>{today()} 기준</time></div></div>
+        <div className="am-tabs" aria-label="계정 상태">{view !== 'history' && tabs.map(([id, label, count]) => <button type="button" key={id} aria-pressed={status === id} onClick={() => { setStatus(id); setSelectedId(null) }}>{label}<b>{unavailable ? '—' : count}</b></button>)}</div>
         <div className={`am-workspace ${view === 'history' ? 'am-history-view' : ''}`}>
           <section className="am-list" aria-label={view === 'history' ? '계정 처리 이력' : '계정 목록'}>
             <FilterBar disabled={unavailable} {...{ view, query, setQuery, roleFilter, setRoleFilter, teamFilter, setTeamFilter }} reset={() => { setQuery(''); setRoleFilter(''); setTeamFilter('') }} />
-            <div className="am-table-wrap">{compact && view !== 'history' ? <MobileAccountList emptyText={unavailable ? '계정 정보를 불러오지 못했습니다.' : query || roleFilter || teamFilter ? '검색 조건에 맞는 항목이 없습니다.' : '표시할 계정이 없습니다.'} accounts={visible} selectedId={selected?.id} selectAccount={selectAccount} /> : <table><caption className="am-sr-only">{title} 목록. 사용자 이름을 선택하면 상세 내용을 확인할 수 있습니다.</caption><thead><tr>{(view === 'history' ? ['사용자', '처리 내용', '상세', '처리 일시', '처리자', '메일 안내'] : [view === 'accounts' ? '사용자' : '신청자', view === 'accounts' ? '역할' : '요청 역할', '담당 부두 · 팀', view === 'accounts' ? '최근 로그인' : '신청 일시', '상태', '']).map((label, i) => <th key={i} scope="col">{label}</th>)}</tr></thead><tbody>
-              {view === 'history' ? history.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map(h => <tr key={h.id}><td><b>{h.name}</b><small>{h.accountId}</small></td><td>{h.action}</td><td>{h.detail || '—'}</td><td>{compactTime(h.at)}</td><td>{h.who}</td><td>{h.notifyRequested ? '안내 요청됨' : '—'}</td></tr>) : visible.map(a => <tr key={a.id} className={a.id === selected?.id ? 'selected' : ''} onClick={e => selectAccount(a, e.currentTarget)}>
+            <div className="am-table-wrap">{compact && view !== 'history' ? <MobileAccountList emptyText={unavailable ? '계정 정보를 불러오지 못했습니다.' : query || roleFilter || teamFilter ? '검색 조건에 맞는 항목이 없습니다.' : '표시할 계정이 없습니다.'} accounts={visible} selectedId={selected?.id} selectAccount={selectAccount} /> : <table><caption className="am-sr-only">{title} 목록. 사용자 이름을 선택하면 상세 내용을 확인할 수 있습니다.</caption><thead><tr>{(view === 'history' ? ['사용자', '처리 내용', '상세', '처리 일시', '처리자', '메일 안내'] : [view === 'accounts' ? '사용자' : '신청자', view === 'accounts' ? '역할' : '요청 역할', '담당 부두, 팀', view === 'accounts' ? '최근 로그인' : '신청 일시', '상태', '']).map((label, i) => <th key={i} scope="col">{label}</th>)}</tr></thead><tbody>
+              {view === 'history' ? history.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map(h => <tr key={h.id}><td><b>{h.name}</b><small>{h.accountId}</small></td><td>{h.action}</td><td>{h.detail || '—'}</td><td>{compactTime(h.at)}</td><td>{h.who}</td><td>{h.notifyRequested ? '안내 요청됨' : '—'}</td></tr>) : grouped.map(g => [g.label && <tr key={`g-${g.key}`} className={`am-group ${folded[g.key] ? 'folded' : ''}`}><th colSpan="6" scope="rowgroup"><button type="button" aria-expanded={!folded[g.key]} onClick={() => setFolded(f => ({ ...f, [g.key]: !f[g.key] }))}><Icon icon={folded[g.key] ? 'chevron-right' : 'chevron-down'} size={14} />{g.label}<b>{g.rows.length}</b></button></th></tr>, ...(folded[g.key] ? [] : g.rows).map(a => <tr key={a.id} className={a.id === selected?.id ? 'selected' : ''} onClick={e => selectAccount(a, e.currentTarget)}>
                 <td><button type="button" className="am-row-select" aria-pressed={a.id === selected?.id} aria-controls="am-inspector" onClick={e => selectAccount(a, e.currentTarget)}><b>{a.name}</b><small>{a.id}</small></button></td><td>{ROLE_LABELS[a.role]}</td><td>{a.team}</td><td>{compactTime(view === 'accounts' ? a.lastLoginAt : a.requestedAt)}</td><td><Badge status={a.status} />{a.status === 'pending' && a.role === 'scheduler' && !a.managerApproved && <small className="am-awaiting">팀장 승인 필요</small>}</td><td><Icon icon="chevron-right" size={14} /></td>
-              </tr>)}
+              </tr>)])}
               {total === 0 && <tr><td colSpan="6" className="am-empty">{unavailable ? '계정 정보를 불러오지 못했습니다.' : query || roleFilter || teamFilter ? '검색 조건에 맞는 항목이 없습니다.' : view === 'history' ? '처리 이력이 없습니다.' : '표시할 계정이 없습니다.'}</td></tr>}
             </tbody></table>}</div>
-            <Pagination totalKnown={!unavailable} {...{ total, currentPage, maxPage, setPage }} unit={view === 'accounts' ? '명' : '건'} />
+            <Pagination {...{ currentPage, maxPage, setPage }} />
           </section>
           {view !== 'history' && !compact && (selected ? <AccountPanel account={selected} lastChange={data.history.find(h => h.accountId === selected.id)} open={open} update={update} /> : <section className="am-detail am-empty">{unavailable ? '계정 정보를 확인할 수 없습니다.' : '선택할 계정이 없습니다.'}</section>)}
         </div>
@@ -131,11 +133,12 @@ function MobileAccountList({ accounts, selectedId, selectAccount, emptyText }) {
 }
 
 function FilterBar({ disabled, view, query, setQuery, roleFilter, setRoleFilter, teamFilter, setTeamFilter, reset }) {
-  return <div className="am-filters"><label className="am-search"><Icon icon="search" size={16} /><input disabled={disabled} aria-label={view === 'history' ? '처리 이력 검색' : '이름, 사번, 회사 메일 검색'} placeholder={view === 'history' ? '이름, 사번, 처리 내용 검색' : '이름, 사번, 회사 메일 검색'} value={query} onChange={e => setQuery(e.target.value)} /></label>{view !== 'history' && <><select disabled={disabled} aria-label="역할 필터" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}><option value="">모든 역할</option>{Object.entries(ROLE_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><select disabled={disabled} aria-label="담당 부두 · 팀 필터" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}><option value="">모든 부두 · 팀</option>{[...TEAMS, SCHEDULER_TEAM].map(t => <option key={t}>{t}</option>)}</select></>}{(query || roleFilter || teamFilter) && <div className="am-filter-reset-wrap"><Button disabled={disabled} className="am-filter-reset" text="초기화" onClick={reset} /></div>}</div>
+  return <div className="am-filters"><label className="am-search"><Icon icon="search" size={16} /><input disabled={disabled} aria-label={view === 'history' ? '처리 이력 검색' : '이름, 사번, 회사 메일 검색'} placeholder={view === 'history' ? '이름, 사번, 처리 내용 검색' : '이름, 사번, 회사 메일 검색'} value={query} onChange={e => setQuery(e.target.value)} /></label>{view !== 'history' && <><select disabled={disabled} aria-label="역할 필터" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}><option value="">모든 역할</option>{Object.entries(ROLE_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><select disabled={disabled} aria-label="담당 부두, 팀 필터" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}><option value="">모든 부두, 팀</option>{[...TEAMS, SCHEDULER_TEAM].map(t => <option key={t}>{t}</option>)}</select></>}{(query || roleFilter || teamFilter) && <div className="am-filter-reset-wrap"><Button disabled={disabled} className="am-filter-reset" text="초기화" onClick={reset} /></div>}</div>
 }
 
-function Pagination({ totalKnown, total, currentPage, maxPage, setPage, unit }) {
-  return <footer className="am-pagination"><span>{totalKnown ? <>전체 {total}{unit}{total > 0 && ` · ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, total)}${unit}`}</> : '목록을 확인할 수 없습니다.'}</span><nav aria-label="페이지 이동"><button type="button" aria-label="이전 페이지" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><Icon icon="chevron-left" size={16} /></button>{Array.from({ length: maxPage }, (_, i) => i + 1).filter(n => n === 1 || n === maxPage || Math.abs(n - currentPage) <= 1).map((n, i, list) => <span key={n}>{i > 0 && n - list[i - 1] > 1 && <span>…</span>}<button type="button" aria-label={`${n}페이지`} aria-current={currentPage === n ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button></span>)}<button type="button" aria-label="다음 페이지" disabled={currentPage === maxPage} onClick={() => setPage(currentPage + 1)}><Icon icon="chevron-right" size={16} /></button></nav></footer>
+function Pagination({ currentPage, maxPage, setPage }) {
+  if (maxPage <= 1) return null
+  return <footer className="am-pagination"><nav aria-label="페이지 이동"><button type="button" aria-label="이전 페이지" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><Icon icon="chevron-left" size={16} /></button>{Array.from({ length: maxPage }, (_, i) => i + 1).filter(n => n === 1 || n === maxPage || Math.abs(n - currentPage) <= 1).map((n, i, list) => <span key={n}>{i > 0 && n - list[i - 1] > 1 && <span>…</span>}<button type="button" aria-label={`${n}페이지`} aria-current={currentPage === n ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button></span>)}<button type="button" aria-label="다음 페이지" disabled={currentPage === maxPage} onClick={() => setPage(currentPage + 1)}><Icon icon="chevron-right" size={16} /></button></nav></footer>
 }
 
 function AccountPanel({ account, lastChange, open, update }) {
@@ -145,11 +148,11 @@ function AccountPanel({ account, lastChange, open, update }) {
   return <section id="am-inspector" className={`am-detail ${pending ? '' : 'am-directory-detail'}`} aria-label="선택 계정 상세">
     <header><h2>{requested ? '신청 상세' : '계정 상세'}</h2><Badge status={account.status} /></header>
     <div className="am-identity"><h3>{account.name}</h3><span>{account.id}</span></div>
-    <dl className="am-fields am-scope-fields" aria-label="역할과 운영 담당 범위"><div><dt>{requested ? '요청 역할' : '현재 역할'}</dt><dd>{ROLE_LABELS[account.role]}</dd></div><div><dt>담당 부두 · 팀</dt><dd>{account.team}</dd></div></dl>
+    <dl className="am-fields am-scope-fields" aria-label="역할과 운영 담당 범위"><div><dt>{requested ? '요청 역할' : '현재 역할'}</dt><dd>{ROLE_LABELS[account.role]}</dd></div><div><dt>담당 부두, 팀</dt><dd>{account.team}</dd></div></dl>
     <dl className="am-fields"><div><dt>회사 메일</dt><dd>{account.email}</dd></div><div><dt>{requested ? '신청 일시' : '승인 일시'}</dt><dd>{accountTime(requested ? account.requestedAt : account.approvedAt || account.requestedAt)}</dd></div>{!requested && <div><dt>최근 로그인</dt><dd>{account.lastLoginAt ? accountTime(account.lastLoginAt) : '로그인 기록 없음'}</dd></div>}</dl>
-    {pending ? <div className="am-review"><h4>승인 전 확인</h4><CheckItem label="사번 · 소속 · 담당 부두" checked={account.identityChecked} onChange={value => update(account.id, 'check', { identityChecked: value })} />{scheduler ? <CheckItem label="팀장 승인" checked={account.managerApproved} onChange={value => update(account.id, 'check', { managerApproved: value })} /> : <div className="am-check"><span>팀장 승인</span><span>해당 없음</span></div>}<p className="am-prerequisite" id="am-review-required">{!account.identityChecked || (scheduler && !account.managerApproved) ? '필수 확인을 마치면 승인할 수 있습니다.' : '필수 확인을 마쳤습니다.'}</p><div className="am-detail-actions"><Button text="반려하기" onClick={e => open('reject', account, e.currentTarget)} /><Button className="am-primary" disabled={!account.identityChecked || (scheduler && !account.managerApproved)} aria-describedby="am-review-required" text="승인하기" onClick={e => open('approve', account, e.currentTarget)} /></div></div> : account.status === 'rejected' ? <div className="am-detail-section"><h4>반려 사유</h4><p className="am-reason">{account.reason}</p></div> : <>
-      <div className="am-detail-section"><header><h4>권한 및 접근 범위</h4><button type="button" onClick={e => open('role', account, e.currentTarget)}><Icon icon="edit" size={14} />변경</button></header><ul>{(scheduler ? ['접안 계획 작성 및 조건 설정', '최적화 후보 비교 · 일정 확정', '확정 통보 메일 작성'] : ['확정된 접안 일정 조회', '담당 부두 일정 확인']).map(item => <li key={item}>{item}</li>)}</ul></div>
-      <div className="am-detail-section am-audit"><h4>최근 변경</h4>{lastChange ? <><b>{lastChange.action}</b><span>{lastChange.who}</span><time>{accountTime(lastChange.at)}</time></> : <p className="am-no-history">이 화면에 저장된 변경 이력이 없습니다.</p>}</div>
+    {pending ? <div className="am-review"><h4>승인 전 확인</h4><CheckItem label="사번, 소속, 담당 부두" checked={account.identityChecked} onChange={value => update(account.id, 'check', { identityChecked: value })} />{scheduler ? <CheckItem label="팀장 승인" checked={account.managerApproved} onChange={value => update(account.id, 'check', { managerApproved: value })} /> : <div className="am-check"><span>팀장 승인</span><span>해당 없음</span></div>}<div className="am-detail-actions"><Button text="반려하기" onClick={e => open('reject', account, e.currentTarget)} /><Button className="am-primary" disabled={!account.identityChecked || (scheduler && !account.managerApproved)} text="승인하기" onClick={e => open('approve', account, e.currentTarget)} /></div></div> : account.status === 'rejected' ? <div className="am-detail-section"><h4>반려 사유</h4><p className="am-reason">{account.reason}</p></div> : <>
+      <div className="am-detail-section"><header><h4>권한 및 접근 범위</h4><button type="button" onClick={e => open('role', account, e.currentTarget)}><Icon icon="edit" size={14} />변경</button></header><ul>{(scheduler ? ['접안 계획 작성 및 조건 설정', '최적화 후보 비교, 일정 확정', '확정 통보 메일 작성'] : ['확정된 접안 일정 조회', '담당 부두 일정 확인']).map(item => <li key={item}>{item}</li>)}</ul></div>
+      <div className="am-detail-section am-audit"><h4>최근 변경</h4>{lastChange ? <><b>{lastChange.action}</b><span>{lastChange.who}</span><time>{accountTime(lastChange.at)}</time></> : <p className="am-no-history">없음</p>}</div>
       <footer className="am-detail-actions"><Button className={account.status === 'active' ? 'am-deactivate' : ''} text={account.status === 'active' ? '계정 비활성화' : '계정 활성화'} onClick={e => open('toggle', account, e.currentTarget)} /></footer>
     </>}
   </section>
@@ -162,7 +165,7 @@ function CheckItem({ label, checked, onChange }) {
 function AccountDialog({ isOpen, kind, account, error, onClose, onClosed, onSubmit }) {
   const formRef = useRef(null)
   const [notify, setNotify] = useState(true)
-  const [reasonType, setReasonType] = useState('소속 · 담당 부두 확인 불가')
+  const [reasonType, setReasonType] = useState('소속, 담당 부두 확인 불가')
   const [reason, setReason] = useState('')
   const [role, setRole] = useState(account.role)
   const [team, setTeam] = useState(account.team)
@@ -174,14 +177,12 @@ function AccountDialog({ isOpen, kind, account, error, onClose, onClosed, onSubm
   return <Dialog isOpen={isOpen} shouldReturnFocusOnClose={false} onClose={onClose} onClosed={onClosed} onOpened={() => formRef.current?.querySelector('select, textarea, button:not([disabled])')?.focus()} title={heading} className="dmin-admin-dialog" aria-label={heading}>
     <form ref={formRef} onSubmit={e => { e.preventDefault(); if (!isOpen) return; const options = kind === 'reject' ? { notify, reason: reasonValue } : kind === 'approve' ? { notify } : kind === 'role' ? { role, team, managerApproved } : {}; onSubmit(options) }}>
       <div className="am-dialog-body">
-        {kind === 'reject' && <p>반려 사유를 계정 처리 이력에 기록합니다.</p>}
-        <div className="am-dialog-account"><div><b>{account.name}</b><small>{account.id}</small></div><dl className="am-fields"><div><dt>{['approve', 'reject'].includes(kind) ? '요청 역할' : '현재 역할'}</dt><dd>{ROLE_LABELS[account.role]}</dd></div><div><dt>담당 부두 · 팀</dt><dd>{account.team}</dd></div></dl></div>
-        {kind === 'approve' && !checked && <p className="am-error">신청 상세에서 사번 · 소속 · 담당 부두{account.role === 'scheduler' ? '와 팀장 승인' : ''}을 확인해 주세요.</p>}
-        {kind === 'reject' && <div className="am-form-label"><label htmlFor="am-reject-category">반려 사유 *</label><select id="am-reject-category" autoFocus value={reasonType} onChange={e => setReasonType(e.target.value)}>{['소속 · 담당 부두 확인 불가', '사번 · 회사 메일 확인 불가', '팀장 승인 미확인', '직접 입력'].map(r => <option key={r}>{r}</option>)}</select><label className="am-sr-only" htmlFor="am-reject-detail">상세 반려 사유</label><textarea id="am-reject-detail" aria-describedby="am-reason-count" aria-label="상세 반려 사유" placeholder="상세 사유를 입력해 주세요." maxLength={reasonType === '직접 입력' ? 300 : 298 - reasonType.length} value={reason} onChange={e => setReason(e.target.value)} required={reasonType === '직접 입력'} /><small id="am-reason-count" className="am-char-count">기록되는 사유 {reasonValue.length} / 300</small></div>}
-        {kind === 'role' && <><label className="am-form-label">역할<select autoFocus value={role} onChange={e => { const next = e.target.value; setRole(next); setTeam(next === 'scheduler' ? SCHEDULER_TEAM : TEAMS[0]); setManagerApproved(false) }}>{Object.entries(ROLE_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label><label className="am-form-label">담당 부두 · 팀<select value={team} onChange={e => setTeam(e.target.value)}>{(role === 'scheduler' ? [SCHEDULER_TEAM] : TEAMS).map(t => <option key={t}>{t}</option>)}</select></label>{role === 'scheduler' && <label className="am-notify"><input type="checkbox" checked={managerApproved} onChange={e => setManagerApproved(e.target.checked)} />팀장 승인 확인</label>}</>}
-        {kind === 'toggle' && <p>{account.status === 'active' ? '계정 상태를 비활성으로 기록합니다. 이 시연은 로그인 인증 시스템과 연결되어 있지 않습니다.' : '계정 상태를 활성으로 기록합니다. 실제 로그인 권한은 인증 시스템 연동 후 적용됩니다.'}</p>}
-        {['approve', 'reject'].includes(kind) && <label className="am-notify"><input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} />처리 결과 메일 안내 요청 기록</label>}
-        {['approve', 'reject'].includes(kind) && <p className="am-delivery-note">실제 메일 발송은 연결되어 있지 않습니다. 요청 여부만 처리 이력에 저장됩니다.</p>}{error && <p className="am-error" role="alert">{error}</p>}
+        <div className="am-dialog-account"><div><b>{account.name}</b><small>{account.id}</small></div><dl className="am-fields"><div><dt>{['approve', 'reject'].includes(kind) ? '요청 역할' : '현재 역할'}</dt><dd>{ROLE_LABELS[account.role]}</dd></div><div><dt>담당 부두, 팀</dt><dd>{account.team}</dd></div></dl></div>
+        {kind === 'approve' && !checked && <p className="am-error">신청 상세에서 사번, 소속, 담당 부두{account.role === 'scheduler' ? '와 팀장 승인' : ''}을 확인해 주세요.</p>}
+        {kind === 'reject' && <div className="am-form-label"><label htmlFor="am-reject-category">반려 사유 *</label><select id="am-reject-category" autoFocus value={reasonType} onChange={e => setReasonType(e.target.value)}>{['소속, 담당 부두 확인 불가', '사번, 회사 메일 확인 불가', '팀장 승인 미확인', '직접 입력'].map(r => <option key={r}>{r}</option>)}</select><label className="am-sr-only" htmlFor="am-reject-detail">상세 반려 사유</label><textarea id="am-reject-detail" aria-describedby="am-reason-count" aria-label="상세 반려 사유" placeholder="상세 사유를 입력해 주세요." maxLength={reasonType === '직접 입력' ? 300 : 298 - reasonType.length} value={reason} onChange={e => setReason(e.target.value)} required={reasonType === '직접 입력'} /><small id="am-reason-count" className="am-char-count">기록되는 사유 {reasonValue.length} / 300</small></div>}
+        {kind === 'role' && <><label className="am-form-label">역할<select autoFocus value={role} onChange={e => { const next = e.target.value; setRole(next); setTeam(next === 'scheduler' ? SCHEDULER_TEAM : TEAMS[0]); setManagerApproved(false) }}>{Object.entries(ROLE_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label><label className="am-form-label">담당 부두, 팀<select value={team} onChange={e => setTeam(e.target.value)}>{(role === 'scheduler' ? [SCHEDULER_TEAM] : TEAMS).map(t => <option key={t}>{t}</option>)}</select></label>{role === 'scheduler' && <label className="am-notify"><input type="checkbox" checked={managerApproved} onChange={e => setManagerApproved(e.target.checked)} />팀장 승인 확인</label>}</>}
+        {['approve', 'reject'].includes(kind) && <label className="am-notify"><input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} />처리 결과 메일로 안내</label>}
+{error && <p className="am-error" role="alert">{error}</p>}
       </div><footer className="am-dialog-actions"><Button type="button" text="취소" onClick={onClose} /><Button type="submit" className={kind === 'reject' ? 'am-danger' : 'am-primary'} text={action} disabled={!isOpen || (kind === 'approve' && !checked) || (kind === 'role' && role === 'scheduler' && !managerApproved)} /></footer>
     </form>
   </Dialog>
