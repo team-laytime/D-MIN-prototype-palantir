@@ -233,6 +233,7 @@ export function engineFacts(ds, first, existing = []) {
   return {
     ...evaluated,
     tanks, nightPilot: first?.params?.night_pilot ?? null, windDefault: first?.params?.weather?.thresholds_ms ?? null,
+    shiftDefault: first?.params?.shifting?.hours ?? null, // 부두 그룹별 [Switching, Direction] 기본값 (없으면 화면의 SHIFT_DEFAULT)
     window: { start: t0, end: win1 },
     presets: ds.results?.map((r) => r.preset) ?? [BASE_PRESET, BASE_PRESET, C_PRESET], // B 자리는 A가 나온 뒤 고른다
     engineReady: Boolean(first),

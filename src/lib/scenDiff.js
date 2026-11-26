@@ -9,7 +9,6 @@ export const BLOCK_KINDS = { WEATHER: '기상', CONSTRUCTION: '공사', EQUIPMEN
 export const PARAM_FIELDS = [
   { path: ['tank', 'safe_min_pct'], label: '안전재고 하한', unit: '%', def: 20, min: 20, max: 80, step: 1, note: '탱크 재고가 이 비율 밑으로 내려가지 않게' },
   { path: ['tank', 'safe_max_pct'], label: '안전재고 상한', unit: '%', def: 80, min: 20, max: 80, step: 1, note: '탱크 재고가 이 비율을 넘지 않게' },
-  { path: ['shifting', 'buffer_switch_h'], label: '부두 전환 여유', unit: 'h', def: 0, min: 0, max: 12, step: 0.5, note: '앞 선박 이안 뒤 다음 접안까지 더 비우는 시간' },
 ]
 // 11-25 안전재고 고정 규칙: 하한은 20% 밑으로, 상한은 80% 위로 갈 수 없다(더 안전하게 좁히는 것만 허용)
 export const TANK_RULE = { min: 20, max: 80 }
@@ -18,6 +17,19 @@ export const WIND_GROUPS = [
   { key: '#3~7', label: '3~8부두, 부이' },
   { key: '#1~2·GAS', label: '1~2부두, 가스부두' },
 ]
+// 11-26 부두 그룹별 Switching · Direction 시간 (엔진 params.shifting.hours, 장표 07p). 부두 탭에서 그룹마다 고치고, 기본값 미만으로는 못 내린다
+//   Switching = 같은 선석에서 앞 선박 이안 뒤 다음 접안까지 교대 시간, Direction = 선석이 비어 있을 때 ETA 뒤 접안까지 시간
+export const SHIFT_DEFAULT = { '#1~2': [1.5, 1.0], '#3': [1.5, 1.0], '#4': [1.0, 1.0], '#5-5': [1.0, 1.0], 'GAS1/2': [1.0, 1.0], '#6': [2.5, 1.5], '#7': [2.5, 1.5], '#8': [2.5, 1.5], Buoy: [1.0, 1.5] }
+export const SHIFT_MAX_H = 12
+/** 선석 id → 그룹 (엔진 shifting_group과 같은 규칙) */
+export const shiftGroup = (berth) => {
+  const b = String(berth).toUpperCase()
+  if (b.startsWith('GAS')) return 'GAS1/2'
+  if (b.startsWith('BUOY')) return 'Buoy'
+  const head = b.split('-')[0]
+  return head === '1' || head === '2' ? '#1~2' : head === '5' ? '#5-5' : `#${head}`
+}
+export const SHIFT_LABEL = { '#1~2': '1~2부두', '#3': '3부두', '#4': '4부두', '#5-5': '5부두', 'GAS1/2': '가스부두', '#6': '6부두', '#7': '7부두', '#8': '8부두', Buoy: '부이' }
 export const getIn = (o, path) => path.reduce((x, k) => (x == null ? undefined : x[k]), o)
 
 const berthCode = (scen, id) => scen.berths.find((b) => b.id === id)?.code ?? id
@@ -76,8 +88,9 @@ export function diffScen(prev, next) {
     if (JSON.stringify(pp[path]) === JSON.stringify(np[path])) continue
     const f = PARAM_FIELDS.find((x) => x.path.join('.') === path)
     const wg = path.startsWith('weather.thresholds_ms.') ? WIND_GROUPS.find((g) => path.endsWith(g.key)) : null
-    const show = (x) => (x === undefined ? (f ? `기본값 ${f.def}${f.unit}` : '기본값') : wg ? `${x[0]} m/s` : `${x}${f?.unit ?? ''}`)
-    const label = wg ? `계획용 풍속 기준 (${wg.label})` : f?.label ?? path
+    const sg = path.startsWith('shifting.hours.') ? path.slice('shifting.hours.'.length) : null
+    const show = (x) => (sg ? `Switching ${(x ?? SHIFT_DEFAULT[sg])[0]}h · Direction ${(x ?? SHIFT_DEFAULT[sg])[1]}h` : x === undefined ? (f ? `기본값 ${f.def}${f.unit}` : '기본값') : wg ? `${x[0]} m/s` : `${x}${f?.unit ?? ''}`)
+    const label = sg ? `Switching · Direction (${SHIFT_LABEL[sg] ?? sg})` : wg ? `계획용 풍속 기준 (${wg.label})` : f?.label ?? path
     out.push({ key: 'env', field: `param:${path}`, label, targetName: '계획 조건', from: show(pp[path]), to: show(np[path]), kind: 'param' })
   }
   return out

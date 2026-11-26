@@ -502,3 +502,36 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .pi-mail-dialog .ml-paper { margin: 0; }
 .pi-mail-body small { color: var(--fg-3); font-size: calc(11px * var(--fs)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pi-mail-act { display: inline-flex; align-items: center; gap: 6px; }
+
+/* 11-26 풍속 그래프: 부두 묶음별 하역 중단(주황) · 이안(빨강) 기준 */
+.pi-wind-th { stroke-width: 1; stroke-dasharray: 4 3; }
+.pi-wind-th.stop { stroke: var(--amber); }
+.pi-wind-th.leave { stroke: var(--red); }
+.pi-wind-tick.th.stop { fill: var(--amber); }
+.pi-wind-tick.th.leave { fill: var(--red); }
+
+/* 11-26 날짜 · 시각 칸: 월/일 시:분만 보이고, 누르면 브라우저 달력(연도 포함) */
+.dtf { position: relative; display: inline-flex; }
+.dtf-text { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--input-bg); color: var(--fg); font: calc(13.5px * var(--fs)) var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+.dtf-text:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.dtf-text:hover { border-color: var(--line-3); }
+.dtf-text .bp6-icon { color: var(--fg-3); }
+.dtf.bad .dtf-text { border-color: var(--red); color: var(--red); }
+.dtf-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.pi-wind-label-bg { fill: var(--bg-2); }
+/* 11-26 부두 탭 위: Switching · Direction 여유 두 칸이 좁으면 줄을 바꿔 나란히 */
+.bt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.bt-bar .pin-def { white-space: nowrap; }
+.wx-at { margin-left: 8px; font-size: calc(14px * var(--fs)); font-weight: 600; color: var(--fg-2); }
+/* 11-26 부두 탭: 선석 목록의 Switching · Direction 열, 선택한 선석 그룹의 편집 칸 */
+.bt-c-sh { width: 20%; }
+.bt-table .bt-c-st { width: 22%; }
+.bt-table thead th.r { text-align: right; white-space: nowrap; }
+.bt-sh { color: var(--fg-2); }
+.bt-sh.changed { color: var(--accent); font-weight: 700; }
+.bt-shift { margin: 4px 0 14px; }
+.bt-shift h4 { margin: 0 0 8px; font-size: calc(13.5px * var(--fs)); }
+.bt-shift h4 small { margin-left: 8px; font-weight: 400; color: var(--fg-3); font-size: calc(11.5px * var(--fs)); }
+.bt-shift-row { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+/* 날짜 칸: 평소에는 연도까지, 화면이 좁으면 월/일 시:분만 */
+@media (max-width: 1440px) { .dtf-y { display: none; } }

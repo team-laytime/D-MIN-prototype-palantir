@@ -3,7 +3,7 @@
 //  - 계약 값(허용 시간, 일 체선료)은 잠금. 체선료는 화면에서 계산하지 않고 「다시 계산」으로 팀 엔진에 보낸다.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Callout, Checkbox, Dialog, DialogBody, Icon, InputGroup, NonIdealState, Spinner } from '@blueprintjs/core'
-import { BLOCK_KINDS, PARAM_FIELDS, TANK_RULE, WIND_GROUPS, getIn } from '../lib/scenDiff.js'
+import { BLOCK_KINDS, PARAM_FIELDS, SHIFT_DEFAULT, SHIFT_LABEL, SHIFT_MAX_H, TANK_RULE, WIND_GROUPS, getIn, shiftGroup } from '../lib/scenDiff.js'
 import { fmt, fmtFull, fromInput, toInput, toMin } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
@@ -17,7 +17,9 @@ const WIND_LIMIT = 14 // m/s, 3~8부두와 부이의 하역 중단 기준(팀 �
 const berthsText = (b, byId) => (b.berths ? b.berths.map((id) => byId[id]?.code ?? id).join(', ') : '전 부두')
 
 export default function ScenarioInput() {
-  const { scenInput: scen, editScen, version, result, recalc, go } = useApp()
+  const { scenInput: scen, editScen, version, result, recalc, go, pendingIncs, decideMails } = useApp()
+  // 11-26 받은 메일 조건 변경 체크(반영할 것). 상단 「후보 비교」를 누를 때 한꺼번에 결정한다
+  const [mailPick, setMailPick] = useState({})
   const [query, setQuery] = useState('')
   const [etaDesc, setEtaDesc] = useState(false)
   const [piTab, setPiTab] = useState('vessel')
@@ -82,6 +84,23 @@ export default function ScenarioInput() {
     if (!Number.isFinite(value) || value < f.min || value > f.max || value === getIn(scen.params, f.path)) return
     editScen((d) => { const [g, k] = f.path; (d.params[g] ??= {})[k] = value })
   }
+  // 11-26 부두 그룹별 Switching · Direction (idx 0 · 1). 기본값과 같아지면 계획 조건에서 뺀다
+  const shiftDef = { ...SHIFT_DEFAULT, ...(scen.shiftDefault ?? {}) }
+  const shiftOf = (g) => scen.params.shifting?.hours?.[g] ?? shiftDef[g] ?? [0, 0]
+  const setShift = (g, idx, v) => {
+    const def = shiftDef[g] ?? [0, 0]
+    if (v < def[idx]) return `기본값 ${def[idx]}h 미만으로는 설정할 수 없습니다.`
+    if (v > SHIFT_MAX_H) return `${SHIFT_MAX_H}h 이하로 입력해 주세요.`
+    editScen((d) => {
+      const hrs = ((d.params.shifting ??= {}).hours ??= {})
+      const next = [...(hrs[g] ?? def)]
+      next[idx] = v
+      if (next[0] === def[0] && next[1] === def[1]) delete hrs[g]; else hrs[g] = next
+      if (!Object.keys(hrs).length) delete d.params.shifting.hours
+      if (!Object.keys(d.params.shifting).length) delete d.params.shifting
+    })
+    return null
+  }
   const resetParam = (f) => editScen((d) => {
     const [g, k] = f.path
     if (!d.params[g]) return
@@ -118,7 +137,9 @@ export default function ScenarioInput() {
   // 계약 칸 중 데이터에 비어 있으면 화면 모델이 기본값으로 채우는 것(NOR 뒤 개시, 기상 공제)은 원본 요청에서 본다
   const rawById = Object.fromEntries((scen.request?.vessels ?? []).map((x) => [vesselIdOf(x), x]))
   const rawOf = (v) => rawById[v.id]
-  const calcState = result.running ? 'run' : result.calcError ? 'bad' : result.stale ? 'warn' : 'ok'
+  // 11-26 기준 시각을 새로 열 때의 첫 후보 계산(result.boot)은 뒤에서 도는 것이라 여기서는 계산 중이라고 알리지 않는다
+  const running = result.running && !result.boot
+  const calcState = running ? 'run' : result.calcError ? 'bad' : result.stale ? 'warn' : 'ok'
 
   return (
     <Screen
@@ -127,10 +148,12 @@ export default function ScenarioInput() {
       step={1}
       bodyClass="plan-input plan-stack"
       actions={<>
-        <Button intent={result.stale ? 'warning' : 'none'} icon={result.running ? <Spinner size={14} /> : 'refresh'} disabled={!canRecalc} onClick={() => recalc()}>
-          {result.running ? '계산 중, 약 1분' : '다시 계산'}
+        <Button intent={result.stale ? 'warning' : 'none'} icon={running ? <Spinner size={14} /> : 'refresh'} disabled={!canRecalc} onClick={() => recalc()}>
+          {running ? '계산 중, 약 1분' : '다시 계산'}
         </Button>
-        <Button intent="primary" endIcon="arrow-right" disabled={!result.candidates.length} onClick={() => go('compare')}>후보 비교</Button>
+        <Button intent="primary" endIcon="arrow-right" disabled={!result.candidates.length && !pendingIncs.length}
+          title={pendingIncs.length ? '체크한 메일은 반영, 나머지는 반영 안 함으로 정하고 후보 비교로 갑니다' : undefined}
+          onClick={() => { if (pendingIncs.length) { decideMails(pendingIncs.filter((i) => mailPick[i.id]).map((i) => i.id)); setMailPick({}) } go('compare') }}>후보 비교</Button>
       </>}
     >
 
@@ -144,7 +167,7 @@ export default function ScenarioInput() {
         )}
       </div>}
 
-      <MailChanges scen={scen} />
+      <MailChanges scen={scen} pick={mailPick} setPick={setMailPick} />
 
       {errors.length > 0 && (
         <Callout intent="danger" icon="error" title={`입력 오류 ${errors.length}건, 고쳐야 다시 계산할 수 있습니다`} className="plan-errors">
@@ -175,7 +198,7 @@ export default function ScenarioInput() {
       {/* 11-25 부두 탭: 목록(선석, 사용 불가) + 오른쪽 상세(제원, 취급 제품, 사용 불가 구간 편집) */}
       {piTab === 'berth' && (
         <BerthTab scen={scen} piers={piers} blocksOf={blocksOf} addBlock={addBlock} editBlock={editBlock} removeBlock={removeBlock} setBlockTime={setBlockTime}
-          paramInput={(path) => <ParamInput f={fieldOf(path)} scen={scen} setParam={setParam} resetParam={resetParam} />} />
+          shift={{ of: shiftOf, def: shiftDef, set: setShift }} />
       )}
 
       {/* 11-25 운영 여건: 생산계획과 탱크 재고(최적화 팀 후보정 값), 관측 풍속. 모두 계획 입력이라 고치지 않는다 */}
@@ -190,8 +213,7 @@ export default function ScenarioInput() {
           <section className="wx">
             <header className="wx-head">
               <h3>풍속</h3>
-              <div><span>최대</span><b className={maxWind && maxWind.ms >= planWind ? 'c-red' : ''}>{maxWind ? `${maxWind.ms} m/s` : '-'}</b></div>
-              <div><span>그 시각</span><b>{maxWind ? fmt(maxWind.t) : '-'}</b></div>
+              <div><span>최대 풍속</span><b className={maxWind && maxWind.ms >= planWind ? 'c-red' : ''}>{maxWind ? <>{maxWind.ms.toFixed(1)} m/s <small className="wx-at">{fmt(maxWind.t)}</small></> : '-'}</b></div>
               <div className="wx-plan">
                 <span>계획용 하역 중단 풍속</span>
                 <div className="wx-inputs">
@@ -213,11 +235,52 @@ export default function ScenarioInput() {
                 </div>
               </div>
             </header>
-            <div className="wx-chart"><WindChart wind={wind} win={scen.window} plan={planWind} stop={windDef['#3~7'][0]} /></div>
+            <div className="wx-chart"><WindChart wind={wind} win={scen.window} plan={planWind} stop={windDef['#3~7'][0]} groups={WIND_GROUPS.map((g) => ({ ...g, stop: windDef[g.key][0], leave: windDef[g.key][1] }))} /></div>
           </section>
         </div>
       )}
     </Screen>
+  )
+}
+
+/**
+ * 11-26 날짜 · 시각 칸: 고르는 창(브라우저 달력)은 연도까지 고른다. 칸에는 「2025/11/03 15:47」, 화면이 좁으면 연도를 빼고
+ * 「11/03 15:47」만 보인다(시각이 잘리지 않게). 칸을 누르면 달력이 열린다. onChange는 datetime-local 값('YYYY-MM-DDTHH:mm')
+ */
+function DateTimeField({ value, label, onChange, bad = false }) {
+  const ref = useRef(null)
+  const open = () => { const el = ref.current; if (!el) return; try { el.showPicker() } catch { el.focus() } }
+  return (
+    <span className={`dtf ${bad ? 'bad' : ''}`}>
+      <button type="button" className="dtf-text num" onClick={open} aria-label={`${label}: ${value == null ? '없음' : fmt(value)} (바꾸기)`}>
+        {value == null ? '—' : <span><span className="dtf-y">{fmtFull(value).slice(0, 5).replace('-', '/')}</span>{fmt(value)}</span>}<Icon icon="calendar" size={12} />
+      </button>
+      <input ref={ref} type="datetime-local" className="dtf-input" tabIndex={-1} aria-hidden="true" value={value == null ? '' : toInput(value)} onChange={(e) => onChange(e.target.value)} />
+    </span>
+  )
+}
+
+/** 11-26 선택한 선석의 부두 그룹 Switching · Direction 시간. 그룹 공통이고 기본값 미만으로는 못 내린다 */
+function ShiftEdit({ group, shift }) {
+  const cur = shift.of(group), def = shift.def[group] ?? [0, 0]
+  const row = (k, name, note) => (
+    <label className={`pin ${cur[k] !== def[k] ? 'changed' : ''}`} title={note}>
+      <span className="pin-k">{name}</span>
+      <NumField value={cur[k]} label={`${SHIFT_LABEL[group] ?? group} ${name}`} onCommit={(v) => shift.set(group, k, v)} />
+      <span className="pin-u">h</span>
+      {cur[k] !== def[k]
+        ? <button type="button" className="vt-undo" title={`기본값 ${def[k]}h로`} aria-label={`${name} 기본값으로`} onClick={() => shift.set(group, k, def[k])}><Icon icon="undo" size={13} /></button>
+        : <span className="pin-def">기본</span>}
+    </label>
+  )
+  return (
+    <section className="bt-shift">
+      <h4>Switching · Direction <small>{SHIFT_LABEL[group] ?? group} 공통 · 기본값 {def[0]}h · {def[1]}h 미만 불가</small></h4>
+      <div className="bt-shift-row">
+        {row(0, 'Switching', '같은 선석에서 앞 선박 이안 뒤 다음 접안까지 교대 시간')}
+        {row(1, 'Direction', '선석이 비어 있을 때 ETA 뒤 접안까지 시간 (도선 · 이동)')}
+      </div>
+    </section>
   )
 }
 
@@ -347,14 +410,14 @@ function TankPlan({ tanks, win, safe, inputs }) {
   )
 }
 
-/** 기준 시각에 이미 접안해 작업 중인 배: 그 선석이 비는 시각부터 계획 대상 배가 들어갈 수 있다 */
+/** 기준 시각에 이미 접안해 작업 중인 배: 예상 이안 시각부터 그 선석에 계획 대상 배가 들어갈 수 있다 */
 function Occupied({ list, berthById }) {
   return (
     <section className="tp env-box">
       <header className="tp-head"><h3>현재 접안 중인 배</h3><span className="env-count">{list.length}척</span></header>
       {list.length === 0 ? <div className="bt-none">없음</div> : (
         <table className="env-table">
-          <thead><tr><th>선석</th><th>선박</th><th>화물</th><th className="r">비는 시각</th></tr></thead>
+          <thead><tr><th>선석</th><th>선박</th><th>화물</th><th className="r">예상 이안 시각</th></tr></thead>
           <tbody>
             {list.map((o) => (
               <tr key={`${o.bid}-${o.etb}`}>
@@ -412,7 +475,7 @@ function TabIcon({ kind }) {
 }
 
 /** 부두 탭: 왼쪽 선석 목록, 오른쪽 그 선석의 제원과 사용 불가 구간(고칠 수 있음) */
-function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, setBlockTime, paramInput }) {
+function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, setBlockTime, shift }) {
   const [openId, setOpenId] = useState(scen.berths[0]?.id ?? null)
   const b = scen.berths.find((x) => x.id === openId) ?? scen.berths[0]
   const mine = scen.blocks.map((x, i) => ({ x, i })).filter(({ x }) => !x.berths || x.berths.includes(b.id))
@@ -420,21 +483,24 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
   return (
     <div className="vt bt">
       <section className="vt-list">
-        <div className="vt-bar bt-bar">{paramInput('shifting.buffer_switch_h')}</div>
         <div className="vt-scroll">
           <table className="vt-table bt-table">
             <caption className="plan-sr-only">선석과 사용 불가 구간</caption>
-            <colgroup><col /><col className="bt-c-st" /></colgroup>
-            <thead><tr><th>선석</th><th>사용 불가</th></tr></thead>
+            <colgroup><col /><col className="bt-c-st" /><col className="bt-c-sh" /><col className="bt-c-sh" /></colgroup>
+            <thead><tr><th>선석</th><th>사용 불가</th><th className="r" title="앞 선박 이안 뒤 다음 접안까지">Switching</th><th className="r" title="ETA 뒤 접안까지">Direction</th></tr></thead>
             {piers.map((g) => (
               <tbody key={g.pier}>
-                <tr className="bt-pier"><th colSpan={2}>{g.name}</th></tr>
+                <tr className="bt-pier"><th colSpan={4}>{g.name}</th></tr>
                 {g.list.map((x) => {
                   const bl = blocksOf(x.id)
                   return (
                     <tr key={x.id} className={x.id === b.id ? 'open' : ''} onClick={() => setOpenId(x.id)}>
                       <td className="vt-name">{label(x)}</td>
                       <td className={`bt-st ${bl.length ? 'on' : ''}`}>{bl.length ? `${bl.length}건` : '없음'}</td>
+                      {[0, 1].map((k) => {
+                        const gp = shiftGroup(x.id), v = shift.of(gp)[k]
+                        return <td key={k} className={`r num bt-sh ${v !== shift.def[gp]?.[k] ? 'changed' : ''}`}>{v}h</td>
+                      })}
                     </tr>
                   )
                 })}
@@ -457,6 +523,7 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
                 <tr><th>크기</th><td>{b.size ?? '-'}</td></tr>
               </tbody>
             </table>
+            <ShiftEdit group={shiftGroup(b.id)} shift={shift} />
             <div className="bt-prod">
               <div className="bt-cap">취급 제품 <span>{b.products.length}</span></div>
               <ul>{b.products.map((p) => <li key={p}>{p}</li>)}</ul>
@@ -475,8 +542,8 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
                     <tbody>
                       {mine.map(({ x, i }) => (
                         <tr key={x.id ?? x.incId ?? i} className={x.incId ? 'inc' : ''}>
-                          <td><input type="datetime-local" className="vt-eta-input" aria-label={`사용 불가 ${i + 1}번 시작`} value={toInput(x.start)} onChange={(e) => setBlockTime(i, 'start', e.target.value)} /></td>
-                          <td><input type="datetime-local" className={`vt-eta-input ${x.end > x.start ? '' : 'bad'}`} aria-label={`사용 불가 ${i + 1}번 종료`} value={toInput(x.end)} onChange={(e) => setBlockTime(i, 'end', e.target.value)} /></td>
+                          <td><DateTimeField value={x.start} label={`사용 불가 ${i + 1}번 시작`} onChange={(t) => setBlockTime(i, 'start', t)} /></td>
+                          <td><DateTimeField value={x.end} bad={!(x.end > x.start)} label={`사용 불가 ${i + 1}번 종료`} onChange={(t) => setBlockTime(i, 'end', t)} /></td>
                           <td>
                             <select className="bt-select" value={x.kind} aria-label={`사용 불가 ${i + 1}번 종류`} onChange={(e) => editBlock(i, (y) => { y.kind = e.target.value })}>
                               {Object.entries(BLOCK_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
@@ -550,8 +617,7 @@ function VesselTab({ scen, vessels, query, setQuery, etaDesc, setEtaDesc, setEta
                       {fixed && <em className="vt-tag" title={`${berthById[fixed.bid]?.label ?? fixed.bid} ${fmt(fixed.etb)} 고정`}>고정</em>}
                     </td>
                     <td className={`vt-eta ${changed ? 'changed' : ''}`} onClick={(e) => e.stopPropagation()}>
-                      <input type="datetime-local" className={`vt-eta-input ${v.eta == null ? 'bad' : ''}`} aria-label={`${v.name} ETA`}
-                        value={v.eta == null ? '' : toInput(v.eta)} onChange={(e) => setEta(v.id, e.target.value)} />
+                      <DateTimeField value={v.eta} bad={v.eta == null} label={`${v.name} ETA`} onChange={(t) => setEta(v.id, t)} />
                       {changed && <button type="button" className="vt-undo" title={`원래 ETA ${fmt(etaOf(v))}로`} aria-label="원래 ETA로" onClick={() => setEta(v.id, toInput(etaOf(v)))}><Icon icon="undo" size={13} /></button>}
                     </td>
                   </tr>
@@ -658,11 +724,18 @@ function VesselCompare({ pair, rawOf, etaOf, onClose, onClear }) {
   )
 }
 
-/** 계획 기간 풍속 선 그래프. 14 m/s 점선이 멈춤 기준이다. */
-function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
+/**
+ * 계획 기간 풍속 선 그래프. 11-26 부두 묶음별 하역 중단 풍속(주황 점선)과 이안 기준 풍속(빨강 점선, 엔진 접안 불가 기준)을 함께 그린다.
+ * 계획용으로 낮춘 기준(plan)이 있으면 그 띠도.
+ */
+function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT, groups = [] }) {
   if (!wind.length) return <p className="small muted">관측값 없음</p>
-  const W = 900, H = 200, L = 30, R = 8, T = 12, B = 24
-  const top = Math.max(stop + 2, ...wind.map((w) => w.ms))
+  const W = 900, H = 220, L = 30, R = 8, T = 14, B = 24
+  const lines = groups.flatMap((g, gi) => [
+    { v: g.stop, cls: 'stop', text: `${g.label} 하역 중단 ${g.stop}`, side: gi },
+    { v: g.leave, cls: 'leave', text: `${g.label} 이안 ${g.leave}`, side: gi },
+  ])
+  const top = Math.max(stop + 2, ...lines.map((l) => l.v + 2), ...wind.map((w) => w.ms))
   const x = (t) => L + ((t - win.start) / Math.max(1, win.end - win.start)) * (W - L - R)
   const y = (ms) => T + (1 - ms / top) * (H - T - B)
   const path = wind.map((w, i) => `${i ? 'L' : 'M'}${x(w.t).toFixed(1)},${y(w.ms).toFixed(1)}`).join(' ')
@@ -671,10 +744,21 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
   for (let t = win.start + (((15 * 60 - win.start) % 1440) + 1440) % 1440; t <= win.end; t += 1440) days.push(t)
   return (
     <svg className="pi-wind" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`풍속 그래프, 최대 ${Math.max(...wind.map((w) => w.ms))} m/s`}>
-      {[0, 5, 10].map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="pi-wind-grid" /><text x={L - 4} y={y(v) + 3} className="pi-wind-tick" textAnchor="end">{v}</text></g>)}
+      {[0, 5, 10, 15, 20].filter((v) => v < top).map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="pi-wind-grid" /><text x={L - 4} y={y(v) + 3} className="pi-wind-tick" textAnchor="end">{v}</text></g>)}
       {days.map((t) => <g key={t}><line x1={x(t)} x2={x(t)} y1={T} y2={H - B} className="pi-wind-grid" /><text x={x(t) + 3} y={H - 5} className="pi-wind-tick">{fmt(t).slice(0, 5)}</text></g>)}
-      <line x1={L} x2={W - R} y1={y(stop)} y2={y(stop)} className="pi-wind-limit" />
-      <text x={W - R} y={y(stop) - 3} className="pi-wind-tick limit" textAnchor="end">하역 중단 {stop} m/s</text>
+      {lines.map((l) => <line key={l.text} x1={L} x2={W - R} y1={y(l.v)} y2={y(l.v)} className={`pi-wind-th ${l.cls}`} />)}
+      {/* 이름은 선을 다 그린 뒤 위에(바탕색 테두리로 선을 가림). 겹치지 않게 첫 묶음은 오른쪽, 둘째 묶음은 왼쪽에 */}
+      {lines.map((l) => {
+        const label = `${l.text} m/s`
+        const w = [...label].reduce((n, ch) => n + (ch.charCodeAt(0) > 0x2000 ? 11 : 6.2), 0) + 6 // 글자 폭 어림 (11px 글꼴)
+        const x0 = l.side ? L + 2 : W - R - w
+        return (
+          <g key={l.text}>
+            <rect x={x0} y={y(l.v) - 15} width={w} height={14} className="pi-wind-label-bg" />
+            <text x={l.side ? L + 5 : W - R - 3} y={y(l.v) - 4} className={`pi-wind-tick th ${l.cls}`} textAnchor={l.side ? 'start' : 'end'}>{label}</text>
+          </g>
+        )
+      })}
       {plan < stop && <>
         <rect x={L} y={y(stop)} width={W - R - L} height={y(plan) - y(stop)} className="pi-wind-margin" />
         <line x1={L} x2={W - R} y1={y(plan)} y2={y(plan)} className="pi-wind-plan" />
@@ -688,39 +772,25 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
 
 /** 11-25 받은 메일의 조건 변경 요청: 여기서 바로 반영하거나 반영하지 않기로 정한다. 반영하면 계획 조건에 들어가고, 후보는 「다시 계산」해야 바뀐다 */
 /**
- * 11-26 받은 메일의 조건 변경: 체크리스트로 반영할 메일을 고르고, 「반영하고 후보 비교」를 한 번 누르면 결정한다
- *   (고른 것 반영 · 나머지 반영 안 함 → 바뀐 조건으로 후보를 한꺼번에 다시 계산하고 후보 비교로). 결정 뒤에는 「결정 되돌리기」.
+ * 11-26 받은 메일의 조건 변경: 체크리스트로 반영할 메일을 고르고, 화면 위 「후보 비교」를 누르면 한꺼번에 결정한다
+ *   (체크한 것 반영 · 나머지 반영 안 함 → 바뀐 조건으로 후보를 다시 계산하고 후보 비교로). 결정 뒤에는 「결정 되돌리기」.
  *   메일을 누르면 원본이 팝업으로 뜬다.
  */
-function MailChanges({ scen }) {
-  const { isScheduler, go, pendingIncs, decideMails, mailDecision, undoMailDecision, recalc, result } = useApp()
+function MailChanges({ scen, pick, setPick }) {
+  const { isScheduler, pendingIncs, mailDecision, undoMailDecision } = useApp()
   const { alerts } = useInbox()
   const rows = alerts.filter((a) => a.channel === 'incident' && a.incId)
-  const [pick, setPick] = useState({}) // incId → 반영(체크)
   const [reading, setReading] = useState(null)
   if (!rows.length) return null
   const pendingIds = new Set(pendingIncs.map((i) => i.id))
-  const picked = pendingIncs.filter((i) => pick[i.id]).map((i) => i.id)
-  const decide = () => {
-    if (pendingIds.size) decideMails(picked)
-    else if (result.stale && !result.running) recalc()
-    setPick({})
-    go('compare')
-  }
   return (
     <section className="pi-mail" data-tour="mail-changes">
       <header className="pi-mail-head">
         <Icon icon="envelope" size={14} />
         <b>받은 메일의 조건 변경</b>
-        <span className={pendingIds.size ? 'c-amber' : 'c-green'}>{pendingIds.size ? `반영할 메일을 고르십시오 · 정하지 않은 메일 ${pendingIds.size}건` : '모두 정함'}</span>
+        <span className={pendingIds.size ? 'c-amber' : 'c-green'}>{pendingIds.size ? `반영할 메일을 체크하십시오 · 정하지 않은 메일 ${pendingIds.size}건 · 「후보 비교」를 누르면 한꺼번에 정합니다` : '모두 정함'}</span>
         <span className="pi-mail-btns">
           {mailDecision && <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={undoMailDecision}>결정 되돌리기</Button>}
-          {pendingIds.size > 0 && (
-            <Button size="small" intent="primary" icon="arrow-right" disabled={!isScheduler} onClick={decide}
-              title="고른 메일은 반영, 나머지는 반영 안 함으로 정하고 바뀐 조건으로 후보를 다시 계산합니다">
-              {picked.length ? `${picked.length}건 반영하고 후보 비교` : '반영 없이 후보 비교'}
-            </Button>
-          )}
         </span>
       </header>
       <ul>
