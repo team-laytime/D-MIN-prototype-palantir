@@ -126,3 +126,12 @@
 .rc-slack { fill: var(--green-wash); stroke: var(--green); stroke-width: 1; }
 .rc-hose { stroke: var(--fg); stroke-width: 1.5; }
 .pg-ship + * { margin-top: 0; }
+
+/* 11-26 운영 현황에서 쓸 때: 재생 시각선 · 정박지 대기 · 줄 강조 */
+.pg-cursor { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--accent); z-index: 3; pointer-events: none; }
+.pg-cursor-label { position: absolute; top: 5px; transform: translateX(-50%); padding: 1px 5px; background: var(--accent); color: #fff; font: 600 calc(11px * var(--fs)) var(--mono); white-space: nowrap; z-index: 2; }
+.pg-wait { position: absolute; top: 19px; height: 0; border-top: 1.5px dashed var(--fg-3); z-index: 1; }
+.pg-wait em { position: absolute; left: 50%; top: -8px; transform: translateX(-50%); padding: 0 4px; background: var(--bg-2); color: var(--fg-3); font: calc(10.5px * var(--fs))/14px var(--sans); font-style: normal; white-space: nowrap; }
+.pg-row.hl .pg-label { background: var(--accent-wash); }
+.pg-row.hl .pg-berth { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.pg-row.hl .pg-track { background: color-mix(in srgb, var(--accent) 7%, transparent); }

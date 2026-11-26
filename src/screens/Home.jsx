@@ -10,7 +10,8 @@ import { MAP_CONTEXT, anchorageFor } from '../lib/vesselState.js'
 import { arriveRoute, seaRoute } from '../lib/seaRoutes.js'
 import { STEP_MIN, poseAt } from '../lib/vesselMotion.js'
 import { NOW, dayStart, fmt, fmtDur, fmtFull, money } from '../lib/time.js'
-import Timeline, { demCents } from './Timeline.jsx'
+import { demCents } from './Timeline.jsx'
+import PlanGantt from './PlanGantt.jsx'
 import './home.css'
 
 // 11-24 실데이터: 시간축은 지금(NOW = 데이터셋 기준 시각 T)부터 계획 기간 끝(후보 전체의 마지막 이안)까지.
@@ -532,7 +533,7 @@ function HomeMap() {
             </div>}
             <div className="home-gantt-body">
               {gView === 'graph'
-                ? <Timeline sim={plan} scen={scen} range={{ start: START, end }} cursor={t} activeVid={selected} onPick={openCard} showWait berthIds={gTab === 'pier' ? gBerths : undefined} hlPier={hover?.startsWith('pier:') ? hover.slice(5) : null} hlBerth={hover?.startsWith('vessel:') ? states.find((st) => st.v.id === hover.slice(7))?.p.bid : null} />
+                ? <PlanGantt sim={plan} scen={scen} range={{ start: START, end }} cursor={t} activeVid={selected} onPick={openCard} showWait berthIds={gTab === 'pier' ? gBerths : undefined} hlPier={hover?.startsWith('pier:') ? hover.slice(5) : null} hlBerth={hover?.startsWith('vessel:') ? states.find((st) => st.v.id === hover.slice(7))?.p.bid : null} />
                 : <ScheduleTable plan={plan} scen={scen} t={t} bById={bById} selected={selected} onPick={openCard} showDem={isScheduler} berthIds={gTab === 'pier' ? gBerths : undefined} />}
             </div>
           </section>
