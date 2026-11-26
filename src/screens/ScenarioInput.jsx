@@ -2,13 +2,12 @@
 //  - 고칠 수 있는 값: 선박 ETA, 부두 사용 불가 구간(blocks), 엔진 조절값(params)
 //  - 계약 값(허용 시간, 일 체선료)은 잠금. 체선료는 화면에서 계산하지 않고 「다시 계산」으로 팀 엔진에 보낸다.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Callout, Icon, InputGroup, NonIdealState, Spinner } from '@blueprintjs/core'
+import { Alert, Button, Callout, Checkbox, Dialog, DialogBody, Icon, InputGroup, NonIdealState, Spinner } from '@blueprintjs/core'
 import { BLOCK_KINDS, PARAM_FIELDS, TANK_RULE, WIND_GROUPS, getIn } from '../lib/scenDiff.js'
 import { fmt, fmtFull, fromInput, toInput, toMin } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { changeText } from '../lib/incidents.js'
-import { setAlertStatus } from '../lib/workspace.js'
 import { St } from '../ui/kit.jsx'
 import { vesselIdOf } from '../lib/dataset.js'
 import { Screen } from '../ui/kit.jsx'
@@ -688,50 +687,77 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
 }
 
 /** 11-25 받은 메일의 조건 변경 요청: 여기서 바로 반영하거나 반영하지 않기로 정한다. 반영하면 계획 조건에 들어가고, 후보는 「다시 계산」해야 바뀐다 */
+/**
+ * 11-26 받은 메일의 조건 변경: 체크리스트로 반영할 메일을 고르고, 「반영하고 후보 비교」를 한 번 누르면 결정한다
+ *   (고른 것 반영 · 나머지 반영 안 함 → 바뀐 조건으로 후보를 한꺼번에 다시 계산하고 후보 비교로). 결정 뒤에는 「결정 되돌리기」.
+ *   메일을 누르면 원본이 팝업으로 뜬다.
+ */
 function MailChanges({ scen }) {
-  const { applyIncident, isScheduler, go, setMailFilter } = useApp()
+  const { isScheduler, go, pendingIncs, decideMails, mailDecision, undoMailDecision, recalc, result } = useApp()
   const { alerts } = useInbox()
   const rows = alerts.filter((a) => a.channel === 'incident' && a.incId)
+  const [pick, setPick] = useState({}) // incId → 반영(체크)
+  const [reading, setReading] = useState(null)
   if (!rows.length) return null
-  const pending = rows.filter((a) => a.status === 'new' || a.status === 'read').length
-  const decide = (a, status) => {
-    if (status === 'applied') applyIncident(a.incId, true)
-    if (status === 'read' && a.status === 'applied') applyIncident(a.incId, false)
-    setAlertStatus(a.id, status, a.title)
+  const pendingIds = new Set(pendingIncs.map((i) => i.id))
+  const picked = pendingIncs.filter((i) => pick[i.id]).map((i) => i.id)
+  const decide = () => {
+    if (pendingIds.size) decideMails(picked)
+    else if (result.stale && !result.running) recalc()
+    setPick({})
+    go('compare')
   }
   return (
     <section className="pi-mail" data-tour="mail-changes">
       <header className="pi-mail-head">
         <Icon icon="envelope" size={14} />
         <b>받은 메일의 조건 변경</b>
-        <span className={pending ? 'c-amber' : 'c-green'}>{pending ? `반영 여부를 정하지 않은 메일 ${pending}건` : '모두 정함'}</span>
-        <Button size="small" variant="minimal" icon="inbox" onClick={() => { setMailFilter('incident'); go('inbox') }}>메일함에서 보기</Button>
+        <span className={pendingIds.size ? 'c-amber' : 'c-green'}>{pendingIds.size ? `반영할 메일을 고르십시오 · 정하지 않은 메일 ${pendingIds.size}건` : '모두 정함'}</span>
+        <span className="pi-mail-btns">
+          {mailDecision && <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={undoMailDecision}>결정 되돌리기</Button>}
+          {pendingIds.size > 0 && (
+            <Button size="small" intent="primary" icon="arrow-right" disabled={!isScheduler} onClick={decide}
+              title="고른 메일은 반영, 나머지는 반영 안 함으로 정하고 바뀐 조건으로 후보를 다시 계산합니다">
+              {picked.length ? `${picked.length}건 반영하고 후보 비교` : '반영 없이 후보 비교'}
+            </Button>
+          )}
+        </span>
       </header>
       <ul>
         {rows.map((a) => {
           const inc = scen.incidents.find((i) => i.id === a.incId)
-          const done = a.status === 'applied' || a.status === 'dismissed'
+          const open = pendingIds.has(a.incId)
           return (
-            <li key={a.id} className={a.status}>
+            <li key={a.id} className={open ? (pick[a.incId] ? 'picked' : '') : a.status}>
+              <span className="pi-mail-check">
+                {open
+                  ? <Checkbox checked={Boolean(pick[a.incId])} disabled={!isScheduler || !inc?.change} aria-label={`${inc?.kind ?? ''} 반영`}
+                    onChange={(e) => { const on = e.currentTarget.checked; setPick((p) => ({ ...p, [a.incId]: on })) }} />
+                  : a.status === 'applied' ? <St tone="ok">반영함</St> : <St tone="idle">반영 안 함</St>}
+              </span>
               <span className="pi-mail-kind">{inc?.kind ?? '변경'}</span>
-              <span className="pi-mail-body">
+              <button type="button" className="pi-mail-body" onClick={() => setReading(a)} title="메일 원본 보기">
                 <b>{inc ? changeText(scen, inc) : a.title}</b>
-                <small>{a.from} · {a.at} · {a.title.replace(/^\[.+?\]\s*/, '')}</small>
-              </span>
-              <span className="pi-mail-act">
-                {a.status === 'applied' && <St tone="ok">반영함</St>}
-                {a.status === 'dismissed' && <St tone="idle">반영 안 함</St>}
-                {done
-                  ? <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={() => decide(a, 'read')}>되돌리기</Button>
-                  : <>
-                    <Button size="small" icon="cross" disabled={!isScheduler} onClick={() => decide(a, 'dismissed')}>반영 안 함</Button>
-                    <Button size="small" intent="primary" icon="tick" disabled={!isScheduler || !inc?.change} onClick={() => decide(a, 'applied')}>반영</Button>
-                  </>}
-              </span>
+                <small>{a.from} · {a.at}</small>
+              </button>
             </li>
           )
         })}
       </ul>
+      <Dialog isOpen={Boolean(reading)} onClose={() => setReading(null)} title={reading?.subject} icon="envelope" className="pi-mail-dialog">
+        {reading && (
+          <DialogBody>
+            <div className="ml-paper">
+              <dl className="ml-head">
+                <dt>보낸 사람</dt><dd>{reading.from} &lt;{reading.fromAddr}&gt;</dd>
+                <dt>받은 시각</dt><dd className="num">{reading.at}</dd>
+                <dt>제목</dt><dd className="strong">{reading.subject}</dd>
+              </dl>
+              <pre className="ml-preview">{reading.body}</pre>
+            </div>
+          </DialogBody>
+        )}
+      </Dialog>
     </section>
   )
 }

@@ -280,7 +280,7 @@ export function AppProvider({ children }) {
     for (const i of pend) setAlertStatus(alertIdOf(i.id), applyIds.includes(i.id) ? 'applied' : 'dismissed', `[${i.kind}] ${i.title}`)
     setMailDecision({ applied: applyIds, dismissed: pend.filter((i) => !applyIds.includes(i.id)).map((i) => i.id), at: nowText(), snap: { scen: s0, version: v0, calc: c0, whatIf: keep, statuses } })
     logActivity('입력', '조건 변경 결정', `반영 ${applyIds.length}건 · 반영 안 함 ${pend.length - applyIds.length}건`)
-    if (!applyIds.length) return
+    if (!applyIds.length) { if (!fresh) recalc(); return } // 반영 없음: 조건이 이미 바뀌어 있었으면 그대로 다시 계산
     if (pre?.state === 'done' && fresh) setCalc({ sims: pre.sims, version: scenRef.current.version, error: null, running: false, at: nowText().slice(0, 16) })
     else recalc()
   }, [editScen, recalc]) // eslint-disable-line react-hooks/exhaustive-deps
