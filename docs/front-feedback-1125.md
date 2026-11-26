@@ -4,12 +4,13 @@
 
 ## 1. 실행
 
-서버 셋을 띄운다. 엔진 저장소는 `../D-MIN-optimization`(Python 3.11, `uv venv -p 3.11 .venv && uv pip install -p .venv/bin/python -r requirements.txt`).
+서버 넷을 띄운다(11-26 전처리 추가). 엔진 저장소는 `../D-MIN-optimization`(Python 3.11, `uv venv -p 3.11 .venv && uv pip install -p .venv/bin/python -r requirements.txt`).
 
 | 서버 | 명령 (엔진 저장소에서) | 주소 | 화면이 부르는 경로 |
 |---|---|---|---|
 | 프론트 | `bun run dev` (이 저장소) | localhost:5175 | |
 | 엔진 API | `BERTH_API_HOST=127.0.0.1 BERTH_API_WORKERS=3 .venv/bin/python -m berth_sim.api` | 127.0.0.1:8000 | `/engine` |
+| 전처리 API (하역 속도) | `PREP_API_HOST=127.0.0.1 PREP_API_PORT=8001 PREP_API_MAX_BODY_MB=100 .venv/bin/python -m berth_prep serve` | 127.0.0.1:8001 | `/prep` |
 | 리스크 모델 API | `.venv/bin/python -m uvicorn berth_risk.api:app --host 127.0.0.1 --port 8002 --workers 3` | 127.0.0.1:8002 | `/risk` |
 
 리스크 모델은 작업자 3개로 띄운다(후보 3개 동시 약 5초, 1개면 약 36초). 요청에 1년치 선박이 들어가 6MB가 넘기 때문이다.
@@ -21,10 +22,9 @@
 cp -R ../optimizer_data_2025_1126/optimizer_2025-01-01 ../optimizer_data_2025_1126/optimizer_2025-01-01_tank
 ../D-MIN-optimization/.venv/bin/python ../D-MIN-optimization/scripts/make_tank_plan.py --bundle ../optimizer_data_2025_1126/optimizer_2025-01-01_tank
 
-# 2) 엔진 요청만 담은 데이터셋 (몇 초). 기준 시각마다 하나
+# 2) 1년치 데이터셋 하나 (몇 초). 기준 시각은 화면에서 고른다
 ../D-MIN-optimization/.venv/bin/python tools/real-data/build_dataset.py \
-  --engine ../D-MIN-optimization --bundle ../optimizer_data_2025_1126/optimizer_2025-01-01_tank \
-  --start "2025-11-09 09:00" --days 3 --id real-2025-11-09
+  --engine ../D-MIN-optimization --bundle ../optimizer_data_2025_1126/optimizer_2025-01-01_tank --id real-2025
 
 # 3) 선박명 · 제원표 (D-MIN-dataset data/reference)
 ../D-MIN-optimization/.venv/bin/python tools/real-data/build_vessel_ref.py ../D-MIN-dataset
@@ -47,7 +47,7 @@ cp -R ../optimizer_data_2025_1126/optimizer_2025-01-01 ../optimizer_data_2025_11
 | B | 상황형 — 아래 규칙으로 고른 안 하나 | 안전재고 강화 `tank.safe_min_pct 25 · safe_max_pct 75` / 보수적 풍속 기준 `weather.thresholds_ms` 중단 풍속 − 2σ / 배별 지연 대비 절반 `shifting.vessel_buffer · work_buffer_scale 0.5` |
 | C | 배별 지연 대비 (데이터 팀 안 3) | `shifting.vessel_buffer: true` — 배마다 작업 여유(배 · 선석별) · 도착 여유(배별)만큼 간격 |
 
-**B 고르는 규칙** (`src/lib/presets.js` · `tools/real-data/build_dataset.py` 두 곳에 같은 규칙)
+**B 고르는 규칙** (`src/lib/presets.js`, 11-26부터 이곳 한 곳)
 
 - 탱크 등급: A 계획 재고 곡선이 마지노선 20/80%까지 1%p 안 높음 · 4%p 안 중간 · 7%p 안 낮음
 - 풍속 등급: 하역 중단 기준(3~7부두 14, 1~2부두 · 가스 18 m/s)까지 여유가 예보 오차 σ의 1배 안 높음 · 2배 안 중간 · 3배 안 낮음, **σ = 2 m/s**
@@ -120,3 +120,12 @@ cp -R ../optimizer_data_2025_1126/optimizer_2025-01-01 ../optimizer_data_2025_11
   - 요청 `vessels[].multi_berth` 추가(전처리 `berth_prep request`가 넣음). 테스트 `tests/test_same_vessel.py`.
   - 엔진 · 리스크 서버는 바뀐 코드로 다시 켜야 한다(리스크 서버가 옛 스키마면 `multi_berth` 때문에 400).
 - **프론트**: 데이터셋 = 엔진 요청만(6.6MB). 화면이 처음 열 때 계산 → 브라우저 저장소. 위 「데이터셋 만들기」 참고.
+
+### 1년치 데이터셋 하나 + 화면에서 기준 시각 고르기 (11-26)
+
+- 날짜마다 파일(6.6MB × 4)을 만들지 않는다. 기준 시각 T에 따라 달라지는 것은 하역 속도(T 전에 끝난 과거 실적의 평균)뿐이다.
+- `public/data/real-2025.json`(9.9MB) = 1년 선박 5,762척 · 생산계획 · 탱크 설정 · 기상(묶음 연도 앞뒤) · 배별 여유 · 과거 하역 실적 37,511건. 하역 속도는 없다.
+- 화면 상단 「기준 시각」에서 날짜 · 시각을 고르고 「열기」(또는 바로가기 03-01 · 03-10 · 10-15 · 11-09 09:00). 화면이 팀 전처리 API(`POST /prep/rates`, `berth_prep request`와 같은 함수)로 하역 속도를 받아(약 1.5초) 엔진 요청을 만든다. 받은 값도 브라우저 저장소에 남는다.
+- 확인: 네 날짜 모두 이렇게 만든 요청이 날짜별 파일의 요청과 같다(선박 5,762척 필드 · 하역 속도 · 기준정보 · 생산계획 전부, 기상은 옛 파일 구간 289시간이 같고 1년치가 더 들어감).
+- 날짜끼리 영향 없음: 확정 · 메모 · 변경 이력 · 조건 변경 결정은 「파일@기준 시각」으로 따로 남는다. 날짜마다 그 날 기존 계획과 후보를 비교한다.
+- 연초 며칠은 탱크 재고를 1/1부터 이어 셀 실적이 짧아 시연에는 피한다.
