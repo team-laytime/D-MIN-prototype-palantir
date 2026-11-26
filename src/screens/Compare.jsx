@@ -28,6 +28,11 @@ const pctText = (a, b) => {
 /** 선석 짧은 이름: '1-1', 'B2'는 그대로, 선석이 하나뿐인 부두('7')는 '7부두' */
 export const shortBerth = (b, id) => (!b ? id : /^\d+$/.test(b.code) ? `${b.code}부두` : b.code)
 const TOP = 4
+const CANDIDATE_LABELS = [['후보 A', '기본'], ['후보 B', '상황형'], ['후보 C', '배별 지연 대비']]
+
+function CandidateStatus({ children }) {
+  return <span className="chip blue cmp-status" role="status">{children}</span>
+}
 
 /** 금액이 바뀌면 이전 값에서 새 값으로 0.65초 동안 세어 올라간다 */
 function CountMoney({ cents }) {
@@ -50,13 +55,6 @@ function CountMoney({ cents }) {
   return money(shown)
 }
 
-/** 다시 계산하는 동안 지난 초 */
-function Elapsed({ since }) {
-  const [, tick] = useState(0)
-  useEffect(() => { const h = setInterval(() => tick((n) => n + 1), 500); return () => clearInterval(h) }, [])
-  return <b className="num">{Math.floor((Date.now() - since) / 1000)}</b>
-}
-
 export default function Compare() {
   const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, risks, scenarioId,
     whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision } = useApp()
@@ -74,9 +72,7 @@ export default function Compare() {
   const onGanttFocus = useCallback((vid) => focusVessel(vid, false), [focusVessel])
   const ganttRef = useRef(null)
 
-  // 다시 계산 시작 시각(경과 초 표시)과, 직전에 보인 금액(바뀐 칸 깜빡임)
-  const [runSince, setRunSince] = useState(null)
-  useEffect(() => { setRunSince(result.running ? Date.now() : null) }, [result.running])
+  // 직전에 보인 금액과 비교해 바뀐 칸을 강조한다
   const shownTotals = useRef({})
   const flash = {}
   for (const s of all) { const p = shownTotals.current[s.id]; if (p !== undefined && p !== s.total) flash[s.id] = true }
@@ -214,9 +210,8 @@ export default function Compare() {
   const blocked = result.stale || result.running
   // 11-26 처음 열 때 A만 먼저 보이고 B · C는 뒤에서 계산 중 (그동안 확정 · 조건 변경 결정은 기다린다)
   const waitBC = result.pending > 0
-  const pend = [['후보 B', '상황형'], ['후보 C', '배별 지연 대비']].slice(2 - result.pending)
-  const pendTd = (body) => pend.map(([id]) => <td key={id} className="muted">{body}</td>)
-  const busyBC = <span className="cmp-running"><Spinner size={12} /> 계산 중</span>
+  const pend = CANDIDATE_LABELS.slice(CANDIDATE_LABELS.length - result.pending)
+  const pendingCells = pend.map(([id]) => <td key={id} className="muted">—</td>)
   const riskWait = focusRisk.state === 'running'
   const fix = (force) => {
     if (blocked || waitBC || riskWait) return
@@ -237,7 +232,7 @@ export default function Compare() {
   const td = (sim, children, extra = '') => <td key={sim.id} className={`${extra} ${sim.id === focusSim.id ? 'on' : ''}`} onClick={() => pick(sim.id)}>{children}</td>
   const riskCell = (sim) => {
     const rk = riskOf(sim.id)
-    if (rk.state === 'running') return <span className="cmp-running"><Spinner size={12} /> 리스크 계산 중</span>
+    if (rk.state === 'running') return <span className="muted">—</span>
     if (rk.state === 'error') return <span className="c-red small">{rk.error}</span>
     const list = checkRisks(rk.data)
     const low = rk.data.counts?.LOW ?? 0
@@ -264,12 +259,10 @@ export default function Compare() {
         <Callout className="cmp-stale" intent="warning" icon="refresh" title="계획 조건이 바뀌었습니다. 다시 계산해야 후보가 맞습니다">
           <p className="small">지금 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 그대로 둡니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
           <div className="risk-buttons">
-            <Button intent="warning" icon="refresh" loading={result.running} disabled={!isScheduler} onClick={recalc}>다시 계산</Button>
-            {result.running && runSince && <span className="small muted">후보 {scen.presets.length}개를 동시에 계산하고 있습니다 · <Elapsed since={runSince} />초 (몇 분 걸릴 수 있음)</span>}
+            <Button intent="warning" icon="refresh" disabled={!isScheduler || result.running} onClick={recalc}>다시 계산</Button>
           </div>
         </Callout>
       )}
-      {!result.stale && result.running && <Callout intent="primary" icon={<Spinner size={16} />}>후보를 다시 계산하고 있습니다 · {runSince && <Elapsed since={runSince} />}초</Callout>}
       {result.calcError && <Callout intent="danger" icon="error" title="다시 계산하지 못했습니다">{result.calcError}</Callout>}
 
       {/* 11-26 위: 후보 비교 표와 조건 변경 요청을 나란히(요청은 표 높이에 맞추고 넘치면 스크롤, 없으면 표가 꽉 차게). 이 안으로 확정은 맨 아래 */}
@@ -280,16 +273,17 @@ export default function Compare() {
                 <colgroup><col className="cmp-c-label" />{cols.map((s) => <col key={s.id} />)}{pend.map(([id]) => <col key={id} />)}</colgroup>
                 <thead><tr><th />{cols.map((sim) => <th key={sim.id} className={sim.id === focusSim.id ? 'on' : ''} onClick={() => pick(sim.id)}>
                   <button type="button" className="cmp-col"><span className="plan-radio" aria-hidden="true" />{sim.label}<span className="cmp-col-sub">{sim.preset?.label}</span>{sim.total === minTotal && <span className="chip green">최저</span>}{sim.sameAsA && <span className="chip" title="이 후보의 조건으로 풀어도 후보 A와 배치가 같습니다">A와 같음</span>}</button>
-                </th>)}{pend.map(([id, sub]) => <th key={id}><span className="cmp-col">{id}<span className="cmp-col-sub">{sub}</span></span></th>)}</tr></thead>
+                  {result.running && !waitBC ? <CandidateStatus>계산 중</CandidateStatus>
+                    : riskOf(sim.id).state === 'running' && <CandidateStatus>리스크 계산 중</CandidateStatus>}
+                </th>)}{pend.map(([id, sub]) => <th key={id}><span className="cmp-col">{id}<span className="cmp-col-sub">{sub}</span></span><CandidateStatus>계산 중</CandidateStatus></th>)}</tr></thead>
                 <tbody>
-                  <tr><th>총 예상 체선료</th>{cols.map((sim) => td(sim, <>
-                    <span className={`cmp-money ${dim}`}><CountMoney cents={sim.total} /></span>
-                    {result.running && runSince && <span className="cmp-running"><Spinner size={12} /> <Elapsed since={runSince} />s</span>}
-                  </>, `num cmp-total ${flash[sim.id] ? 'flash' : ''}`))}{pendTd(busyBC)}</tr>
-                  <tr><th>최저안 대비</th>{cols.map((sim) => td(sim, sim.total === minTotal ? '가장 낮음' : `+${money(sim.total - minTotal)} (${pctText(sim.total, minTotal)})`, `num ${dim} ${sim.total === minTotal ? 'c-green' : 'muted'}`))}{pendTd('—')}</tr>
-                  <tr><th>체선 발생</th>{cols.map((sim) => { const d = demOf(sim); return td(sim, <>{d.length}척 <span className="muted small">· {hm(d.reduce((s, p) => s + p.dem.excessMin, 0))}</span></>, `num ${dim}`) })}{pendTd('—')}</tr>
-                  <tr><th>고정한 배</th>{cols.map((sim) => td(sim, `${sim.placements.filter((p) => p.fixed).length}척`, `num ${dim}`))}{pendTd('—')}</tr>
-                  <tr className="cmp-risk-row"><th>리스크</th>{cols.map((sim) => td(sim, riskCell(sim)))}{pendTd('—')}</tr>
+                  <tr><th>총 예상 체선료</th>{cols.map((sim) => td(sim,
+                    <span className={`cmp-money ${dim}`}><CountMoney cents={sim.total} /></span>,
+                    `num cmp-total ${flash[sim.id] ? 'flash' : ''}`))}{pendingCells}</tr>
+                  <tr><th>최저안 대비</th>{cols.map((sim) => td(sim, sim.total === minTotal ? '가장 낮음' : `+${money(sim.total - minTotal)} (${pctText(sim.total, minTotal)})`, `num ${dim} ${sim.total === minTotal ? 'c-green' : 'muted'}`))}{pendingCells}</tr>
+                  <tr><th>체선 발생</th>{cols.map((sim) => { const d = demOf(sim); return td(sim, <>{d.length}척 <span className="muted small">· {hm(d.reduce((s, p) => s + p.dem.excessMin, 0))}</span></>, `num ${dim}`) })}{pendingCells}</tr>
+                  <tr><th>고정한 배</th>{cols.map((sim) => td(sim, `${sim.placements.filter((p) => p.fixed).length}척`, `num ${dim}`))}{pendingCells}</tr>
+                  <tr className="cmp-risk-row"><th>리스크</th>{cols.map((sim) => td(sim, riskCell(sim)))}{pendingCells}</tr>
                 </tbody>
               </table>
             </Panel>
@@ -322,9 +316,8 @@ export default function Compare() {
               <div className="cmp-checks" data-tour="risks">
                 <div className="cmp-checks-head">
                   <b>확인할 리스크</b>
-                  {riskWait ? <span className="cmp-running"><Spinner size={12} /> 계산 중</span>
-                    : focusRisk.state === 'error' ? <span className="c-red small">계산 못 함</span>
-                      : <span className={`small ${checkedN < checkTotal ? 'c-amber' : 'c-green'}`}><span className="num">{checkTotal}</span>건 중 <span className="num">{checkedN}</span>건 확인</span>}
+                  {!riskWait && (focusRisk.state === 'error' ? <span className="c-red small">계산 못 함</span>
+                    : <span className={`small ${checkedN < checkTotal ? 'c-amber' : 'c-green'}`}><span className="num">{checkTotal}</span>건 중 <span className="num">{checkedN}</span>건 확인</span>)}
                 </div>
                 {focusRisk.state === 'error' && <p className="small c-red">{focusRisk.error}</p>}
                 {focusRisk.state === 'done' && checkTotal === 0 && <p className="small c-green">높음·중간 리스크가 없습니다.</p>}
@@ -343,8 +336,7 @@ export default function Compare() {
                 <label htmlFor="risk-reason">판단 근거</label>
                 <TextArea id="risk-reason" fill rows={3} value={reason} disabled={!isScheduler} onChange={(e) => setReason(e.currentTarget.value)} placeholder="예: 체선료가 가장 낮고, 작업 간격이 빠듯한 7부두는 하역팀과 미리 조율" />
               </div>
-              {blocked ? <p className="small c-amber">{result.running ? '다시 계산하는 중입니다.' : '계획 조건이 바뀌어 다시 계산한 뒤에 확정할 수 있습니다.'}</p>
-                : waitBC && <p className="small c-amber">후보 B · C 계산이 끝나면 확정할 수 있습니다.</p>}
+              {result.stale && !result.running && <p className="small c-amber">계획 조건이 바뀌어 다시 계산한 뒤에 확정할 수 있습니다.</p>}
               {asking ? (
                 <Callout className="risk-confirmation" intent="warning" icon="warning-sign">
                   <p className="small"><b>{[uncheckedRisks.length && `확인하지 않은 리스크 ${uncheckedRisks.length}건`, mails.length && `결정하지 않은 조건 변경 요청 ${mails.length}건`].filter(Boolean).join(' · ')}</b>이 확정 기록에 함께 남습니다.{mails.length > 0 && ' 결정하지 않은 요청은 반영하지 않은 것으로 남고 이 계획에 들어가지 않습니다.'}</p>
@@ -375,8 +367,7 @@ function MailDecide({ scen, all, mails, decision, onDecide, onUndo, canEdit, run
       <li key={id} className={on ? 'on' : 'off'}><span className={`sev ${on ? 'ok' : 'low'}`}>{on ? '반영' : '반영 안 함'}</span><span>{changeText(scen, inc)}<small>{inc.kind} · {inc.from}</small></span></li>) }
     return (
       <Panel code="CHANGE-REQ" title="조건 변경 결정" pad actions={<Button size="small" icon="undo" disabled={!canEdit} onClick={onUndo} title="결정 전 계획 조건 · 후보 · 메일 상태로 돌아갑니다">되돌리기</Button>}>
-        <div className="small md-sum">{running ? <span className="cmp-running"><Spinner size={12} /> 반영한 조건으로 후보를 다시 계산하는 중</span>
-          : `반영 ${decision.applied.length}건 · 반영 안 함 ${decision.dismissed.length}건 · ${decision.at.slice(5, 16)}`}</div>
+        <div className="small md-sum">반영 {decision.applied.length}건 · 반영 안 함 {decision.dismissed.length}건 · {decision.at.slice(5, 16)}</div>
         <ul className="md-list">{decision.applied.map((id) => row(id, true))}{decision.dismissed.map((id) => row(id, false))}</ul>
       </Panel>
     )
@@ -472,31 +463,24 @@ function FixList({ title, note, items, tone, empty }) {
   )
 }
 
-/** 11-26 처음 여는 기준 시각의 후보 계산 중: 화면 틀(후보 비교 표 · 배치 결과 · 확정)은 그대로 보이고 값 자리에 「계산 중」 */
 function CompareLoading() {
-  const cols = [['후보 A', '기본'], ['후보 B', '상황형'], ['후보 C', '배별 지연 대비']]
-  const busy = <span className="cmp-running"><Spinner size={12} /> 계산 중</span>
   return (
     <div className="stack">
       <div className="cmp-top">
         <Panel code="CAND-REPORT" title="후보 비교">
           <table className="dt cmp-report">
-            <colgroup><col className="cmp-c-label" />{cols.map(([id]) => <col key={id} />)}</colgroup>
-            <thead><tr><th />{cols.map(([id, sub]) => <th key={id}><span className="cmp-col">{id}<span className="cmp-col-sub">{sub}</span></span></th>)}</tr></thead>
+            <colgroup><col className="cmp-c-label" />{CANDIDATE_LABELS.map(([id]) => <col key={id} />)}</colgroup>
+            <thead><tr><th />{CANDIDATE_LABELS.map(([id, sub]) => <th key={id}><span className="cmp-col">{id}<span className="cmp-col-sub">{sub}</span></span><CandidateStatus>계산 중</CandidateStatus></th>)}</tr></thead>
             <tbody>
-              {['총 예상 체선료', '최저안 대비', '체선 발생', '고정한 배', '리스크'].map((row, i) => (
-                <tr key={row}><th>{row}</th>{cols.map(([id]) => <td key={id} className={i ? 'muted' : ''}>{i ? '—' : busy}</td>)}</tr>
+              {['총 예상 체선료', '최저안 대비', '체선 발생', '고정한 배', '리스크'].map((row) => (
+                <tr key={row}><th>{row}</th>{CANDIDATE_LABELS.map(([id]) => <td key={id} className="muted">—</td>)}</tr>
               ))}
             </tbody>
           </table>
         </Panel>
       </div>
-      <Panel code="BERTH PLAN" title="배치 결과">
-        <div className="cmp-none">{busy}</div>
-      </Panel>
-      <Panel code="PLAN-DECIDE" title="이 안으로 확정" pad>
-        <div className="cmp-none">{busy}</div>
-      </Panel>
+      <Panel code="BERTH PLAN" title="배치 결과" />
+      <Panel code="PLAN-DECIDE" title="이 안으로 확정" />
     </div>
   )
 }
