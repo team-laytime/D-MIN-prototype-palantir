@@ -1,4 +1,5 @@
 import { Callout } from '@blueprintjs/core'
+import BootCallout from './ui/BootCallout.jsx'
 import { useApp } from './state/app.jsx'
 import { Shell } from './ui/Shell.jsx'
 import Login from './screens/Login.jsx'
@@ -25,7 +26,7 @@ export default function App() {
   if (!role) return <Login />
   let screen
   if (result.loading && tab !== 'ops') {
-    screen = <div className="screen-body"><Callout icon="cloud-download" title="데이터셋 불러오는 중">데이터셋과 계산 결과를 불러오고 있습니다.</Callout></div>
+    screen = <div className="screen-body"><BootCallout boot={result.boot} /></div>
   } else if (NEEDS_RESULT.includes(tab) && result.error) {
     screen = <div className="screen-body"><Callout intent="danger" icon="error" title="데이터를 불러오지 못함">{result.error}</Callout></div>
   } else if (NEEDS_CANDIDATE.includes(tab) && !result.candidates.length) {

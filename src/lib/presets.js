@@ -1,4 +1,4 @@
-// 11-25 후보 구성: A 기본 · B 상황형 · C 배별 지연 대비. 데이터셋 스크립트(tools/real-data/build_dataset.py)와 같은 규칙이다.
+// 11-25 후보 구성: A 기본 · B 상황형 · C 배별 지연 대비. (11-26 데이터셋에 계산 결과를 넣지 않으므로 규칙은 이 파일 한 곳)
 //   B = A 계획의 탱크 등급과 예보 풍속 등급 중 높은 쪽(같으면 탱크). 둘 다 없으면 배별 지연 대비 절반.
 //   탱크 등급: 재고가 마지노선 20/80%까지 1%p 안 높음 · 4%p 안 중간 · 7%p 안 낮음 (리스크 모델과 같은 기준)
 //   풍속 등급: 하역 중단 기준까지 여유가 예보 오차 σ의 1배 안 높음 · 2배 안 중간 · 3배 안 낮음
@@ -32,6 +32,9 @@ export function windGrade(scen) {
   return { g, text: `예보 최대 ${top} m/s, ${grp} 중단 기준 ${th[grp][0]} m/s까지 ${Math.round(margin * 10) / 10} m/s (σ ${SIGMA_MS})`, th }
 }
 
+export const BASE_PRESET = { id: 'base', label: '기본', desc: '팀 엔진 기본 파라미터', params: {} }
+export const C_PRESET = { id: 'vessel_buffer', label: '배별 지연 대비', desc: '배마다 늦어질 만큼 앞뒤 간격을 비워 둔 계획 (작업 여유 · 도착 여유, 데이터 팀 안 3)',
+  params: { shifting: { vessel_buffer: true } } }
 const B_TANK = { id: 'tank', label: '안전재고 강화', desc: '탱크 안전 범위를 20~80%에서 25~75%로 좁힘', params: { tank: { safe_min_pct: 25, safe_max_pct: 75 } } }
 const B_HALF = { id: 'buffer_half', label: '배별 지연 대비 절반', desc: '배별 작업 여유를 절반만 둠 (도착 여유는 그대로)', params: { shifting: { vessel_buffer: true, work_buffer_scale: 0.5 } } }
 

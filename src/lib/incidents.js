@@ -62,11 +62,11 @@ export function seedIncidents({ vessels, berths, window }, plan, base) {
     })
   }
 
-  // 4) 우선 접안 요청: 기존 계획과 부두가 다른 반출선 중 12~48시간 뒤 접안하는 첫 배를 기존 계획 부두 · 시각으로 고정
-  const planBy = Object.fromEntries(plan.map((p) => [p.vessel_id, p]))
+  // 4) 우선 접안 요청: 12~48시간 뒤 접안하는 첫 반출선을 기존 계획 부두 · 시각으로 고정
+  //    (11-26 엔진 계획 없이 만든다. 최적화는 이 배를 옮길 수 있으므로 고정은 늘 의미 있는 조건)
   const pick = base
     .map((b) => ({ b, v: vById[b.vessel_id], etb: round10(toMin(b.etb)) }))
-    .filter(({ b, v, etb }) => v && !used.has(v.id) && !v.in && etb >= 12 * 60 && etb <= 48 * 60 && etb >= v.eta && v.compat.includes(b.berth) && planBy[v.id]?.berth !== b.berth)
+    .filter(({ b, v, etb }) => v && !used.has(v.id) && !v.in && etb >= 12 * 60 && etb <= 48 * 60 && etb >= v.eta && v.compat.includes(b.berth))
     .sort((x, y) => x.etb - y.etb)[0]
   if (pick) {
     used.add(pick.v.id)

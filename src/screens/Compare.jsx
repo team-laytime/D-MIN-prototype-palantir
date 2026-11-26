@@ -12,6 +12,7 @@ import { SEV, KIND, checkRisks, riskLabel, riskShip, sortRisks } from '../lib/ri
 import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
 import { changeText } from '../lib/incidents.js'
 import SimilarCases from './SimilarCases.jsx'
+import BootCallout from '../ui/BootCallout.jsx'
 import { groupsFor } from '../lib/mailGroups.js'
 import { useApp } from '../state/app.jsx'
 import { Panel, Screen, St } from '../ui/kit.jsx'
@@ -89,6 +90,9 @@ export default function Compare() {
 
   if (!scen || result.loading) {
     return <Screen tab="compare" title="후보 비교·확정"><div className="cmp-none"><Spinner size={20} /> {result.error ?? '데이터셋을 불러오는 중입니다'}</div></Screen>
+  }
+  if (!all.length && result.boot) {
+    return <Screen tab="compare" title="후보 비교·확정"><BootCallout boot={result.boot} /></Screen>
   }
   if (!all.length) {
     return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '계산 결과가 비어 있습니다.'}</Callout></Screen>
