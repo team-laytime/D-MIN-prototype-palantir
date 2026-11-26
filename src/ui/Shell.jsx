@@ -1,5 +1,6 @@
 // 콘솔 틀: 상단 명령 바 · 왼쪽 레일 · 작업 영역 · 하단 상태 바. 화면 내용은 children.
 import { Button, HTMLSelect, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core'
+import { useEffect, useState } from 'react'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { NAV, canUse, groupOf } from '../lib/workspace.js'
@@ -71,11 +72,7 @@ export function Shell({ children }) {
         </button>
         <div className="topbar-right">
           {isScheduler && (
-            <label className="scen-select" id="scen" data-tour="scen">
-              <span className="faint tiny">데이터셋</span>
-              <HTMLSelect minimal value={scenarioId ?? ''} onChange={(e) => setScenarioId(e.target.value)} aria-label="데이터셋"
-                options={datasets.length ? datasets.map((d) => ({ value: d.id, label: d.label })) : [{ value: '', label: '불러오는 중' }]} />
-            </label>
+            <DatasetPicker datasets={datasets} scenarioId={scenarioId} onOpen={setScenarioId} />
           )}
           <Clock />
           <ThemeToggle />
@@ -123,6 +120,41 @@ export function Shell({ children }) {
 
       {/* 11-25 아래 상태 줄의 데이터셋, 엔진, 금액 표시를 빼고 임시 문구만 (나중에 바꿈) */}
       <footer className="statusbar"><span className="statusbar-credit">Made by Minkyu</span></footer>
+    </div>
+  )
+}
+
+/**
+ * 11-26 데이터셋 고르기: 1년치 데이터셋은 기준 시각(날짜 · 시각)을 직접 고른다. 「열기」를 눌러야 바뀐다
+ * (바꿀 때마다 하역 속도 · 후보 계산이 돌기 때문). 시연용 바로가기는 목록에서 바로 연다. 날짜별 파일은 예전처럼 목록.
+ */
+function DatasetPicker({ datasets, scenarioId, onOpen }) {
+  const [file, start] = (scenarioId ?? '').split('@')
+  const d = datasets.find((x) => x.id === file) ?? datasets.at(-1)
+  const [draft, setDraft] = useState(start ?? '')
+  useEffect(() => { setDraft(start ?? '') }, [start])
+  if (!d || d.kind !== 'year') {
+    return (
+      <label className="scen-select" id="scen" data-tour="scen">
+        <span className="faint tiny">데이터셋</span>
+        <HTMLSelect minimal value={scenarioId ?? ''} onChange={(e) => onOpen(e.target.value)} aria-label="데이터셋"
+          options={datasets.length ? datasets.map((x) => ({ value: x.id, label: x.label })) : [{ value: '', label: '불러오는 중' }]} />
+      </label>
+    )
+  }
+  const [day, hm] = draft.split(' ')
+  const valid = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(draft) && day >= d.range.from && day <= d.range.to
+  const go = () => { if (valid && draft !== start) onOpen(`${d.id}@${draft}`) }
+  return (
+    <div className="scen-select scen-picker" id="scen" data-tour="scen">
+      <span className="faint tiny">기준 시각</span>
+      <input type="date" className="scen-date num" value={day ?? ''} min={d.range.from} max={d.range.to} aria-label="기준 날짜"
+        onChange={(e) => setDraft(`${e.target.value} ${hm ?? '09:00'}`)} onKeyDown={(e) => e.key === 'Enter' && go()} />
+      <input type="time" className="scen-time num" value={hm ?? ''} step={3600} aria-label="기준 시각"
+        onChange={(e) => setDraft(`${day ?? d.default_start.split(' ')[0]} ${e.target.value}`)} onKeyDown={(e) => e.key === 'Enter' && go()} />
+      <Button size="small" variant="minimal" intent="primary" text="열기" disabled={!valid || draft === start} onClick={go} />
+      <HTMLSelect minimal value="" aria-label="시연 바로가기" onChange={(e) => e.target.value && onOpen(`${d.id}@${e.target.value}`)}
+        options={[{ value: '', label: '바로가기' }, ...d.shortcuts.map((x) => ({ value: x, label: x }))]} />
     </div>
   )
 }

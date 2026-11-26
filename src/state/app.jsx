@@ -3,7 +3,7 @@
 //   - 데이터셋을 불러오면 후보 3개(엔진 프리셋별 계획)가 바로 있다.
 //   - 계획 조건(ETA·부두 사용 불가·고정·파라미터)을 고치면 「다시 계산」으로 엔진 API에 보낸다(약 1분).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { buildRequest, buildScen, engineFacts, fetchRisks, initialResults, loadDataset, loadIndex, rankSims, recalc as engineRecalc } from '../lib/dataset.js'
+import { buildRequest, buildScen, engineFacts, fetchRisks, initialResults, loadDataset, loadIndex, rankSims, recalc as engineRecalc, scenarioIdOf } from '../lib/dataset.js'
 import { setTimeBase } from '../lib/time.js'
 import { applyChange } from '../lib/incidents.js'
 import { chooseB, presetsFor } from '../lib/presets.js'
@@ -46,7 +46,20 @@ export function AppProvider({ children }) {
     setLoadError(null)
     bootRef.current?.abort()
     const ctl = new AbortController(); bootRef.current = ctl
-    const ds = await loadDataset(id)
+    // 11-26 다른 기준 시각을 고르면 앞 화면을 비우고(불러오는 중) 그 시각의 하역 속도부터 받는다
+    if (scenRef.current.scen && scenarioIdRef.current !== id) {
+      replaceScen({ scen: null, version: scenRef.current.version + 1 })
+      setCalc({ sims: [], version: 0, error: null, running: false, at: null })
+    }
+    setScenarioIdRaw(id) // 고른 기준 시각을 불러오는 동안에도 상단에 보인다
+    if (id.includes('@')) setBoot({ step: 'rates', since: Date.now() })
+    let ds
+    try {
+      ds = await loadDataset(id, ctl.signal)
+    } catch (e) {
+      if (ctl.signal.aborted) return
+      throw e
+    } finally { if (bootRef.current === ctl) setBoot(null) }
     if (ctl.signal.aborted) return
     setTimeBase(ds.request.start)
     // 11-26 계획 조건 · 운영 현황은 요청만으로 바로 띄운다. 후보는 데이터셋에 없으면 이어서 계산(브라우저 저장소에 있으면 바로)
@@ -83,7 +96,8 @@ export function AppProvider({ children }) {
   }, [replaceScen])
 
   useEffect(() => {
-    loadIndex().then((idx) => { setDatasets(idx); if (idx.length) return open(idx.at(-1).id) })
+    // 11-26 1년치 데이터셋은 기본 기준 시각으로 연다 (상단에서 날짜 · 시각을 고른다)
+    loadIndex().then((idx) => { setDatasets(idx); const d = idx.at(-1); if (d) return open(d.kind === 'year' ? scenarioIdOf(d.id, d.default_start) : d.id) })
       .catch((e) => { if (e.name !== 'AbortError') setLoadError(e.message) })
   }, [open])
 

@@ -14,12 +14,58 @@ export async function loadIndex() {
   if (!r.ok) throw new Error('데이터셋 목록(public/data/index.json)이 없습니다. tools/real-data/build_dataset.py로 먼저 만드십시오.')
   return r.json()
 }
-export async function loadDataset(id) {
-  const r = await fetch(`${import.meta.env.BASE_URL}data/${id}.json`)
-  if (!r.ok) throw new Error(`데이터셋 ${id}를 불러오지 못했습니다 (${r.status})`)
-  const ds = await r.json()
-  ds.vesselRef = await loadVesselRef()
-  return ds
+/**
+ * 데이터셋 열기. id = '<파일>@<기준 시각 YYYY-MM-DD HH:MM>' (11-26 1년치 파일 하나 + 화면에서 고른 기준 시각).
+ *   1년치 파일에는 하역 속도가 없다: 고른 시각 T 전에 끝난 과거 실적으로 팀 전처리 API(POST /prep/rates)가 계산한다
+ *   (엔진 요청을 만들던 berth_prep request와 같은 함수 rate_rows). 받은 값은 브라우저 저장소에 남긴다.
+ *   '@'가 없으면 예전처럼 날짜별 파일을 그대로 연다.
+ */
+export async function loadDataset(id, signal) {
+  const [file, start] = id.split('@')
+  const base = await loadFile(file)
+  if (!start) return { ...base, vesselRef: await loadVesselRef() }
+  const startIso = kstIso(start)
+  const rates = await ratesFor(base, startIso, signal)
+  const vessels = base.request.vessels.map((v, i) => ({ ...v, rate_t_per_h: rates[i] }))
+  return {
+    id, label: `${start} 현재, ${base.days * 24}시간 계획`, bundle: base.bundle, start, days: base.days, source: base.source,
+    meta: base.meta, request: { ...base.request, start: startIso, vessels }, built_at: base.built_at, vesselRef: await loadVesselRef(),
+  }
+}
+
+export const scenarioIdOf = (file, start) => `${file}@${start}`
+/** 'YYYY-MM-DD HH:MM'(KST) → '2025-11-09T00:00:00Z' (엔진 요청 start와 같은 모양) */
+export const kstIso = (text) => new Date(`${text.replace(' ', 'T')}:00+09:00`).toISOString().replace('.000Z', 'Z')
+
+const files = {}
+function loadFile(file) {
+  files[file] ??= fetch(`${import.meta.env.BASE_URL}data/${file}.json`).then(async (r) => {
+    if (!r.ok) throw new Error(`데이터셋 ${file}를 불러오지 못했습니다 (${r.status})`)
+    return r.json()
+  }).catch((e) => { delete files[file]; throw e })
+  return files[file]
+}
+
+// 기준 시각별 하역 속도 (전처리 지문 + 파일 + 기준 시각을 키로 저장). 반환: 선박 순서대로 {부두: t/h} | null
+const prepVersion = () => versionOf('rates', '/prep/health', (b) => b?.model?.version)
+async function ratesFor(base, startIso, signal) {
+  const ver = await prepVersion()
+  const key = ver && `rates:${ver}:${hashText(`${base.bundle}|${base.built_at}|${startIso}`)}`
+  const hit = key && await cacheGet(key)
+  if (hit) return hit
+  const p = base.past_shipments
+  const past = p.qty.map((q, i) => ({ vessel_code: p.vessel_code[i], material_code: p.material_code[i], berth: p.berth[i],
+    work_start: `${p.work_start[i].replace(' ', 'T')}:00+09:00`, work_end: `${p.work_end[i].replace(' ', 'T')}:00+09:00`, qty: q }))
+  const vessels = base.request.vessels.map((v) => ({ call_sign: v.call_sign, entry_year: v.entry_year, voyage: v.voyage, stay_seq: v.stay_seq,
+    vessel_code: v.vessel_code, material_code: v.material_code, qty: v.qty }))
+  const r = await fetch('/prep/rates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: startIso, vessels, past_shipments: past }), signal })
+    .catch((e) => { if (e.name === 'AbortError') throw e; return null })
+  if (!r) throw new Error('전처리 서버(127.0.0.1:8001)에 연결되지 않았습니다. 엔진 저장소에서 `PREP_API_HOST=127.0.0.1 .venv/bin/python -m berth_prep serve`로 띄우십시오.')
+  const body = await r.json().catch(() => null)
+  if (!r.ok) throw new Error(`하역 속도를 계산하지 못했습니다: ${body?.detail ?? body?.title ?? r.status}`)
+  const out = body.vessels.map((v) => (Object.keys(v.rate_t_per_h ?? {}).length ? v.rate_t_per_h : null))
+  if (key) cacheSet(key, out)
+  return out
 }
 
 // 11-25 호출부호별 선박명, 제원표 (D-MIN-dataset data/reference → tools/real-data/build_vessel_ref.py → public/data/vessel-ref.json).
