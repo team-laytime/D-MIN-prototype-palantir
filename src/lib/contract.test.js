@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { dealRows, detectKind, findInQuote, fmtValue, weatherDeductPct } from './contract.js'
+import { dealRows, detectKind, findInQuote, findQuoteInText, fmtValue, weatherDeductPct } from './contract.js'
 
 const load = (name) => JSON.parse(readFileSync(new URL(`../mock/contract/${name}.json`, import.meta.url), 'utf8'))
 const deals = load('deals')
@@ -110,4 +110,13 @@ test('값 표시와 종류 판정', () => {
   assert.equal(detectKind('SYN_VEGA_매매확인서.pdf'), 'sales')
   assert.equal(detectKind('SYN_VEGA_CP.pdf'), 'cp')
   assert.equal(detectKind('Fwd_ 선적 일정 문의.eml'), null)
+})
+
+test('원본 본문에서 근거 문장 찾기: 시연용으로 옮긴 날짜도 원본(원래 날짜) 줄에 맞춘다', () => {
+  const text = 'FIXTURE RECAP\nLAYCAN : 06-08 NOV 2028\nDEM : USD 42,100 PDPR\n'
+  const at = (q) => { const r = findQuoteInText(text, q); return r && text.slice(r[0], r[1]) }
+  assert.equal(at('DEM : USD 42,100 PDPR'), 'DEM : USD 42,100 PDPR')
+  assert.equal(at('LAYCAN : 16-18 NOV 2025'), 'LAYCAN : 06-08 NOV 2028')
+  assert.equal(at('LAYCAN : 16-18 Dec 2025'), 'LAYCAN : 06-08 NOV 2028')
+  assert.equal(at('FREIGHT : WS 95'), null)
 })

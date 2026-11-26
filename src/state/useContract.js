@@ -6,7 +6,7 @@ import DEALS from '../mock/contract/deals.json'
 
 const DOCS = Object.fromEntries(Object.values(import.meta.glob('../mock/contract/SYN-*.json', { eager: true, import: 'default' })).map((d) => [d.doc_id, d]))
 export const FORM = { pdf: 'PDF', scan: '스캔 PDF', docx: 'DOCX', eml: '메일 (eml)', txt: '텍스트 (txt)', paste: '메일 붙여 넣기' }
-export const ERROR = { vessel: '선박을 못 찾음', kind: '종류 판정 실패', empty: '글자를 하나도 못 읽음', duplicate: '중복 등록', pool: '시연용 추출 결과 없음' }
+export const ERROR = { vessel: '선박명 판독 실패', kind: '문서 종류 미확인', empty: '판독 불가', duplicate: '중복 등록', pool: '시연용 추출 결과 없음' }
 const EXTRACT_MS = 1800
 // 시연 시계: 상단 기준 시각(데이터셋 기본 2025-11-09 09:00)에서 화면을 연 뒤 흐른 만큼. 등록 · 검토 시각이 실제 오늘 날짜와 섞이지 않게 한다.
 // shortcut: 기준 시각을 다른 날로 골라도 따라가지 않는다. 계약 화면이 데이터셋 시각을 쓰게 되면 app 상태의 T를 받는다.
@@ -29,7 +29,7 @@ const SEED = [
   ['SYN-SC-304', 'pdf', 'SYN-SC-304.pdf', '11-07 09:06'],
   ['SYN-CP-307', 'pdf', 'SYN-CP-307.pdf', '11-07 09:12'],
   ['SYN-SC-306', 'pdf', 'SYN-SC-306.pdf', '11-07 09:13'],
-  ['SYN-CP-315', 'scan', 'SYN-CP-315.pdf', '11-08 09:20'], // 문자 인식으로 선박명을 못 읽음 → 선박을 못 찾음
+  ['SYN-CP-315', 'scan', 'SYN-CP-315.pdf', '11-08 09:20'], // OCR로 선박명을 못 읽음 → 선박명 판독 실패
   [null, 'eml', 'Fwd_ 선적 일정 문의.eml', '11-08 09:24', 'kind'],
   [null, 'scan', 'scan_0413.pdf', '11-08 09:25', 'empty'],
   [null, 'pdf', 'SYN-CP-301.pdf', '11-08 09:31', 'duplicate'],
@@ -102,8 +102,13 @@ export function reviewMany(dealKey, fields, by) {
   const at = clock().slice(0, 16)
   set({ reviews: { ...state.reviews, ...Object.fromEntries(fields.map((f) => [`${dealKey}:${f}`, { by, at }])) } })
 }
-/** 등록 한 건 지우기(오류 문서 정리 · 다시 올리기 전). */
-export function removeReg(no) { set({ regs: state.regs.filter((r) => r.no !== no) }) }
+/** 등록 한 건 지우기. 추출이 끝난 문서면 그 선박(거래)의 문서 조합이 바뀌므로 그 선박의 검토 기록도 처음으로 돌린다. */
+export function removeReg(no) {
+  const docId = state.regs.find((r) => r.no === no)?.docId
+  const deal = docId && DEALS.find((d) => d.documents.includes(docId))
+  const reviews = deal ? Object.fromEntries(Object.entries(state.reviews).filter(([k]) => !k.startsWith(`${deal.documents[0]}:`))) : state.reviews
+  set({ regs: state.regs.filter((r) => r.no !== no), reviews })
+}
 
 /** 거래(선박)별 화면 모델: 등록이 끝난 문서만으로 행을 만든다. 선박명을 못 읽은 문서는 빠진다. */
 export function dealViews(s) {
@@ -120,14 +125,16 @@ export function dealViews(s) {
 /** 등록 문서 한 건의 남은 검토 필수 수(이 문서가 출처인 행). */
 export const leftFor = (view, docId) => view.left.filter((r) => r.sources.some((x) => x.doc_id === docId)).length
 export const docOf = (docId) => DOCS[docId] ?? null
-// 스캔본 쪽 이미지: 합성 계약서 원본 PDF 쪽을 그림으로 바꿔 넣은 것(pages/<doc_id>-<쪽>.jpg, 110dpi 흑백). 없으면 null → 화면은 자리 표시.
-// 근거 위치(evidence.boxes)는 지금 파서로 스캔본 두 건을 다시 돌린 결과에서 옮겨 넣었다(eval4_llm 출력에는 없음).
-// shortcut: 목업에 넣어 둔 스캔본(SYN-CP-304 · 315)만. 파서를 붙이면 서버가 쪽 이미지를 내보내는 주소로 바꾼다.
-const PAGES = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/pages/*.jpg', { eager: true, query: '?url', import: 'default' }))
-  .map(([path, url]) => [path.split('/').pop().replace('.jpg', ''), url]))
+// 원본 쪽 이미지: 합성 계약서 원본 PDF 쪽을 그림으로 바꿔 넣은 것(pages/<doc_id>-<쪽>.jpg|png). 없으면 null → 화면은 자리 표시.
+// 근거 위치(evidence.boxes)는 지금 파서(커밋된 HEAD)로 PDF 16건을 다시 돌린 결과에서 옮겨 넣었다(eval4_llm 출력에는 없음).
+// 스캔본은 tesseract 낱말 상자, 글자층 PDF는 pypdf 글자 위치(세로는 정확, 가로는 추정). LLM으로 읽은 특약 칸 일부는 박스가 없다.
+// shortcut: 파서를 붙이면 서버가 쪽 이미지를 내보내는 주소로 바꾼다.
+// 글자층 PDF 쪽은 1비트 PNG(150dpi, 쪽당 35~50KB), 스캔본은 흑백 JPEG(110dpi). 근거 박스는 둘 다 같은 방식(쪽 대비 비율)으로 얹는다
+const PAGES = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/pages/*.{jpg,png}', { eager: true, query: '?url', import: 'default' }))
+  .map(([path, url]) => [path.split('/').pop().replace(/\.(jpg|png)$/, ''), url]))
 export const pageImage = (docId, page) => PAGES[`${docId}-${page}`] ?? null
 export const pageCount = (docId) => Object.keys(PAGES).filter((k) => k.startsWith(`${docId}-`)).length
-// 원본 전체 보기: 글자층 PDF · recap 텍스트 원본(files/). 스캔본은 위 쪽 이미지로 본다.
+// 원본 전체 보기: PDF는 위 쪽 이미지(없으면 files/의 PDF를 브라우저 PDF 보기로), recap은 텍스트 원본(files/).
 const name = (path) => path.split('/').pop().replace(/\.\w+$/, '')
 const PDFS = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/files/*.pdf', { eager: true, query: '?url', import: 'default' })).map(([p, u]) => [name(p), u]))
 const TEXTS = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/files/*.txt', { eager: true, query: '?raw', import: 'default' })).map(([p, t]) => [name(p), t]))

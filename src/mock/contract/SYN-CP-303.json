@@ -12,7 +12,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.0836,
+      0.2618,
+      0.0977
+     ]
+    ]
    }
   },
   "vessel_name": {
@@ -25,7 +33,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9766,
+      0.1546
+     ]
+    ]
    }
   },
   "imo": {
@@ -38,7 +60,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1627,
+      0.2369,
+      0.2971,
+      0.2518
+     ]
+    ]
    }
   },
   "dwt": {
@@ -51,7 +81,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1711,
+      0.3141,
+      0.4819,
+      0.329
+     ]
+    ]
    }
   },
   "owner": {
@@ -64,7 +102,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9766,
+      0.1546
+     ]
+    ]
    }
   },
   "charterer": {
@@ -77,7 +129,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9766,
+      0.1546
+     ]
+    ]
    }
   },
   "laycan_from": {
@@ -98,7 +164,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1627,
+      0.5065,
+      0.3475,
+      0.5214
+     ]
+    ]
    }
   },
   "load_laydays_to": {
@@ -111,7 +185,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1711,
+      0.522,
+      0.3559,
+      0.5368
+     ]
+    ]
    }
   },
   "load_ports": {
@@ -124,7 +206,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5909,
+      0.7591,
+      0.6057
+     ]
+    ]
    }
   },
   "discharge_ports": {
@@ -137,7 +227,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.6289,
+      0.7087,
+      0.6437
+     ]
+    ]
    }
   },
   "cargo": {
@@ -150,7 +248,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.6823,
+      0.3811,
+      0.6972
+     ]
+    ]
    }
   },
   "cp_qty_t": {
@@ -163,7 +269,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.6669,
+      0.3223,
+      0.6817
+     ]
+    ]
    }
   },
   "laytime_total_h": {
@@ -176,7 +290,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1627,
+      0.8272,
+      0.5155,
+      0.8421
+     ]
+    ]
    }
   },
   "demurrage_rate_per_day": {
@@ -189,7 +311,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.8807,
+      0.5407,
+      0.8955
+     ]
+    ]
    }
   },
   "laytime_terms": {
@@ -267,7 +397,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.8807,
+      0.5407,
+      0.8955
+     ]
+    ]
    }
   }
  },

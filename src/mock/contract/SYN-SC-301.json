@@ -12,7 +12,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.2762,
+      0.2551,
+      0.2911
+     ],
+     [
+      0.3291,
+      0.2762,
+      0.6231,
+      0.2911
+     ]
+    ]
    }
   },
   "sk_role": {
@@ -25,7 +39,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5314,
+      0.1366,
+      0.9598,
+      0.1515
+     ]
+    ]
    }
   },
   "rate_basis": {
@@ -38,7 +60,27 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5981,
+      0.2971,
+      0.6129
+     ],
+     [
+      0.3291,
+      0.5981,
+      0.9255,
+      0.6129
+     ],
+     [
+      0.1291,
+      0.6135,
+      0.1711,
+      0.6284
+     ]
+    ]
    }
   },
   "laycan_from": {
@@ -59,7 +101,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.3,
+      0.2551,
+      0.3148
+     ],
+     [
+      0.3291,
+      0.3,
+      0.6315,
+      0.3148
+     ]
+    ]
    }
   },
   "load_laydays_to": {
@@ -72,7 +128,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.3,
+      0.2551,
+      0.3148
+     ],
+     [
+      0.3291,
+      0.3,
+      0.6315,
+      0.3148
+     ]
+    ]
    }
   },
   "discharge_laydays_from": {
@@ -97,7 +167,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5743,
+      0.3307,
+      0.5892
+     ],
+     [
+      0.3291,
+      0.5743,
+      0.5475,
+      0.5892
+     ]
+    ]
    }
   },
   "demurrage_rate_per_day": {
@@ -110,7 +194,27 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5981,
+      0.2971,
+      0.6129
+     ],
+     [
+      0.3291,
+      0.5981,
+      0.9255,
+      0.6129
+     ],
+     [
+      0.1291,
+      0.6135,
+      0.1711,
+      0.6284
+     ]
+    ]
    }
   },
   "currency": {
@@ -123,7 +227,27 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5981,
+      0.2971,
+      0.6129
+     ],
+     [
+      0.3291,
+      0.5981,
+      0.9255,
+      0.6129
+     ],
+     [
+      0.1291,
+      0.6135,
+      0.1711,
+      0.6284
+     ]
+    ]
    }
   }
  },

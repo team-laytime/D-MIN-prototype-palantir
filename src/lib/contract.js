@@ -9,34 +9,34 @@
 export const KIND = { cp: 'C/P', recap: 'Recap', sales: '매매 확인서' }
 // recap · sales 구역은 문서 종류와 같아 출처에 다시 쓰지 않는다
 export const SECTION = { part1: 'Part I', rider: 'Rider' }
-export const REASON = { ocr: '스캔 문자 인식', scan: '스캔본 특약 미확인', llm: 'LLM 판정', diff: '문서 간 불일치', rate: 'C/P 요율 미확인' }
+export const REASON = { ocr: 'OCR 판독', scan: '스캔본 특약 미확인', llm: 'AI 판독', diff: '문서 간 불일치', rate: 'C/P 요율 미확인' }
 // 계산에 쓰는 4개(값을 고칠 수 있는 칸)를 맨 위에 따로 둔다
 export const GROUPS = ['계산에 쓰는 값', '정박시간 · 레이데이즈', '선박·화물', '계약 당사자·양식', '그 외 특약']
 
 // edit가 있는 4개만 값을 고칠 수 있다(계산에 쓰는 값). weather는 파서의 weather_rule + bad_weather_half를 한 줄로 합친 것.
 const F = (key, label, group, fmt = null, edit = false) => ({ key, label, group, fmt, edit })
 export const FIELDS = [
-  F('laytime_total_h', '허용 정박시간', 0, 'h', true),
-  F('demurrage_rate_per_day', '일 체선료', 0, 'usd', true),
-  F('nor_notice_h', '정박시간 개시 (NOR 뒤)', 0, 'h', true),
-  F('weather', '기상 조항', 0, 'weather', true),
+  F('laytime_total_h', '허용 정박시간 (Laytime)', 0, 'h', true),
+  F('demurrage_rate_per_day', '체선료율 (Demurrage)', 0, 'usd', true),
+  F('nor_notice_h', 'NOR 후 정박시간 개시 (Notice time)', 0, 'h', true),
+  F('weather', '악천후 조항 (Weather)', 0, 'weather', true),
   F('laytime_terms', '정박시간 조건', 1),
   F('laytime_load_h', '선적 허용시간', 1, 'h'),
   F('laytime_discharge_h', '양하 허용시간', 1, 'h'),
   F('load_port_laytime_h', '선적항 허용시간', 1, 'h'),
-  F('laytime_prorate', '부분 화물 비례 배분', 1),
+  F('laytime_prorate', '부분 적재 시 비례 배분 (Pro rata)', 1),
   F('laytime_start_rule', '정박시간 개시 규칙', 1),
   F('laytime_end_rule', '정박시간 종료 규칙', 1),
   F('laycan_from', '레이캔 시작', 1), F('laycan_to', '레이캔 끝', 1),
-  F('load_laydays_from', '선적 레이데이즈 시작', 1), F('load_laydays_to', '선적 레이데이즈 끝', 1),
-  F('discharge_laydays_from', '양하 레이데이즈 시작', 1), F('discharge_laydays_to', '양하 레이데이즈 끝', 1),
+  F('load_laydays_from', '선적 Laydays 개시일', 1), F('load_laydays_to', '선적 Cancelling일', 1),
+  F('discharge_laydays_from', '양하 Laydays 개시일', 1), F('discharge_laydays_to', '양하 Cancelling일', 1),
   F('currency', '통화', 1),
   F('vessel_name', '선박명', 2), F('imo', 'IMO', 2), F('dwt', '재화중량 (DWT)', 2, 't'), F('cargo', '화물', 2),
-  F('cp_qty_t', '계약 물량', 2, 't'), F('load_ports', '선적항', 2), F('discharge_ports', '양하항', 2),
-  F('cp_form', '계약 양식', 3), F('owner', '선주', 3), F('charterer', '용선자', 3),
+  F('cp_qty_t', 'C/P 수량', 2, 't'), F('load_ports', '선적항', 2), F('discharge_ports', '양하항', 2),
+  F('cp_form', 'C/P 양식 (Form)', 3), F('owner', '선주', 3), F('charterer', '용선자', 3),
   F('incoterm', '인도 조건', 3), F('sk_role', '당사 역할', 3), F('rate_basis', '체선료 요율 기준', 3),
-  F('anchorage_to_berth_counts', '정박지→부두 이동 산입', 4), F('berth_shift_counts', '부두 이동 산입', 4),
-  F('half_rate_events', '반값 체선료 사유', 4), F('no_demurrage_events', '체선료 면제 사유', 4), F('laytime_exclusions', '정박시간 제외', 4),
+  F('anchorage_to_berth_counts', '정박지→선석 이동시간 산입', 4), F('berth_shift_counts', '선석 이동(Shifting) 산입', 4),
+  F('half_rate_events', '체선료 반감 사유 (Half demurrage)', 4), F('no_demurrage_events', '체선료 면제 사유', 4), F('laytime_exclusions', '정박시간 공제 사유 (Exceptions)', 4),
 ]
 
 // 파서는 '산입' 기준(FULL = 악천후 시간을 정박시간에 전부 산입)이고 계산은 '공제' 기준(weather_deduct_pct)이라 방향이 반대다.
@@ -47,13 +47,13 @@ export const weatherDeductPct = (code) => WEATHER[code]?.deduct ?? null
 // shortcut: ASBATANKVOY만, 조항 원문 대신 요약 문장. 파서 레포에 양식별 기본값 표(조항 원문 포함)가 생기면 그걸 읽는다.
 export const FORM_DEFAULTS = {
   nor_notice_h: { value: 6, clause: 'Part II 6', text: 'NOR 제출 6시간 뒤에 정박시간이 개시된다.' },
-  weather: { value: 'HALF', clause: 'Part II 7(a)', text: '악천후로 부두 이동이 늦어진 시간은 정박시간에 절반만 산입한다.' },
+  weather: { value: 'HALF', clause: 'Part II 7(a)', text: '악천후로 선석 이동이 늦어진 시간은 정박시간에 절반만 산입한다.' },
   laytime_terms: { value: 'SHINC, 가역', clause: 'Part II 7', text: '일요일·공휴일 포함(SHINC), 선적과 양하 허용시간을 합산(가역)한다.' },
-  laytime_prorate: { value: false, clause: 'Part II 7', text: '부분 화물이어도 허용시간을 비례 배분하지 않는다.' },
+  laytime_prorate: { value: false, clause: 'Part II 7', text: '부분 적재여도 허용시간을 비례 배분하지 않는다.' },
   laytime_end_rule: { value: '호스 분리·장비 철거·인원 하선 중 늦은 때 + 서류 3시간', clause: 'Part II 7(b)(c)', text: '호스 분리, 장비 철거, 인원 하선 중 가장 늦은 때에 서류 대기 3시간을 더한 때 끝난다.' },
-  half_rate_events: { value: ['화재', '폭발', '폭풍', '파업', '직장 폐쇄', '설비 고장'], clause: 'Part II 8', text: '화재, 폭발, 폭풍, 파업, 직장 폐쇄, 설비 고장으로 생긴 체선은 반값이다.' },
-  berth_shift_counts: { value: true, clause: 'Part II', text: '부두 사이 이동 시간은 정박시간에 산입한다.' },
-  anchorage_to_berth_counts: { value: false, clause: 'Part II', text: '정박지·대기 장소에서 부두까지 이동하는 시간은 산입하지 않는다.' },
+  half_rate_events: { value: ['화재', '폭발', '폭풍', '파업', '직장 폐쇄', '설비 고장'], clause: 'Part II 8', text: '화재, 폭발, 폭풍, 파업, 직장 폐쇄, 설비 고장으로 생긴 체선은 체선료를 반감한다.' },
+  berth_shift_counts: { value: true, clause: 'Part II', text: '선석 사이 이동(Shifting) 시간은 정박시간에 산입한다.' },
+  anchorage_to_berth_counts: { value: false, clause: 'Part II', text: '정박지·대기 장소에서 선석까지 이동하는 시간은 산입하지 않는다.' },
 }
 
 const CODE = { HOSES_OFF: '호스 분리 시 종료', PORT_CONGESTION: '항만 혼잡', CRUDE: '원유' }
@@ -124,14 +124,14 @@ export function dealRows(docs, deal) {
         // 적용값은 매매 확인서에서 임시로 가져오지만, 확인할 곳은 C/P(요율의 기준)
         const check = cps[0] ? { doc_id: cps[0].doc_id, kind: 'cp', page: null, section: null, scan: isScan(cps[0]) } : null
         return { ...row, value: scS.value, src: scS, status: 'review', reason: 'rate', srcTag: '임시', check,
-          note: `매매 확인서는 C/P 요율을 따르는데(CP 요율 준용) ${cps[0] ? 'C/P에서 일 체선료를 읽지 못했습니다' : 'C/P가 아직 없습니다'}. 매매 확인서 값을 임시로 씁니다. 원본 C/P에서 요율을 확인하십시오.` }
+          note: `매매 확인서는 C/P 요율을 따르는데(CP 요율 준용) ${cps[0] ? 'C/P에서 체선료율을 읽지 못했습니다' : 'C/P가 아직 없습니다'}. 매매 확인서 값을 임시로 씁니다. 원본 C/P에서 요율을 확인하십시오.` }
       }
     }
     const hit = ds.filter((d) => !(f.key === 'demurrage_rate_per_day' && d.kind === 'sales')).map((d) => source(d, f.key)).find((s) => s.value != null)
     if (hit) {
       const reason = hit.ev?.ocr ? 'ocr' : hit.ev?.method === 'llm' ? 'llm' : null
-      const note = reason === 'ocr' ? '스캔본을 문자 인식한 문장이라 글자가 틀렸을 수 있습니다.'
-        : reason === 'llm' ? `규칙에 맞는 문장이 없어 LLM이 판정했습니다 (확신도 ${hit.ev.confidence}).` : null
+      const note = reason === 'ocr' ? '스캔본을 OCR로 판독한 문장이라 글자가 틀렸을 수 있습니다.'
+        : reason === 'llm' ? `규칙에 맞는 문장이 없어 AI(LLM)가 판독했습니다 (확신도 ${hit.ev.confidence}).` : null
       return { ...row, value: hit.value, src: hit, sources: [hit], status: reason ? 'review' : 'rule', reason, note }
     }
     const def = form.startsWith('ASBATANKVOY') ? FORM_DEFAULTS[f.key] : null
@@ -142,7 +142,7 @@ export function dealRows(docs, deal) {
       // 값의 출처는 양식 조항이지만, 확인할 곳은 스캔 C/P의 특약(바꾸는 조항이 없는지). 특약 시작 쪽부터 연다
       const page = { doc_id: cps[0].doc_id, kind: 'cp', value: null, page: riderPage(cps[0]), section: 'rider', quote: null, scan: true }
       return { ...row, value: def.value, src, sources: [page, src], status: 'review', reason: 'scan', srcTag: '양식 기본값', check: page,
-        note: '스캔본이라 특약에 이 조항을 바꾸는 문장이 없는 건지, 문자 인식이 못 읽은 건지 알 수 없습니다. 원본 특약 쪽에 바꾸는 조항이 없으면 확인하십시오. 그때까지는 양식 기본값을 씁니다.' }
+        note: '스캔본이라 특약에 이 조항을 바꾸는 문장이 없는 건지, OCR이 못 읽은 건지 알 수 없습니다. 원본 특약 쪽에 바꾸는 조항이 없으면 확인하십시오. 그때까지는 양식 기본값을 씁니다.' }
     }
     return { ...row, note: '문서에서 이 항목을 찾지 못했습니다.' }
   })
@@ -187,6 +187,20 @@ export function findInQuote(quote, value) {
     if (hit) return [quote.slice(0, hit.index), hit[0], quote.slice(hit.index + hit[0].length)]
   }
   return null
+}
+
+/**
+ * 원본 본문(recap 메일 · 텍스트)에서 근거 문장 위치 찾기 → [시작, 끝] 또는 null.
+ * 목업 값은 시연용으로 날짜를 옮겨 원본과 숫자 · 달 이름이 다를 수 있어, 그 둘은 느슨하게(숫자 아무거나 · 달 이름 아무거나) 맞춘다.
+ */
+const MONTH_WORD = new RegExp(`\\b(${MONTHS.map((m) => `${m}|${m.slice(0, 3)}`).join('|')})\\b`, 'gi')
+export function findQuoteInText(text, quote) {
+  if (!text || !quote?.trim()) return null
+  const exact = text.indexOf(quote)
+  if (exact >= 0) return [exact, exact + quote.length]
+  const pat = esc(quote.trim()).replace(MONTH_WORD, '[A-Za-z]+').replace(/\d+/g, '\\d+').replace(/\s+/g, '\\s+')
+  const hit = new RegExp(pat, 'i').exec(text)
+  return hit ? [hit.index, hit.index + hit[0].length] : null
 }
 
 /** 파일 이름이나 붙여 넣은 본문으로 종류 판정(시연용 흉내). 못 정하면 null = 종류 판정 실패. */

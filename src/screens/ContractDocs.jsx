@@ -1,6 +1,6 @@
 // 계약 문서 담당: C/P · recap · 매매 확인서 등록과 등록 문서 목록. recap은 브로커 메일로 오므로 본문 붙여 넣기가 따로 있다.
 import { useRef, useState } from 'react'
-import { Button, Checkbox, Icon, TextArea } from '@blueprintjs/core'
+import { Alert, Button, Checkbox, Icon, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { ERROR, FORM, dealViews, leftFor, pickDeal, registerFiles, registerText, removeReg, useContract, docOf } from '../state/useContract.js'
 import { KIND, vesselOf } from '../lib/contract.js'
@@ -21,9 +21,9 @@ function Status({ r, view, onRetry }) {
       </span>
     )
   }
-  if (r.kind === 'recap' && view?.recapOnly) return <St tone="warn">서명된 C/P 없이 recap만 있음</St>
   const n = view ? leftFor(view, r.docId) : 0
-  return n ? <St tone="warn">검토 필수 {n}건</St> : <St tone="ok">추출 완료</St>
+  return r.kind === 'recap' && view?.recapOnly ? <St tone="warn">서명된 C/P 없이 recap만 있음</St>
+    : n ? <St tone="warn">검토 필수 {n}건</St> : <St tone="ok">추출 완료</St>
 }
 
 export default function ContractDocs() {
@@ -32,6 +32,7 @@ export default function ContractDocs() {
   const [text, setText] = useState('')
   const [drag, setDrag] = useState(false)
   const [onlyErr, setOnlyErr] = useState(false)
+  const [del, setDel] = useState(null)
   const fileRef = useRef(null)
   const pasteRef = useRef(null)
   const views = dealViews(s)
@@ -75,9 +76,9 @@ export default function ContractDocs() {
         <Panel code="DOCS" title="등록 문서" desc={`${s.regs.length}건, 최근 등록 순. 추출이 끝난 문서를 누르면 추출값 검토로 갑니다`}
           actions={<Checkbox className="ct-check" checked={onlyErr} disabled={!errCount && !onlyErr} onChange={(e) => setOnlyErr(e.currentTarget.checked)} label={`예외만 보기 (${errCount})`} />}>
           <table className="dt ct-docs">
-            <thead><tr><th>문서 번호</th><th>종류</th><th>연결된 선박</th><th>형태</th><th>등록</th><th>추출 상태</th></tr></thead>
+            <thead><tr><th>문서 번호</th><th>종류</th><th>연결된 선박</th><th>형태</th><th>등록</th><th>추출 상태</th><th aria-label="지우기" /></tr></thead>
             <tbody>
-              {!regs.length && <tr><td colSpan={6} className="faint">{onlyErr ? '예외 문서가 없습니다.' : '등록된 문서가 없습니다.'}</td></tr>}
+              {!regs.length && <tr><td colSpan={7} className="faint">{onlyErr ? '예외 문서가 없습니다.' : '등록된 문서가 없습니다.'}</td></tr>}
               {regs.map((r) => {
                 const doc = r.docId ? docOf(r.docId) : null
                 const view = r.status === 'done' && !r.error ? viewOf(r.docId) : null
@@ -90,6 +91,9 @@ export default function ContractDocs() {
                     <td>{FORM[r.form]}</td>
                     <td><div className="num">{r.at.slice(5, 16)}</div><div className="faint tiny">{r.by}</div></td>
                     <td><Status r={r} view={view} onRetry={retry} /></td>
+                    <td className="ct-del">
+                      {r.status === 'done' && !r.error && <Button size="small" variant="minimal" icon="trash" aria-label={`${r.docId ?? r.name} 지우기`} title="등록 지우기" onClick={(e) => { e.stopPropagation(); setDel(r) }} />}
+                    </td>
                   </tr>
                 )
               })}
@@ -97,6 +101,10 @@ export default function ContractDocs() {
           </table>
         </Panel>
       </div>
+      <Alert isOpen={!!del} intent="danger" icon="trash" confirmButtonText="지우기" cancelButtonText="취소" canEscapeKeyCancel canOutsideClickCancel
+        onConfirm={() => { removeReg(del.no); setDel(null) }} onCancel={() => setDel(null)}>
+        {del && <p><span className="num">{del.docId}</span>({del.name})의 등록을 지웁니다. 이 문서에서 나온 값이 추출값 검토에서 빠지고, 이 선박의 검토 기록도 처음으로 돌아갑니다.</p>}
+      </Alert>
     </Screen>
   )
 }

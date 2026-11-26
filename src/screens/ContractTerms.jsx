@@ -2,11 +2,11 @@
 // 스캔본은 근거 줄을 원본 쪽에서 잘라 확대하고(파서 evidence.boxes) 위치에 박스를 친다. 글자층 PDF는 원문 문장에서 값을 강조한다.
 // 문서 전체는 「원본 보기」 드로어로 본다. 검토 필수는 「원문과 일치」 · 「변경 조항 없음 확인」(같은 쪽 · 같은 이유는 한 번에),
 // 문서 간 불일치는 어느 문서 값을 쓸지 고르고, 계산에 쓰는 4개는 값을 고칠 수 있다. 끝나면 다음 검토 항목으로 넘어가 초점도 옮긴다.
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { Button, Callout, Checkbox, Drawer, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Button, ButtonGroup, Callout, Checkbox, Drawer, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { dealViews, docFile, pageCount, pageImage, pickDeal, review, reviewMany, useContract } from '../state/useContract.js'
-import { FIELDS, GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, findInQuote, fmtValue, norm } from '../lib/contract.js'
+import { GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, findInQuote, findQuoteInText, fmtValue, norm } from '../lib/contract.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import './contract.css'
 
@@ -37,7 +37,7 @@ function CheckLabel({ c }) {
 }
 
 function Quote({ text, value, scan }) {
-  if (!text) return <p className="ct-quote faint">{scan ? '문자 인식 결과에 이 항목이 없습니다.' : '원문 문장이 없습니다.'}</p>
+  if (!text) return <p className="ct-quote faint">{scan ? 'OCR 판독 결과에 이 항목이 없습니다.' : '원문 문장이 없습니다.'}</p>
   const hit = findInQuote(text, value)
   // 값 위치를 못 찾으면 문장 전체가 추출 근거다
   return <p className="ct-quote">{hit ? <>{hit[0]}<mark>{hit[1]}</mark>{hit[2]}</> : <mark>{text}</mark>}</p>
@@ -82,24 +82,26 @@ function Source({ s, row, cur, pick, onOpen }) {
   const file = !s.clause && docFile(s.doc_id)
   // 근거 위치가 없는 확인 대상: 원본을 열 때 무엇을 찾아야 하는지 같이 넘긴다
   const hint = s.section === 'rider' && !s.ev ? checkHint(s)
-    : row.reason === 'rate' && s.doc_id === row.check?.doc_id ? `문자 인식이 이 값을 읽지 못해 근거 위치가 없습니다. 쪽을 넘기며 「${row.label}」 칸을 찾아 확인합니다.` : null
+    : row.reason === 'rate' && s.doc_id === row.check?.doc_id ? `OCR이 이 값을 읽지 못해 근거 위치가 없습니다. 쪽을 넘기며 「${row.label}」 칸을 찾아 확인합니다.` : null
   const open = () => onOpen(s.doc_id, s.page, hint)
   const value = pick ? fmtValue(row, s.value, cur) : null
-  const crop = s.scan && s.ev?.boxes?.length && pageImage(s.doc_id, s.page)
+  // 근거 박스가 있으면 스캔본 · 글자층 PDF 모두 원본 쪽에서 잘라 위치를 보인다. 글자층은 아래 원문 문장이 정확한 글자다
+  const crop = s.ev?.boxes?.length && pageImage(s.doc_id, s.page)
+  const quoteTitle = s.scan ? 'OCR 판독 결과' : '원문 문장'
   return (
     <div className="ct-src">
       <div className="ct-src-head">
         <span><SrcLabel s={s} /></span>
         {s.clause && <span className="chip">양식 조항 요약</span>}
         {pick && <span>이 문서 값 <b><Val text={value} /></b></span>}
-        {s.scan && <span className="chip amber">{s.ev?.ocr ? '스캔 문자 인식' : '스캔본'}</span>}
+        {s.scan && <span className="chip amber">{s.ev?.ocr ? 'OCR 판독' : '스캔본'}</span>}
         {s.ev?.ocr_conf != null && <span>인식 신뢰도 <span className="num">{Math.round(s.ev.ocr_conf * 100)}%</span></span>}
         {file && <Button size="small" variant="minimal" icon="document-open" text="원본 보기" onClick={open} />}
       </div>
       {crop
-        ? <div className="ct-crop-wrap"><Crop s={s} onOpen={open} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
+        ? <div className="ct-crop-wrap"><Crop s={s} onOpen={open} /><div><span className="faint tiny">{quoteTitle}</span><Quote text={s.quote} value={s.value ?? row.value} scan={s.scan} /></div></div>
         : s.scan
-          ? <div className="ct-scan"><ScanPage s={s} hint={hint} onOpen={onOpen} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
+          ? <div className="ct-scan"><ScanPage s={s} hint={hint} onOpen={onOpen} /><div><span className="faint tiny">OCR 판독 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
           : <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />}
     </div>
   )
@@ -117,7 +119,7 @@ function StatusCell({ row, rv }) {
     )
   }
   if (row.status === 'review') return <span className="ct-rv"><St tone="warn">검토 필수</St><span className="chip amber">{REASON[row.reason]}</span></span>
-  if (row.status === 'rule') return <St tone="idle">규칙 추출</St>
+  if (row.status === 'rule') return <St tone="idle">자동 추출</St>
   if (row.status === 'default') return <St tone="idle">양식 기본값</St>
   return <span className="faint">값 없음</span>
 }
@@ -181,34 +183,170 @@ function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPic
   )
 }
 
-// 원본 전체 보기: 스캔본은 쪽 이미지에 이 문서의 근거 위치를 모두 표시(지금 항목은 진하게), 글자층 PDF는 브라우저 PDF 보기, recap은 본문.
-function DocViewer({ doc, page, field, hint, onClose }) {
+// 원본 전체 보기: PDF(스캔본 · 글자층)는 쪽 이미지 위에 근거 위치를 칠하고, recap(텍스트 · 메일)은 본문의 근거 문장을 굵게 · 밑줄로.
+// 표시 범위는 이 항목 · 검토 필수 · 전체 · 끄기. 칠한 곳을 누르면 그 항목의 값과 상태가 뜬다.
+// 쪽 이미지는 버튼, Ctrl/⌘ + 휠(트랙패드 핀치), 두 번 누르기로 확대하고, 확대하면 끌어서 옮긴다.
+const rowKeyOf = (k) => (k === 'weather_rule' || k === 'bad_weather_half' ? 'weather' : k)
+const MARKS = [['field', '이 항목'], ['review', '검토 필수'], ['all', '전체'], ['off', '끄기']]
+const ZOOM = [1, 4]
+
+function rowStatus(r, rv) {
+  if (!r) return '표에 없는 항목'
+  if (rv) return rv.from ? `${rv.from} 값 적용` : 'value' in rv ? '직접 수정' : r.reason === 'scan' ? '변경 조항 없음 확인' : '원문과 일치 확인'
+  return r.status === 'review' ? `검토 필수 · ${REASON[r.reason]}` : r.status === 'rule' ? '자동 추출' : r.status === 'default' ? '양식 기본값' : '값 없음'
+}
+
+// 칠한 곳을 눌렀을 때의 설명(쪽 이미지에서는 그 위치 아래, 본문에서는 위쪽 줄)
+function PopInfo({ k, doc, row, rv, cur, onGoto, onClose }) {
+  const c = bodyOf(doc)[k]
+  const v = fmtValue(k === 'bad_weather_half' ? {} : row ?? {}, c.value, cur)
+  return (
+    <>
+      <div className="ct-pop-head"><b>{row?.label ?? k}</b><Button size="small" variant="minimal" icon="cross" aria-label="설명 닫기" onClick={onClose} /></div>
+      <div>이 문서 값 <b><Val text={v} /></b></div>
+      <div className={row?.status === 'review' && !rv ? 'c-amber' : 'muted'}>{rowStatus(row, rv)}</div>
+      {c.evidence.ocr_conf != null && <div className="faint">인식 신뢰도 <span className="num">{Math.round(c.evidence.ocr_conf * 100)}%</span></div>}
+      {row?.src?.doc_id && row.src.doc_id !== doc.doc_id && <div className="faint">적용값은 {KIND[row.src.kind]} <span className="num">{row.src.doc_id}</span> 값</div>}
+      {row && <Button size="small" icon="th" text="추출값 표에서 보기" onClick={() => onGoto(row.key)} />}
+    </>
+  )
+}
+
+// recap 본문: 근거 문장 위치를 찾아(findQuoteInText) 겹치는 구간은 합치고, 칠한 구간을 누르면 설명
+function TextDoc({ text, marks, field, sel, onSel }) {
+  const ranges = marks.map(([k, c]) => { const r = findQuoteInText(text, c.evidence.quote); return r && { s: r[0], e: r[1], k } }).filter(Boolean)
+  const cuts = [...new Set([0, text.length, ...ranges.flatMap((r) => [r.s, r.e])])].sort((a, b) => a - b)
+  const parts = cuts.slice(0, -1).map((a, i) => ({ a, b: cuts[i + 1], keys: ranges.filter((r) => r.s <= a && r.e >= cuts[i + 1]).map((r) => r.k) }))
+  return (
+    <pre className="ct-txt">
+      {parts.map(({ a, b, keys }) => (keys.length
+        ? <mark key={a} role="button" tabIndex={0} className={`${keys.some((k) => rowKeyOf(k) === field) ? 'on' : 'other'} ${keys.includes(sel) ? 'sel' : ''}`}
+          aria-label={`근거 문장: ${keys.join(', ')}`} onClick={() => onSel(keys[0])} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSel(keys[0]) } }}>{text.slice(a, b)}</mark>
+        : <Fragment key={a}>{text.slice(a, b)}</Fragment>))}
+    </pre>
+  )
+}
+
+function DocViewer({ doc, page, field, hint, rows, left, rvOf, cur, onGoto, onClose }) {
   const file = docFile(doc.doc_id)
   const [p, setP] = useState(page ?? 1)
-  const label = (k) => FIELDS.find((f) => f.key === k)?.label ?? k
-  const marks = file?.pages ? Object.entries(bodyOf(doc)).filter(([, c]) => c?.evidence?.page === p && c.evidence.boxes?.length) : []
+  const [mode, setMode] = useState(field ? 'field' : 'all')
+  const [sel, setSel] = useState(null)
+  const [z, setZ] = useState(1)
+  const scroller = useRef(null)
+  const anchor = useRef(null)
+  const drag = useRef(null)
+  const rowOf = (k) => rows.find((r) => r.key === rowKeyOf(k))
+  const todo = new Set(left.filter((r) => r.sources.some((x) => x.doc_id === doc.doc_id)).map((r) => r.key))
+  const want = ([k]) => mode === 'all' || (mode === 'field' && rowKeyOf(k) === field) || (mode === 'review' && todo.has(rowKeyOf(k)))
+  const onPage = file?.pages ? Object.entries(bodyOf(doc)).filter(([, c]) => c?.evidence?.page === p && c.evidence.boxes?.length) : []
+  const shown = onPage.filter(want)
+  const textMarks = file?.text != null ? Object.entries(bodyOf(doc)).filter(([, c]) => c?.evidence?.quote).filter(want) : []
+  const modes = (
+    <>
+      <span className="faint small">표시</span>
+      <ButtonGroup size="small">
+        {MARKS.map(([m, t]) => <Button key={m} text={t} active={mode === m} disabled={m === 'field' && !field} aria-pressed={mode === m} onClick={() => { setMode(m); setSel(null) }} />)}
+      </ButtonGroup>
+    </>
+  )
+  const info = sel && <PopInfo k={sel.k} doc={doc} row={rowOf(sel.k)} rv={rowOf(sel.k) && rvOf(rowOf(sel.k).key)} cur={cur} onGoto={onGoto} onClose={() => setSel(null)} />
+
+  // 확대: 커서(없으면 가운데) 아래 지점이 그대로 있게 스크롤을 맞춘다
+  const zoomTo = (next, cx, cy) => {
+    const el = scroller.current
+    const nz = Math.min(ZOOM[1], Math.max(ZOOM[0], Math.round(next * 100) / 100))
+    if (!el || nz === z) return
+    const r = el.getBoundingClientRect()
+    const x = cx == null ? el.clientWidth / 2 : cx - r.left
+    const y = cy == null ? el.clientHeight / 2 : cy - r.top
+    anchor.current = { fx: (el.scrollLeft + x) / el.scrollWidth, fy: (el.scrollTop + y) / el.scrollHeight, x, y }
+    setZ(nz)
+  }
+  const zoomRef = useRef(zoomTo)
+  zoomRef.current = zoomTo
+  useLayoutEffect(() => {
+    const a = anchor.current; const el = scroller.current
+    if (!a || !el) return
+    el.scrollLeft = a.fx * el.scrollWidth - a.x
+    el.scrollTop = a.fy * el.scrollHeight - a.y
+    anchor.current = null
+  }, [z])
+  // Ctrl/⌘ + 휠(맥 트랙패드 핀치도 ctrlKey로 온다)은 확대, 그냥 휠은 스크롤. React onWheel은 passive라 직접 붙인다
+  const attach = useCallback((el) => {
+    scroller.current = el
+    if (!el) return
+    el.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      zoomRef.current(zRef.current * Math.exp(-e.deltaY * 0.004), e.clientX, e.clientY)
+    }, { passive: false })
+  }, [])
+  const zRef = useRef(z)
+  zRef.current = z
+  // 끌어서 옮기기. 거의 안 움직였으면 클릭으로 보고 떠 있는 설명을 닫는다
+  const down = (e) => {
+    if (e.button !== 0 || e.target.closest('.ct-box, .ct-pop')) return
+    const el = scroller.current
+    drag.current = { x: e.clientX, y: e.clientY, l: el.scrollLeft, t: el.scrollTop, moved: false }
+  }
+  const move = (e) => {
+    const d = drag.current
+    if (!d) return
+    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 4) d.moved = true
+    scroller.current.scrollLeft = d.l - (e.clientX - d.x)
+    scroller.current.scrollTop = d.t - (e.clientY - d.y)
+  }
+  const up = () => { const d = drag.current; drag.current = null; if (d && !d.moved) setSel(null) }
+  const go = (np) => { setP(np); setSel(null) }
+
+  const popBox = sel && bodyOf(doc)[sel.k]?.evidence?.boxes?.[sel.i]
   return (
     <Drawer isOpen position="right" size="760px" onClose={onClose} icon="document" title={`${KIND[doc.kind]} ${doc.doc_id} 원본`} className="ct-viewer">
       <div className="ct-viewer-body">
         {file?.pages && (
           <>
             <div className="ct-viewer-bar">
-              <Button size="small" variant="minimal" icon="chevron-left" aria-label="앞 쪽" disabled={p <= 1} onClick={() => setP(p - 1)} />
-              <span className="num small">{p} / {file.pages}</span><span className="small">쪽</span>
-              <Button size="small" variant="minimal" icon="chevron-right" aria-label="다음 쪽" disabled={p >= file.pages} onClick={() => setP(p + 1)} />
-              <span className="faint small">이 쪽의 근거 위치 {marks.length}곳 · {hint ?? (page ? `이 항목 근거는 ${page}쪽` : '이 항목은 근거 위치를 모릅니다')}</span>
+              <Button size="small" variant="minimal" icon="chevron-left" aria-label="앞 쪽" disabled={p <= 1} onClick={() => go(p - 1)} />
+              <span className="small"><span className="num">{p} / {file.pages}</span>쪽</span>
+              <Button size="small" variant="minimal" icon="chevron-right" aria-label="다음 쪽" disabled={p >= file.pages} onClick={() => go(p + 1)} />
+              <span className="ct-viewer-sep" />
+              {modes}
+              <span className="ct-viewer-sep" />
+              <Button size="small" variant="minimal" icon="zoom-out" aria-label="축소" disabled={z <= ZOOM[0]} onClick={() => zoomTo(z - 0.5)} />
+              <Button size="small" variant="minimal" text={<span className="num">{Math.round(z * 100)}%</span>} title="폭 맞춤" aria-label="폭에 맞추기" onClick={() => zoomTo(1)} />
+              <Button size="small" variant="minimal" icon="zoom-in" aria-label="확대" disabled={z >= ZOOM[1]} onClick={() => zoomTo(z + 0.5)} />
             </div>
-            <div className="ct-viewer-page">
-              <img src={pageImage(doc.doc_id, p)} alt={`${doc.doc_id} 원본 ${p}쪽 스캔 이미지`} />
-              {marks.map(([k, c]) => c.evidence.boxes.map((b, i) => (
-                <span key={`${k}-${i}`} className={`ct-box ${k === field || (field === 'weather' && k.startsWith('weather')) ? 'on' : 'other'}`} title={label(k)}
-                  style={{ left: `${b[0] * 100}%`, top: `${b[1] * 100}%`, width: `${(b[2] - b[0]) * 100}%`, height: `${(b[3] - b[1]) * 100}%` }} />
-              )))}
+            <p className="faint small ct-viewer-hint">
+              {hint ?? (page ? `이 항목 근거는 ${page}쪽입니다.` : '이 항목은 근거 위치를 모릅니다.')} 이 쪽 표시 {shown.length}곳 / 추출 {onPage.length}곳 · 칠한 곳을 누르면 무엇인지 보입니다 · Ctrl/⌘ + 휠, 두 번 누르기로 확대
+            </p>
+            <div className={`ct-viewer-scroll ${z > 1 ? 'zoomed' : ''}`} ref={attach}>
+              <div className="ct-viewer-page" style={{ width: `${z * 100}%` }}
+                onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={() => { drag.current = null }}
+                onDoubleClick={(e) => { if (!e.target.closest('.ct-box, .ct-pop')) zoomTo(z < 2 ? 2 : 1, e.clientX, e.clientY) }}>
+                <img src={pageImage(doc.doc_id, p)} alt={`${doc.doc_id} 원본 ${p}쪽 스캔 이미지`} draggable={false} />
+                {shown.map(([k, c]) => c.evidence.boxes.map((b, i) => (
+                  <button type="button" key={`${k}-${i}`} aria-label={`${rowOf(k)?.label ?? k} 근거 위치`}
+                    className={`ct-box ${rowKeyOf(k) === field ? 'on' : 'other'} ${sel?.k === k ? 'sel' : ''}`}
+                    style={{ left: `${b[0] * 100}%`, top: `${b[1] * 100}%`, width: `${(b[2] - b[0]) * 100}%`, height: `${(b[3] - b[1]) * 100}%` }}
+                    onClick={(e) => { e.stopPropagation(); setSel({ k, i }) }} />
+                )))}
+                {popBox && (
+                  <div className="ct-pop" role="dialog" aria-label="칠한 곳 설명" style={{ left: `${Math.min(popBox[0], 0.55) * 100}%`, top: `calc(${popBox[3] * 100}% + 6px)` }}>{info}</div>
+                )}
+              </div>
             </div>
           </>
         )}
         {file?.pdf && <iframe className="ct-pdf" title={`${doc.doc_id} 원본 PDF`} src={`${file.pdf}#page=${page ?? 1}`} />}
-        {file?.text != null && <pre className="ct-txt">{file.text}</pre>}
+        {file?.text != null && (
+          <>
+            <div className="ct-viewer-bar">{modes}</div>
+            <p className="faint small ct-viewer-hint">{hint ?? ''} 근거 문장 {textMarks.length}곳을 굵게 · 밑줄로 표시했습니다 · 누르면 무엇인지 보입니다</p>
+            {sel && <div className="ct-pop ct-pop-bar" role="dialog" aria-label="칠한 곳 설명">{info}</div>}
+            <div className="ct-viewer-scroll"><TextDoc text={file.text} marks={textMarks} field={field} sel={sel?.k} onSel={(k) => setSel({ k })} /></div>
+          </>
+        )}
         {!file && <NonIdealState icon="document" title="원본 파일이 없습니다" description="시연 데이터에 이 문서의 원본은 넣지 않았습니다." />}
         <p className="faint tiny ct-viewer-note">{DATE_HINT}</p>
       </div>
@@ -265,7 +403,7 @@ export default function ContractTerms() {
   const viewerDoc = viewer && view.docs.find((d) => d.doc_id === viewer.docId)
 
   return (
-    <Screen tab="terms" title="추출값 검토" desc="검토 필수는 스캔본 값 · 스캔본의 양식 기본값, LLM 판정, 문서 간 불일치입니다. 나머지는 원문만 볼 수 있습니다.">
+    <Screen tab="terms" title="추출값 검토" desc="검토 필수는 OCR 판독 값 · 스캔본의 양식 기본값, AI 판독, 문서 간 불일치입니다. 나머지는 원문만 볼 수 있습니다.">
       <div className="ct-grid">
         <Panel code="VESSELS" title="선박" desc={`${views.length}척`}>
           <ul className="ct-vessels">
@@ -346,7 +484,8 @@ export default function ContractTerms() {
           </table>
         </Panel>
       </div>
-      {viewerDoc && <DocViewer key={`${viewer.docId}-${viewer.page}-${viewer.field}`} doc={viewerDoc} page={viewer.page} field={viewer.field} hint={viewer.hint} onClose={() => setViewer(null)} />}
+      {viewerDoc && <DocViewer key={`${viewer.docId}-${viewer.page}-${viewer.field}`} doc={viewerDoc} page={viewer.page} field={viewer.field} hint={viewer.hint}
+        rows={view.rows} left={view.left} rvOf={rvOf} cur={cur} onGoto={(k) => { setViewer(null); focusNext.current = true; setOpen(k) }} onClose={() => setViewer(null)} />}
     </Screen>
   )
 }

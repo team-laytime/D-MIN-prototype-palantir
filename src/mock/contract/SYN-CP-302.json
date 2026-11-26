@@ -12,7 +12,15 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.0836,
+      0.2618,
+      0.0977
+     ]
+    ]
    }
   },
   "vessel_name": {
@@ -25,7 +33,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8674,
+      0.1546
+     ]
+    ]
    }
   },
   "imo": {
@@ -38,7 +60,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1759,
+      0.2434,
+      0.2397,
+      0.2575
+     ],
+     [
+      0.4583,
+      0.2434,
+      0.5141,
+      0.2575
+     ]
+    ]
    }
   },
   "dwt": {
@@ -51,7 +87,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1839,
+      0.3474,
+      0.3275,
+      0.3615
+     ],
+     [
+      0.4583,
+      0.3474,
+      0.6099,
+      0.3615
+     ]
+    ]
    }
   },
   "owner": {
@@ -64,7 +114,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8674,
+      0.1546
+     ]
+    ]
    }
   },
   "charterer": {
@@ -77,7 +141,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8674,
+      0.1546
+     ]
+    ]
    }
   },
   "laycan_from": {
@@ -98,7 +176,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1759,
+      0.6396,
+      0.2637,
+      0.6537
+     ],
+     [
+      0.4583,
+      0.6396,
+      0.538,
+      0.6537
+     ]
+    ]
    }
   },
   "load_laydays_to": {
@@ -111,7 +203,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1839,
+      0.6604,
+      0.2716,
+      0.6745
+     ],
+     [
+      0.4583,
+      0.6604,
+      0.538,
+      0.6745
+     ]
+    ]
    }
   },
   "load_ports": {
@@ -124,7 +230,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.7435,
+      0.4312,
+      0.7576
+     ],
+     [
+      0.4583,
+      0.7435,
+      0.8413,
+      0.7576
+     ]
+    ]
    }
   },
   "discharge_ports": {
@@ -137,7 +257,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.7851,
+      0.4711,
+      0.7992
+     ],
+     [
+      0.4583,
+      0.7851,
+      0.5939,
+      0.7992
+     ]
+    ]
    }
   },
   "cargo": {
@@ -150,7 +284,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.8474,
+      0.2796,
+      0.8615
+     ],
+     [
+      0.4583,
+      0.8474,
+      0.5301,
+      0.8615
+     ]
+    ]
    }
   },
   "cp_qty_t": {
@@ -163,7 +311,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.8267,
+      0.2477,
+      0.8408
+     ],
+     [
+      0.4583,
+      0.8267,
+      0.538,
+      0.8408
+     ]
+    ]
    }
   },
   "laytime_total_h": {
@@ -176,7 +338,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1759,
+      0.1614,
+      0.4233,
+      0.1755
+     ],
+     [
+      0.4583,
+      0.1614,
+      0.4742,
+      0.1755
+     ]
+    ]
    }
   },
   "demurrage_rate_per_day": {
@@ -189,7 +365,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.2237,
+      0.2876,
+      0.2378
+     ],
+     [
+      0.4583,
+      0.2237,
+      0.5779,
+      0.2378
+     ]
+    ]
    }
   },
   "laytime_terms": {
@@ -234,7 +424,27 @@
     "confidence": 0.8,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.6777,
+      1.0,
+      0.694
+     ],
+     [
+      0.0863,
+      0.6961,
+      1.0,
+      0.7124
+     ],
+     [
+      0.0863,
+      0.7145,
+      0.1787,
+      0.7308
+     ]
+    ]
    }
   },
   "half_rate_events": {
@@ -267,7 +477,21 @@
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
-    "reviewed_by": null
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.2237,
+      0.2876,
+      0.2378
+     ],
+     [
+      0.4583,
+      0.2237,
+      0.5779,
+      0.2378
+     ]
+    ]
    }
   }
  },

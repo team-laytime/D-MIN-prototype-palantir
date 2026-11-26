@@ -24,11 +24,11 @@
 | `add()`의 `setTimeout`: 1.8초 뒤 `detectKind`(파일 이름 낱말)로 종류를 정하고 `POOL`에서 결과 하나를 붙임 | 파일을 파서로 보내고, 끝나면 결과를 붙인다. `POOL` · `EXTRACT_MS` · `detectKind`는 지운다 |
 | 중복 판정: 파일 이름 | 내용 해시나 파서 `doc_id` |
 | `pageImage()` · `pageCount()`: 목업 스캔본 2건(SYN-CP-304 · 315)의 원본 쪽을 그림으로 바꿔 둔 `src/mock/contract/pages/<doc_id>-<쪽>.jpg`. 없으면 `null` → 자리 표시 | 서버가 주는 쪽 이미지 주소와 쪽 수 |
-| `docFile()`: 원본 전체 보기용. 스캔본은 쪽 이미지, 글자층 PDF는 `files/<doc_id>.pdf`(브라우저 PDF 보기), recap은 `files/<doc_id>.txt` | 서버가 주는 원본 파일 주소 |
+| `docFile()`: 원본 전체 보기용. PDF는 쪽 이미지(없으면 `files/<doc_id>.pdf`를 브라우저 PDF 보기로), recap은 `files/<doc_id>.txt` | 서버가 주는 원본 파일 주소 |
 | `review()`: 검토 기록을 브라우저 메모리에만 둠(새로고침하면 사라짐) | 파서의 검토 기록에 쓴다(5절) |
 | `SEED`: 처음부터 등록된 문서 15건(오류 예시 3건 포함). 파일 이름은 합성 계약서 원본 이름 그대로 | 서버의 등록 목록 |
 
-예외 표시는 `ERROR`의 키로 한다: `vessel`(선박명을 못 읽음), `kind`(종류 모름), `empty`(글자 없음), `duplicate`, `pool`(흉내 전용, 연결하면 지움). 파서 `run.extract_file`이 돌려주는 실패 이유 `"글자 없음(OCR 실패)"` → `empty`, `"종류 모름"` → `kind`로 맞추면 된다. 파서 실행 자체가 실패한 경우의 키는 아직 없다.
+예외 표시는 `ERROR`의 키로 한다: `vessel`(선박명 판독 실패), `kind`(문서 종류 미확인), `empty`(판독 불가), `duplicate`, `pool`(흉내 전용, 연결하면 지움). 파서 `run.extract_file`이 돌려주는 실패 이유 `"글자 없음(OCR 실패)"` → `empty`, `"종류 모름"` → `kind`로 맞추면 된다. 파서 실행 자체가 실패한 경우의 키는 아직 없다.
 
 거래 key는 `deal.documents[0]`이다(`dealViews`). 문서가 더 등록돼 deals를 다시 만들면 첫 문서가 바뀔 수 있다. 그러면 그 거래의 검토 기록(`reviews["<key>:<칸>"]`)이 끊기니, 연결할 때 바뀌지 않는 key(예: IMO + laydays)로 바꾸는 게 좋다.
 
@@ -62,7 +62,9 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
 
 **근거 위치와 쪽 이미지**:
 - 화면은 evidence의 `boxes`(줄마다 `[x0, y0, x1, y1]`, 쪽 대비 비율, 왼쪽 위 0)로 근거 줄을 쪽 이미지에서 잘라 확대하고 박스를 친다(`Crop`). 원본 보기에서는 그 쪽의 근거를 모두 표시한다. `ocr_conf`는 「인식 신뢰도」로 보인다.
-- 지금 파서(`layout.attach`)가 이미 `boxes` · `ocr_conf`를 내보낸다. 목업의 eval4_llm 출력은 그 전 것이라, 스캔본 두 건(SYN-CP-304 · 315)만 지금 파서로 다시 돌려(규칙 + tesseract, LLM 없이) `boxes` · `ocr_conf`를 옮겨 넣었다. 값은 eval4_llm 그대로다.
+- 지금 파서(`layout.attach`)가 이미 `boxes` · `ocr_conf`를 내보낸다. 목업의 eval4_llm 출력은 그 전 것이라, PDF 16건(스캔본 2 · 글자층 14)을 커밋된 파서로 다시 돌려(규칙만, LLM 없이) `boxes` · `ocr_conf`만 옮겨 넣었다. 값은 eval4_llm 그대로다. LLM으로 읽은 특약 칸(SYN-CP-303 NOR 후 정박시간 개시, SYN-CP-314 비례 배분)은 박스가 없다.
+- 글자층 PDF도 쪽 이미지(1비트 PNG)에 박스를 얹는다. 박스가 실제 줄과 어긋나는 경우가 있다(SYN-CP-301 체선료율 박스가 값 줄이 아니라 위 제목 줄 「I. Demurrage」에). 아래 원문 문장은 정확한 글자라 값 확인은 문장으로 한다.
+- recap(텍스트 · 메일)은 원본 본문에서 근거 문장을 찾아 굵게 · 밑줄로 표시한다(`findQuoteInText`). 목업 값은 날짜를 옮겨 원본과 숫자가 달라, 숫자 · 달 이름은 느슨하게 맞춘다.
 - 박스가 없는 근거(문자 인식이 값을 못 읽음, 특약에 조항이 없는지 확인하는 기본값)는 쪽 전체 썸네일과 원본 보기로 확인한다.
 - 박스 품질은 문자 인식 문장 품질을 따른다. 깨진 긴 문장(예: SYN-CP-304 허용 정박시간)은 박스가 여러 줄에 걸치고, 몇몇 칸(IMO · DWT 등)은 한 줄 어긋나 있다. 파서 쪽에서 볼 부분이다.
 - 쪽 이미지는 파서가 내보내지 않는다. 합성 스캔본은 한 쪽에 이미지 한 장이라 `ocr.page_images()`로 꺼낼 수 있다. 쪽 번호는 evidence의 `page`(1부터)다. 쪽 비율은 A4로 고정해 두었다(`PAGE_RATIO`).
@@ -72,14 +74,14 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
 연결한 뒤에도 화면에 남는 판정이다. 파서 쪽에서 같은 규칙을 바꾸면 여기도 맞춰야 한다.
 
 - **검토 필수** (`dealRows`):
-  - 스캔본 문자 인식 값: `evidence.ocr`로 판정하고 confidence는 보지 않는다(스캔본 특약 값 0.8도 포함).
+  - OCR 판독 값(스캔본): `evidence.ocr`로 판정하고 confidence는 보지 않는다(스캔본 특약 값 0.8도 포함).
   - 글자층 C/P 없이 스캔본만 있을 때의 양식 기본값(「스캔본 특약 미확인」).
-  - LLM 판정(`method: "llm"`).
+  - AI 판독(`method: "llm"`).
   - 문서 간 불일치(deals).
   - C/P 요율 미확인.
 
   파서의 `review[]`는 쓰지 않는다. 「필수 칸 없음」 같은 이유가 화면 기준과 달라서다.
-- **일 체선료**: 매매 확인서 `rate_basis`가 「CP 요율 준용」이면 C/P 값이 기준이다.
+- **체선료율**: 매매 확인서 `rate_basis`가 「CP 요율 준용」이면 C/P 값이 기준이다.
   - 값이 다르면 문서 간 불일치로 보고, C/P 값을 쓴다.
   - C/P에서 값을 못 읽었으면 매매 확인서 값을 임시로 쓰고 검토 필수로 둔다.
   - 「별도」 요율은 쓰지 않는다.
@@ -90,7 +92,7 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
   - 스캔본 특약 미확인: 값은 양식 조항에서, 확인은 스캔 C/P 특약에서. 특약 쪽 범위는 파서가 내주지 않아 「특약 근거가 나온 첫 쪽 ~ 문서 끝」으로 추정한다(`riderRange`, `shortcut:`).
 - **문서 우선순위**: C/P → recap → 매매 확인서 순이다. 같은 종류 안에서는 글자층 있는 문서가 스캔 사본보다 앞이다(`reconcile`과 같음).
 - **양식 기본값** (`FORM_DEFAULTS`): ASBATANKVOY 2025 Part II 기본값 8개를 `llm.py` 프롬프트에서 옮겨 적은 것이다. 출처 칸에는 조항 원문이 아니라 요약 문장이 나온다. 파서 쪽에 양식별 기본값 표가 생기면 그걸 읽게 바꾼다(`shortcut:` 주석).
-- **기상 조항**: 파서는 산입 기준(FULL · HALF · NONE)이고 계산은 공제 기준(`weather_deduct_pct`)이다. FULL → 0, HALF → 50, NONE → 100(`weatherDeductPct`).
+- **악천후 조항**: 파서는 산입 기준(FULL · HALF · NONE)이고 계산은 공제 기준(`weather_deduct_pct`)이다. FULL → 0, HALF → 50, NONE → 100(`weatherDeductPct`).
 
 ## 5. 아직 없는 것
 
@@ -128,4 +130,4 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
 시연 순서:
 1. 「메일 본문 붙여 넣기」에 `Fixture recap - SYN BELLATRIX`를 넣으면 「recap만 있음」이 된다.
 2. 이어서 `SYN-CP-312.pdf`(또는 이름에 `BELLATRIX`와 `CP`가 들어간 PDF)를 올리면 문서 간 불일치 1건이 생긴다. 흉내라서 올린 파일 내용은 읽지 않고, 파일 이름에 든 문서 번호 · 선박명으로 미리 돌린 결과를 고른다.
-3. 「추출값 검토」에서 SYN VEGA(스캔 C/P)를 열면 스캔본 검토 흐름을 볼 수 있다. 「일 체선료」를 펼쳐 원본 2쪽으로 넘기면, 문자 인식이 못 읽은 요율(USD 46,300)이 원본에 있는 것을 볼 수 있다.
+3. 「추출값 검토」에서 SYN VEGA(스캔 C/P)를 열면 스캔본 검토 흐름을 볼 수 있다. 「체선료율 (Demurrage)」을 펼쳐 원본 2쪽으로 넘기면, OCR이 못 읽은 요율(USD 46,300)이 원본에 있는 것을 볼 수 있다.
