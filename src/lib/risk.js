@@ -20,7 +20,7 @@ export function riskLabel(r, name) {
     FIX: () => `고정 ${b ?? ''} 접안 ${e.amount}h 밀림`,
   }
   switch (r.kind) {
-    case 'WORK_GAP': return `${r.berth} ${e.ships}척 연속 접안 (${a} → … → ${name(r.vessel_ids.at(-1))}) · 사이 여유 ${(e.gaps_h ?? []).join(' · ')}h${perHour(r)}`
+    case 'WORK_GAP': return `${r.berth} ${e.ships}척 연속 접안 (${a} → … → ${name(r.vessel_ids.at(-1))})${perHour(r)}`
     case 'WEATHER': return `${r.berth} ${a} 접안 중 ${(e.causes ?? []).join(', ')} ${e.max_wind_ms}m/s (${t(r.start)}~)`
     case 'TANK': return e.gap_pct != null
       ? `${r.tank} ${e.side === 'SHORT' ? '최저' : '최고'} ${e.worst_pct}%, ${e.gap_pct < 0 ? `마지노선 ${e.limit_pct}% 벗어남` : `마지노선 ${e.limit_pct}%까지 ${e.gap_pct}%p`} (${t(r.start)}~)`

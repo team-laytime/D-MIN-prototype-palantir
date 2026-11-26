@@ -108,8 +108,7 @@ function WorkGapChart({ risk, sim, scen, name }) {
         {row(8, '계획', false)}
         {row(38, '첫 배 1h 늦으면', true)}
       </svg>
-      <p className="rc-note">{ships.map((s) => `${name(s.vid)}${s.working ? '(작업 중)' : ''}`).join(' → ')} · 사이 여유 {(e.gaps_h ?? []).join(' · ')}h
-        (부두 전환 {e.switching_h}h 뺀 값, 회색 = 부두 전환) · 첫 배가 1시간 늦으면 뒤 {pushed}척이 밀림{risk.cost_per_hour ? ` · 밀리면 체선료 시간당 ${money(Math.round(risk.cost_per_hour.amount * 100))}` : ''}</p>
+      <p className="rc-note">{ships.map((s) => `${name(s.vid)}${s.working ? '(작업 중)' : ''}`).join(' → ')} · 부두 전환({e.switching_h}h, 회색)만 하고 바로 이어 댐 · 첫 배가 1시간 늦으면 뒤 {pushed}척이 밀림{risk.cost_per_hour ? ` · 밀리면 체선료 시간당 ${money(Math.round(risk.cost_per_hour.amount * 100))}` : ''}</p>
     </>
   )
 }
