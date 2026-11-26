@@ -9,7 +9,7 @@ export const PASSWORD = '1234'
 export const ADMIN_LOGIN_ID = 'admin'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
-  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: 'SK 3부두 하역 1팀', mail: 'sk3-ops@example.com' },
+  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: '3부두 하역 1팀', mail: 'sk3-ops@example.com' },
 }
 
 // 왼쪽 레일 = 묶음. roles에 없는 계정에게는 어디에도 나오지 않는다. icon은 Blueprint 아이콘 이름.

@@ -486,14 +486,19 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 /* 11-25 받은 메일의 조건 변경 요청 (계획 조건 위) */
 .pi-mail { border: 1px solid var(--line-2); border-left: 3px solid var(--amber); background: var(--bg-2); }
 .pi-mail-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: calc(12px * var(--fs)); }
-.pi-mail-head .bp6-button { margin-left: auto; }
+.pi-mail-btns { margin-left: auto; display: inline-flex; gap: 6px; }
 .pi-mail ul { list-style: none; margin: 0; padding: 0; }
-.pi-mail li { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.pi-mail li { display: grid; grid-template-columns: 70px 92px minmax(0, 1fr); align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .pi-mail li:last-child { border-bottom: 0; }
 .pi-mail li.applied { background: var(--green-wash); }
 .pi-mail li.dismissed { opacity: .6; }
 .pi-mail-kind { justify-self: start; padding: 1px 7px; border: 1px solid color-mix(in srgb, var(--amber) 50%, transparent); color: var(--amber); font: 600 calc(11px * var(--fs)) var(--sans); white-space: nowrap; }
 .pi-mail li.applied .pi-mail-kind { color: var(--green); border-color: color-mix(in srgb, var(--green) 50%, transparent); }
-.pi-mail-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: calc(12.5px * var(--fs)); }
+.pi-mail-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: calc(12.5px * var(--fs)); padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.pi-mail-body:hover b { text-decoration: underline; }
+.pi-mail-check .bp6-control { margin: 0; }
+.pi-mail li.picked { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.pi-mail-dialog { width: 640px; }
+.pi-mail-dialog .ml-paper { margin: 0; }
 .pi-mail-body small { color: var(--fg-3); font-size: calc(11px * var(--fs)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pi-mail-act { display: inline-flex; align-items: center; gap: 6px; }

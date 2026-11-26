@@ -8,6 +8,10 @@
 .topbar-op { font-size: calc(10.5px * var(--fs)); letter-spacing: 0.1em; color: var(--fg-3); }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
 .scen-select { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding-left: 10px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.scen-picker input { height: 24px; padding: 0 4px; border: 0; background: transparent; color: var(--fg); font-size: calc(12px * var(--fs)); color-scheme: light dark; }
+.scen-picker input { flex: none; }
+.scen-picker .scen-date { width: 150px; }
+.scen-picker .scen-time { width: 124px; }
 .scen-select .bp6-html-select select { background: transparent !important; box-shadow: none !important; font-size: calc(12px * var(--fs)); height: 26px; }
 .clock { font-size: calc(12px * var(--fs)); color: var(--fg); }
 .clock b { font-weight: 500; }

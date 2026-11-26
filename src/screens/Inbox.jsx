@@ -1,15 +1,14 @@
 // 메일함 (11-24 최최종: 알림함 → 메일함)
-//  - 받은메일함: 기상 특보, 입력 변경, 돌발 상황, 확정 알림이 메일로 들어온다. 스케줄러는 읽고 업무에 참고한다.
-//  - 돌발 상황은 지금 있을 때만 분류에 보이고, 메일을 열어 「반영」 또는 「반영 안 함」으로 정한다.
+//  - 받은메일함: 강풍 관측, 입력 변경, 조건 변경 요청, 확정 알림이 메일로 들어온다. 스케줄러는 읽고 업무에 참고한다.
+//  - 11-26 분류 탭, 반영 칸, 다른 화면으로 가는 버튼을 뺐다 — 메일만 보인다. 조건 변경 요청은 「후보 비교·확정」에서 결정한다.
 //  - 보낸메일함: 확정 통보 메일을 보낼 때마다 여기에 남는다. 메일 쓰기도 있지만 거의 쓰지 않는다.
 import { useEffect, useState } from 'react'
 import { Alert, Button, Dialog, DialogBody, DialogFooter, HTMLSelect, Icon, InputGroup, NonIdealState, TextArea } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { CHANNELS } from '../lib/inbox.js'
-import { changeText } from '../lib/incidents.js'
 import { GROUPS } from '../lib/mailGroups.js'
-import { markRead, sendMail, setAlertStatus, useWorkspace, ws } from '../lib/workspace.js'
+import { markRead, sendMail, useWorkspace, ws } from '../lib/workspace.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import MailBody from './MailBody.jsx'
 import AttachmentDialog, { AttachmentButtons } from './MailAttachment.jsx'
@@ -17,7 +16,6 @@ import './report.css'
 import './inbox.css'
 
 const ME = { scheduler: '스케줄러 A <scheduler@example.com>', user: '이용자 B <sk3-ops@example.com>' }
-const goLabel = (a) => (a.action.tab === 'input' ? '계획 조건에서 보기' : a.action.tab === 'compare' ? '후보 비교·확정에서 보기' : a.action.tab === 'ops' ? '확정 일정 보기' : '선박 카드 열기')
 
 function Compose({ open, onClose, onSent }) {
   const [to, setTo] = useState(GROUPS[0].id)
@@ -47,70 +45,43 @@ function Compose({ open, onClose, onSent }) {
 }
 
 export default function Inbox() {
-  const { isScheduler, role, scen, mailFilter, setMailFilter, go, applyIncident } = useApp()
+  const { isScheduler, role } = useApp()
   useWorkspace()
-  const { alerts, open, incidents } = useInbox()
+  const { alerts } = useInbox()
   const [folder, setFolder] = useState('in')
   const [selId, setSelId] = useState(null)
   const [composing, setComposing] = useState(false)
   const [viewing, setViewing] = useState(null) // 열어 본 첨부
   const [doneTo, setDoneTo] = useState(null) // 메일 쓰기로 보낸 뒤 완료 창
 
-  // 돌발 상황이 하나도 없으면 분류에서 뺀다. 그 분류를 보고 있었다면 전체로 돌린다.
-  const channels = (isScheduler ? CHANNELS : CHANNELS.filter((c) => c.id === 'all' || c.id === 'plan'))
-    .filter((c) => c.id !== 'incident' || incidents.length > 0)
-  const channel = channels.some((c) => c.id === mailFilter) ? mailFilter : 'all'
+  // 11-26 메일함은 받은메일함 · 보낸메일함만 (분류 탭 없음). 조건 변경 요청은 「후보 비교·확정」에서 결정한다
   const unreadIn = (id) => alerts.filter((a) => a.status === 'new' && (id === 'all' || a.channel === id)).length
   const chLabel = (id) => CHANNELS.find((c) => c.id === id)?.label
 
-  const inbox = alerts.filter((a) => channel === 'all' || a.channel === channel)
+  const inbox = alerts
   const sent = [...ws.sent].reverse()
   const list = folder === 'in' ? inbox : sent
   const sel = list.find((m) => String(m.id) === String(selId)) ?? list[0] ?? null
-  const applied = alerts.filter((a) => a.channel === 'incident' && a.status === 'applied')
-  // 조건 변경 요청 메일을 「반영」하면 그 change(ETA · 부두 사용 불가 · 고정 · 조절값)가 계획 조건에 들어간다.
-  const selInc = sel?.incId ? scen?.incidents.find((i) => i.id === sel.incId) : null
-  const selChange = selInc?.change ? changeText(scen, selInc) : null
 
   useEffect(() => { if (folder === 'in' && sel && sel.status === 'new') markRead(sel.id) }, [folder, sel?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const pickFolder = (f) => { setFolder(f); setSelId(null) }
-  const pickChannel = (id) => { setFolder('in'); setMailFilter(id); setSelId(null) }
 
   return (
     <Screen tab="inbox" title="메일함" bodyClass="inbox-page">
-      {isScheduler && incidents.length > 0 && (
-        <button type="button" className="mb-strip warn" onClick={() => pickChannel('incident')}>
-          <Icon icon="warning-sign" size={14} /><b>조건 변경 요청 {incidents.length}건</b><span>반영할지 아직 정하지 않았습니다. 눌러서 보기</span>
-        </button>
-      )}
-      {isScheduler && applied.length > 0 && (
-        <div className="mb-strip ok">
-          <Icon icon="tick-circle" size={14} /><b>조건 변경 요청 {applied.length}건이 계획 조건에 반영됨</b><span>계획 조건에서 「다시 계산」을 눌러야 후보에 반영됩니다.</span>
-          <Button size="small" intent="primary" icon="properties" onClick={() => go('input')}>계획 조건에서 확인, 수정</Button>
-        </div>
-      )}
       <div className="mb-grid">
         <Panel code="MAILBOX" title="메일함">
           {isScheduler && <div className="mb-compose-btn"><Button fill icon="edit" onClick={() => setComposing(true)}>메일 쓰기</Button></div>}
           <ul className="inbox-channels">
             <li><button type="button" className={`inbox-channel ${folder === 'in' ? 'on' : ''}`} onClick={() => pickFolder('in')}><Icon icon="inbox" size={14} /><span>받은메일함</span>{unreadIn('all') > 0 && <span className="num inbox-count">{unreadIn('all')}</span>}</button></li>
-            {folder === 'in' && channels.filter((c) => c.id !== 'all').map((c) => (
-              <li key={c.id}>
-                <button type="button" className={`inbox-channel sub ${channel === c.id ? 'on' : ''} ${c.id === 'incident' ? 'hot' : ''}`} onClick={() => pickChannel(channel === c.id ? 'all' : c.id)}>
-                  <Icon icon={c.icon} size={12} /><span>{c.label}</span>
-                  {c.id === 'incident' ? <span className="num inbox-count hot">{incidents.length}</span> : unreadIn(c.id) > 0 && <span className="num inbox-count">{unreadIn(c.id)}</span>}
-                </button>
-              </li>
-            ))}
             {isScheduler && <li><button type="button" className={`inbox-channel ${folder === 'out' ? 'on' : ''}`} onClick={() => pickFolder('out')}><Icon icon="send-message" size={14} /><span>보낸메일함</span><span className="num faint mb-total">{ws.sent.length}</span></button></li>}
           </ul>
         </Panel>
 
-        <Panel code={folder === 'in' ? 'INBOX' : 'SENT'} title={folder === 'in' ? (channel === 'all' ? '받은메일함' : `받은메일함 · ${chLabel(channel)}`) : '보낸메일함'} desc={`${list.length}통`} data-tour="inbox-list">
+        <Panel code={folder === 'in' ? 'INBOX' : 'SENT'} title={folder === 'in' ? '받은메일함' : '보낸메일함'} desc={`${list.length}통`} data-tour="inbox-list">
           {list.length === 0 ? (
             <NonIdealState className="inbox-empty" icon={folder === 'in' ? 'inbox' : 'send-message'} title={folder === 'in' ? '받은 메일이 없습니다' : '보낸 메일이 없습니다'}
-              description={folder === 'in' ? '강풍 관측, 입력 변경, 현장 메일이 오면 여기에 쌓입니다.' : '「확정 통보 메일」에서 부서별로 보내면 여기에 남습니다.'} />
+              description={folder === 'in' ? '현장 메일과 확정 알림이 오면 여기에 쌓입니다.' : '「확정 통보 메일」에서 부서별로 보내면 여기에 남습니다.'} />
           ) : (
             <ul className="mb-list">
               {folder === 'in' ? inbox.map((a) => (
@@ -135,7 +106,7 @@ export default function Inbox() {
           )}
         </Panel>
 
-        <Panel code="READ" title="메일 보기">
+        <Panel code="READ" title="메일 보기" bodyClass="mb-read-body">
           {!sel ? <NonIdealState className="inbox-empty" icon="envelope" title="메일을 고르십시오" /> : folder === 'in' ? (
             <article className="mb-read">
               {/* 11-25 확정 통보 메일 미리보기와 같은 메일 종이로 그린다 */}
@@ -151,26 +122,6 @@ export default function Inbox() {
                   {(() => { const p = sel.planNo && ws.plans.find((x) => x.no === sel.planNo); return p ? <MailBody text={sel.body} plan={p} /> : <pre className="ml-preview">{sel.body}</pre> })()}
                 </div>
               </div>
-              {sel.channel === 'incident' && isScheduler ? (
-                <div className={`mb-decide ${sel.status === 'applied' ? 'ok' : sel.status === 'dismissed' ? 'idle' : ''}`}>
-                  {sel.status === 'applied' || sel.status === 'dismissed' ? (
-                    <>
-                      <span>{sel.status === 'applied' ? `계획 조건에 넣었습니다: ${selChange ?? '-'}. 「다시 계산」을 눌러야 후보에 반영됩니다.` : '이번 계획에는 반영하지 않기로 했습니다.'} <span className="tiny muted">{sel.doneBy} · {sel.doneAt}</span></span>
-                      <Button size="small" variant="minimal" icon="undo" onClick={() => { if (sel.status === 'applied') applyIncident(sel.incId, false); setAlertStatus(sel.id, 'read', sel.title) }}>되돌리기</Button>
-                    </>
-                  ) : (
-                    <>
-                      <span><span className="strong">이 내용을 계획 조건에 반영할까요?</span><span className="tiny muted block">{selChange ? `반영: ${selChange}. ` : ''}후보는 「다시 계산」을 눌러야 바뀝니다.</span></span>
-                      <div className="mb-decide-btns">
-                        <Button size="small" icon="cross" onClick={() => setAlertStatus(sel.id, 'dismissed', sel.title)}>반영 안 함</Button>
-                        <Button size="small" intent="primary" icon="tick" disabled={!selChange} title={selChange ? undefined : '이 메일에는 계획 조건으로 넣을 값이 없습니다'} onClick={() => { applyIncident(sel.incId, true); setAlertStatus(sel.id, 'applied', sel.title) }}>반영</Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="mb-actions"><Button size="small" icon="share" onClick={() => open(sel)}>{goLabel(sel)}</Button></div>
-              )}
             </article>
           ) : (
             <article className="mb-read">

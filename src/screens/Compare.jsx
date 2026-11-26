@@ -12,6 +12,7 @@ import { SEV, KIND, checkRisks, riskLabel, riskShip, sortRisks } from '../lib/ri
 import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
 import { changeText } from '../lib/incidents.js'
 import SimilarCases from './SimilarCases.jsx'
+import BootCallout from '../ui/BootCallout.jsx'
 import { groupsFor } from '../lib/mailGroups.js'
 import { useApp } from '../state/app.jsx'
 import { Panel, Screen, St } from '../ui/kit.jsx'
@@ -60,7 +61,7 @@ function Elapsed({ since }) {
 }
 
 export default function Compare() {
-  const { scen, result, all, recalc, editScen, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, go, risks,
+  const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, go, risks,
     whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision } = useApp()
   useWorkspace() // 확정, 취소, 보낸 메일이 바로 보이게 구독
   const [reason, setReason] = useState('')
@@ -90,8 +91,11 @@ export default function Compare() {
   if (!scen || result.loading) {
     return <Screen tab="compare" title="후보 비교·확정"><div className="cmp-none"><Spinner size={20} /> {result.error ?? '데이터셋을 불러오는 중입니다'}</div></Screen>
   }
+  if (!all.length && result.boot) {
+    return <Screen tab="compare" title="후보 비교·확정"><BootCallout boot={result.boot} /></Screen>
+  }
   if (!all.length) {
-    return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '엔진 결과가 비어 있습니다.'}</Callout></Screen>
+    return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '계산 결과가 비어 있습니다.'}</Callout></Screen>
   }
 
   const best = all[0]
@@ -101,15 +105,6 @@ export default function Compare() {
   const vname = (vid) => vById[vid]?.name ?? scen.nameByCall?.[vid.split('-')[0]] ?? vid.split('-')[0]
   const plan = activePlan()
   const fixedNow = current && current.version === version
-  const fixedSet = new Set(scen.fixes.map((f) => f.vid))
-  const toggleFix = (p) => {
-    const on = fixedSet.has(p.vid)
-    editScen((d) => {
-      d.fixes = d.fixes.filter((f) => f.vid !== p.vid)
-      if (!on) d.fixes.push({ vid: p.vid, bid: p.bid, etb: p.etb })
-    })
-    logActivity('입력', on ? '선박 고정 해제' : '선박 고정', vname(p.vid), on ? '' : `${focusSim.label} 배정 ${bById[p.bid]?.name ?? p.bid} ${fmt(p.etb)}`)
-  }
   const toGantt = (vid, risk = null, riskSim = null) => { focusVessel(vid, Boolean(vid), risk, riskSim); ganttRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 
   // ── 확정 뒤: 확정 일정 모니터링 + 통보 상태 ────────────────────────────
@@ -253,14 +248,14 @@ export default function Compare() {
 
       {result.stale && (
         <Callout className="cmp-stale" intent="warning" icon="refresh" title="계획 조건이 바뀌었습니다. 다시 계산해야 후보가 맞습니다">
-          <p className="small">지금 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 엔진에 보냅니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
+          <p className="small">지금 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 그대로 둡니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
           <div className="risk-buttons">
             <Button intent="warning" icon="refresh" loading={result.running} disabled={!isScheduler} onClick={recalc}>다시 계산</Button>
-            {result.running && runSince && <span className="small muted">엔진이 후보 {scen.presets.length}개를 동시에 계산하고 있습니다 · <Elapsed since={runSince} />초 (몇 분 걸릴 수 있음)</span>}
+            {result.running && runSince && <span className="small muted">후보 {scen.presets.length}개를 동시에 계산하고 있습니다 · <Elapsed since={runSince} />초 (몇 분 걸릴 수 있음)</span>}
           </div>
         </Callout>
       )}
-      {!result.stale && result.running && <Callout intent="primary" icon={<Spinner size={16} />}>엔진이 후보를 다시 계산하고 있습니다 · {runSince && <Elapsed since={runSince} />}초</Callout>}
+      {!result.stale && result.running && <Callout intent="primary" icon={<Spinner size={16} />}>후보를 다시 계산하고 있습니다 · {runSince && <Elapsed since={runSince} />}초</Callout>}
       {result.calcError && <Callout intent="danger" icon="error" title="다시 계산하지 못했습니다">{result.calcError}</Callout>}
 
       <div className="risk-layout">
@@ -291,7 +286,7 @@ export default function Compare() {
             </>}>
             <GanttLegend keys={['bar', 'dem', 'wait', 'pin', 'night']} />
             <PlanGantt sim={gSim} sims={cols} refId={gRef.id} scen={scen} range={range} focus={focus} onFocus={onGanttFocus} loading={blocked}
-              risks={riskOf(gSim.id).data?.risks ?? []} fixedSet={fixedSet} onToggleFix={toggleFix} canEdit={isScheduler} onOpenCard={(vid) => openVessel(focusSim.id, vid, { mode: 'evidence' })} />
+              risks={riskOf(gSim.id).data?.risks ?? []} onOpenCard={(vid) => openVessel(focusSim.id, vid, { mode: 'evidence' })} />
           </Panel>
 
           <DemList title={`${focusSim.label} 체선 발생 선박`} focusVid={focus.vid} onPick={toGantt}
@@ -402,7 +397,7 @@ function MailDecide({ scen, all, mails, decision, onDecide, onUndo, canEdit, run
 /** 확인할 리스크의 메일 한 줄 밑: 「반영하면?」 미리 계산(그 조건을 넣은 A · B · C) */
 function WhatIfLine({ e, all, blocked }) {
   if (!e) return <span className="cmp-wi muted">{blocked ? '단독 반영 시: 다시 계산 뒤에 미리 계산' : '단독 반영 시: 계산 대기'}</span>
-  if (e.state === 'queued') return <span className="cmp-wi muted">단독 반영 시: 엔진이 바빠 잠시 뒤 다시 계산</span>
+  if (e.state === 'queued') return <span className="cmp-wi muted">단독 반영 시: 계산이 밀려 잠시 뒤 다시 계산</span>
   if (e.state === 'running') return <span className="cmp-wi"><Spinner size={11} /> 단독 반영 시 A · B · C 계산 중 <Elapsed since={e.t0} />초</span>
   if (e.state === 'error') return <span className="cmp-wi c-red">단독 반영 시 계산 못 함: {e.error}</span>
   return (

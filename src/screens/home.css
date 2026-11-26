@@ -3,6 +3,7 @@
   min-height: 0;
   display: grid;
   grid-template-rows: 66px auto minmax(0, 1fr) minmax(176px, 24%);
+  grid-template-columns: minmax(0, 1fr); /* 11-26 접안 일정 그래프 폭(시간 × 칸)이 화면 폭을 밀어내지 않게 — 그래프는 안에서 가로 스크롤 */
   gap: 8px;
   padding: 10px;
   overflow: hidden;
@@ -250,7 +251,7 @@
 .home-route-label { position: absolute; transform: translate(-100%, -50%); padding: 1px 5px; background: var(--bg-1); border: 1px solid #c2410c; color: #c2410c; font: 600 calc(10px * var(--fs)) var(--sans); white-space: nowrap; }
 
 /* 11-23 사이드 픽 · OFFLIGHT 방식(오른쪽 기준): 지도를 밀어내며 스르륵 열리는 패널 */
-.home-main.v4 { display: flex; gap: 0; }
+.home-main.v4 { display: flex; gap: 0; min-width: 0; }
 .home-main.v4 > .home-map-panel { flex: 1 1 auto; min-width: 0; }
 .sp { flex: none; width: 0; margin-left: 0; overflow: hidden; transition: width .28s cubic-bezier(.2, .8, .2, 1), margin-left .28s cubic-bezier(.2, .8, .2, 1); }
 .home-main.side-open .sp { width: 440px; margin-left: 8px; }
@@ -382,7 +383,7 @@
 .home-arr-incidents strong { color: var(--amber); }
 
 /* 아래: 선석별 간트 */
-.home-gantt { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-2); background: var(--bg-2); }
+.home-gantt { flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-2); background: var(--bg-2); }
 .home-gantt-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; flex: none; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .home-gantt-title { font-size: calc(13px * var(--fs)); font-weight: 600; color: var(--fg); }
 .home-gantt-desc { font-size: calc(11px * var(--fs)); color: var(--fg-2); }
@@ -635,3 +636,28 @@ body:has(.home-console) { min-width: 0; }
    남은 시간 칸 폭을 고정하고 숫자 폭을 같게 해서 옆 칸이 움직이지 않게 한다 */
 .home-arr-left { flex: none; min-width: 7.2em; text-align: right; font-variant-numeric: tabular-nums; }
 .home-arr-time b { font-variant-numeric: tabular-nums; }
+
+/* 11-26 지도 위 부두 표시 · 상세(툴팁)를 테마 색으로 — 라이트 모드에서도 주변과 같은 밝은 바탕 (다크는 전과 비슷) */
+.hud-tag { border-color: var(--line-3); background: color-mix(in srgb, var(--bg-2) 92%, transparent); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.hud-tag em { color: var(--fg-2); border-left-color: var(--line-2); }
+.hud-tag i { background: var(--fg-3); }
+.hud-tag.st-busy i { background: var(--green); box-shadow: 0 0 0 3px var(--green-wash); }
+.hud-tag.st-busy em { color: var(--green); }
+.hud-tag.st-blocked i { background: var(--red); }
+.hud-tag.st-blocked em { color: var(--red); }
+.hud-tag.hl { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.home-map-tip { border-color: var(--line-3) !important; background: var(--bg-2) !important; color: var(--fg) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, .18) !important; }
+.home-map-tip .tip-head b { color: var(--fg); }
+.home-map-tip .tip-chip { color: var(--fg-2); }
+.home-map-tip .tip-chip.ok { color: var(--green); }
+.home-map-tip .tip-chip.warn { color: var(--amber); }
+.home-map-tip .tip-chip.bad { color: var(--red); }
+.home-map-tip .tip-sub, .home-map-tip .tip-rows dt, .home-map-tip .tip-rows dd.idle { color: var(--fg-3); }
+.home-map-tip .tip-rows { border-top-color: var(--line); }
+.home-map-tip .tip-rows dd, .home-map-tip .tip-rows dd.busy { color: var(--fg); }
+.home-map-tip .tip-rows .tip-bar, .tip-meter span { background: var(--bg-4); }
+.home-map-tip .tip-rows .tip-bar i, .tip-meter span.on { background: var(--green); }
+.tip-meter span.bad { background: var(--red); }
+.home-map-tip .tip-rows .tip-pct { color: var(--green); }
+.home-map-tip .tip-big b { color: var(--amber); }
+.home-map-tip .tip-big span { color: var(--fg-2); }

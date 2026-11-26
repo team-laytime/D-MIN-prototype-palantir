@@ -1,6 +1,6 @@
 // 11-25 리스크를 누르면 무엇이 문제인지 그림으로 보여 준다 (배치 그림 오른쪽 위 카드).
 //   TANK      그 탱크 묶음의 재고 곡선 · 마지노선 20/80% · 계획 안전 범위 · 리스크 구간 · 관련 선박 작업
-//   WORK_GAP  같은 선석의 「계획」과 「앞 배가 필요 여유만큼 늦으면」 두 줄 — 다음 배가 얼마나 밀리는지
+//   WORK_GAP  연속 접안: 줄 선 배들을 「계획」과 「첫 배가 1시간 늦으면」 두 줄로 — 사이 여유가 없으면 뒤 배가 줄줄이 밀린다
 //   LAYTIME   도착 → 대기 → 작업 → 호스 분리 → 허용 정박시간 끝, 여유와 체선이 붙기 시작하는 곳
 //   그 밖     리스크 모델 문장과 근거 숫자
 // 숫자는 모두 엔진 응답 · 리스크 모델 evidence 그대로다.
@@ -69,38 +69,46 @@ function TankChart({ risk, sim, scen, name }) {
 
 function WorkGapChart({ risk, sim, scen, name }) {
   const e = risk.evidence ?? {}
-  const [a, b] = risk.vessel_ids ?? []
-  const next = sim.placements.find((p) => p.vid === b)
-  if (!next) return null
-  const prevP = sim.placements.find((p) => p.vid === a)
-  const occ = !prevP && (scen.occupied ?? []).find((o) => o.bid === risk.berth)
-  const prev = prevP ?? (occ ? { etb: occ.etb, etu: occ.etu } : null)
-  if (!prev) return null
-  const sw = (e.switching_h ?? 0) * 60, need = (e.required_h ?? 0) * 60
-  const free = prev.etu + sw // 계획상 선석이 비는 시각
-  const late = Math.max(0, prev.etu + need + sw - next.etb) // 앞 배가 필요 여유만큼 늦으면 다음 배가 밀리는 시간
-  const t0 = Math.max(prev.etb, next.etb - 24 * 60) - 60, t1 = next.etb + late + Math.min(next.etu - next.etb, 12 * 60) + 60
-  const ax = axis(t0, t1, 78)
-  const row = (y, label, shift) => (
+  const ids = risk.vessel_ids ?? []
+  // 줄 선 배: 계획한 배는 엔진 배치, 기준 시각에 작업 중인 배는 선석 점유(occupied)
+  const occ = (scen.occupied ?? []).filter((o) => o.bid === risk.berth)
+  const ships = ids.map((vid) => {
+    const p = sim.placements.find((x) => x.vid === vid)
+    if (p) return { vid, etb: p.etb, etu: p.etu, working: false }
+    const o = occ[0] // 작업 중인 배는 줄 맨 앞 한 척뿐 (선석 점유 기록엔 선박 ID가 없다)
+    return o ? { vid, etb: o.etb, etu: o.etu, working: true } : null
+  })
+  if (ships.some((s) => !s)) return null
+  const sw = (e.switching_h ?? 0) * 60
+  const gaps = (e.gaps_h ?? []).map((g) => g * 60)
+  const LATE = 60 // 첫 배가 1시간 늦으면: 사이 여유만큼 흡수하고 남는 만큼 다음 배가 밀린다
+  const shifts = [LATE]
+  gaps.forEach((g, i) => shifts.push(Math.max(0, shifts[i] - g)))
+  const t0 = ships[0].etb - 60, t1 = ships.at(-1).etu + LATE + 60
+  const ax = axis(t0, t1, 64)
+  const row = (y, label, late) => (
     <g>
       <text x={2} y={y + 13} className="rc-row-t">{label}</text>
-      <rect x={ax.x(prev.etb)} y={y + 2} width={ax.x(prev.etu) - ax.x(prev.etb)} height={16} className="rc-bar" />
-      {shift > 0 && <rect x={ax.x(prev.etu)} y={y + 2} width={ax.x(prev.etu + need) - ax.x(prev.etu)} height={16} className="rc-late" />}
-      <rect x={ax.x(prev.etu + (shift ? need : 0))} y={y + 6} width={Math.max(1, ax.x(prev.etu + (shift ? need : 0) + sw) - ax.x(prev.etu + (shift ? need : 0)))} height={8} className="rc-sw" />
-      <rect x={ax.x(next.etb + shift)} y={y + 2} width={Math.max(2, ax.x(next.etu + shift) - ax.x(next.etb + shift))} height={16} className={`rc-bar ${shift ? 'rc-pushed' : ''}`} />
-      <text x={ax.x(next.etb + shift) + 4} y={y + 14} className="rc-bar-t">{name(b)}</text>
+      {ships.map((s, i) => {
+        const d = late ? shifts[i] : 0
+        return (
+          <g key={s.vid}>
+            <rect x={ax.x(s.etb + d)} y={y + 2} width={Math.max(2, ax.x(s.etu + d) - ax.x(s.etb + d) - 1)} height={16} className={`rc-bar ${d > 0 && i > 0 ? 'rc-pushed' : ''}`} />
+            {i < ships.length - 1 && <rect x={ax.x(s.etu + d)} y={y + 6} width={Math.max(1, ax.x(s.etu + d + sw) - ax.x(s.etu + d))} height={8} className="rc-sw" />}
+          </g>
+        )
+      })}
     </g>
   )
+  const pushed = shifts.slice(1).filter((d) => d > 0).length
   return (
     <>
-      <svg viewBox={`0 0 ${W} 92`} className="rc-svg" role="img" aria-label="작업 간격">
+      <svg viewBox={`0 0 ${W} 92`} className="rc-svg" role="img" aria-label="연속 접안">
         <Ticks ax={ax} y1={4} y2={70} />
-        <text x={ax.x(prev.etb) + 4} y={2} className="rc-tick">{prevP ? name(a) : `${name(a)} (작업 중)`}</text>
-        {row(8, '계획', 0)}
-        {row(38, `앞 배 ${hm(need)} 늦으면`, late)}
-        {late > 0 && <text x={ax.x(next.etb + late) + 4} y={33 + 30 + 4} className="rc-pt-t">+{hm(late)} 밀림</text>}
+        {row(8, '계획', false)}
+        {row(38, '첫 배 1h 늦으면', true)}
       </svg>
-      <p className="rc-note">계획 간격 {e.gap_h}h(선석이 비는 {fmt(free).slice(-5)} → 접안 {fmt(next.etb).slice(-5)}) · 앞 배가 늦어질 수 있는 시간 {e.required_h}h{e.required_basis === 'WORK_BUFFER' ? '(데이터 팀 작업 여유)' : ''} · 회색 = 부두 전환 {e.switching_h}h{risk.cost_per_hour ? ` · 밀리면 체선료 시간당 ${money(Math.round(risk.cost_per_hour.amount * 100))}` : ''}</p>
+      <p className="rc-note">{ships.map((s) => `${name(s.vid)}${s.working ? '(작업 중)' : ''}`).join(' → ')} · 부두 전환({e.switching_h}h, 회색)만 하고 바로 이어 댐 · 첫 배가 1시간 늦으면 뒤 {pushed}척이 밀림{risk.cost_per_hour ? ` · 밀리면 체선료 시간당 ${money(Math.round(risk.cost_per_hour.amount * 100))}` : ''}</p>
     </>
   )
 }

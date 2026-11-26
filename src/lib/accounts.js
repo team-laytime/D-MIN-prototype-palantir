@@ -1,7 +1,7 @@
 // 관리자 프로토타입 전용 저장소. 서버 인증/메일 발송과 분리하며 기존 업무 저장소는 수정하지 않는다.
 export const ACCOUNT_KEY = 'dmin.admin.accounts.v1'
 export const ROLE_LABELS = { user: '일정 이용자', scheduler: '선박 스케줄러' }
-export const TEAMS = ['SK 3부두 하역 1팀', 'SK 5부두 하역 1팀', 'SK 6부두 하역 2팀', '선박 대리점']
+export const TEAMS = ['3부두 하역 1팀', '5부두 하역 1팀', '6부두 하역 2팀', '선박 대리점']
 export const SCHEDULER_TEAM = '물류운영팀 선박 스케줄'
 const KST = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
 export const accountTime = (at) => Number.isFinite(new Date(at).getTime()) ? KST.format(new Date(at)).replace(',', '').replaceAll('-', '.') : '—'

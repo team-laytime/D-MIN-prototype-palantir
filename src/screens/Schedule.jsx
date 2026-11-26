@@ -19,7 +19,7 @@ import './decide.css'
 const MY_PIER = '3'
 const PIER_ORDER = ['1', '2', '3', '4', '5', '6', '7', '8', 'BUOY', 'GAS']
 const pierRank = (p) => (p === MY_PIER ? -1 : PIER_ORDER.indexOf(p) === -1 ? 99 : PIER_ORDER.indexOf(p))
-const pierShort = (p) => (p === 'BUOY' ? '부이' : p === 'GAS' ? '가스' : `SK${p}`)
+const pierShort = (p) => (p === 'BUOY' ? '부이' : p === 'GAS' ? '가스' : `${p}부두`)
 const byBerth = (a, b) => a.localeCompare(b, 'en', { numeric: true })
 const phase = (p) => (p.etu <= NOW ? 'done' : p.etb <= NOW ? 'on' : 'next')
 const PHASE = { on: ['live', '접안 중'], next: ['idle', '예정'], done: ['idle', '완료'] }
