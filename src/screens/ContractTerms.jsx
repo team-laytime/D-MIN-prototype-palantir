@@ -1,20 +1,29 @@
 // 추출값 검토: 왼쪽 선박(거래) 목록, 오른쪽 추출값 표. 행을 누르면 바로 아래에 원문 문장이 열리고 추출된 부분이 강조된다.
 // 검토 필수는 「원문과 일치」(스캔본 양식 기본값은 「변경 조항 없음 확인」)나 값 수정으로 끝내고, 다음 검토 항목으로 넘어간다.
+// 스캔본 원문은 왼쪽 원본 쪽 이미지, 오른쪽 문자 인식 결과. 글자층이 있는 PDF는 원문 문장만.
 import { Fragment, useState } from 'react'
-import { Button, Callout, Checkbox, HTMLSelect, NonIdealState } from '@blueprintjs/core'
+import { Button, Callout, Checkbox, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
-import { dealViews, pickDeal, review, useContract } from '../state/useContract.js'
+import { dealViews, pageImage, pickDeal, review, useContract } from '../state/useContract.js'
 import { GROUPS, KIND, REASON, SECTION, WEATHER, findInQuote, fmtValue, norm } from '../lib/contract.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import './contract.css'
 
 const srcText = (s) => (s.clause ? s.clause : [`${KIND[s.kind]} ${s.doc_id}`, s.page && `${s.page}쪽`, SECTION[s.section]].filter(Boolean).join(' · '))
 
-function Quote({ text, value }) {
-  if (!text) return <p className="ct-quote faint">원문 문장이 없습니다.</p>
+function Quote({ text, value, scan }) {
+  if (!text) return <p className="ct-quote faint">{scan ? '문자 인식 결과에 이 항목이 없습니다.' : '원문 문장이 없습니다.'}</p>
   const hit = findInQuote(text, value)
   // 값 위치를 못 찾으면 문장 전체가 추출 근거다
   return <p className="ct-quote">{hit ? <>{hit[0]}<mark>{hit[1]}</mark>{hit[2]}</> : <mark>{text}</mark>}</p>
+}
+
+// 스캔본 원본 쪽. 값 위치(bbox)가 아직 없어 쪽 전체를 보인다. 목업에는 이미지가 없어 자리 표시만.
+function ScanPage({ s }) {
+  const label = s.page ? `원본 ${s.page}쪽 스캔 이미지` : s.section === 'rider' ? '원본 특약 쪽 스캔 이미지' : '원본 스캔 이미지 (쪽 번호 모름)'
+  const url = pageImage(s.doc_id, s.page)
+  if (url) return <img className="ct-scan-page" src={url} alt={label} />
+  return <div className="ct-scan-page ph" role="img" aria-label={`${label} (자리 표시)`}><Icon icon="media" size={20} /><span>{label}</span></div>
 }
 
 const CONFIRM = { scan: '변경 조항 없음 확인' }
@@ -61,9 +70,16 @@ function Detail({ row, rv, cur, onConfirm, onSave }) {
             <span className="num">{srcText(s)}</span>
             {s.clause && <span className="chip">양식 조항 요약</span>}
             {(row.reason === 'diff' || row.reason === 'rate') && <span>이 문서 값 <b className="num">{fmtValue(row, s.value, cur)}</b></span>}
-            {s.ev?.ocr && <span className="chip amber">스캔 문자 인식</span>}
+            {s.scan && <span className="chip amber">{s.ev?.ocr ? '스캔 문자 인식' : '스캔본'}</span>}
           </div>
-          <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />
+          {s.scan
+            ? (
+              <div className="ct-scan">
+                <ScanPage s={s} />
+                <div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div>
+              </div>
+            )
+            : <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />}
         </div>
       ))}
       <div className="ct-actions">

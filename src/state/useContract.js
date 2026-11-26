@@ -111,3 +111,5 @@ export function dealViews(s) {
 /** 등록 문서 한 건의 남은 검토 필수 수(이 문서가 출처인 행). */
 export const leftFor = (view, docId) => view.left.filter((r) => r.sources.some((x) => x.doc_id === docId)).length
 export const docOf = (docId) => DOCS[docId] ?? null
+// shortcut: 목업에는 쪽 이미지가 없어 늘 null(화면은 자리 표시). 파서가 쪽 이미지(나중에 bbox)를 내보내면 그 주소를 돌려준다.
+export const pageImage = () => null

@@ -78,7 +78,7 @@ function pick(body, key) {
 const source = (doc, key, fallbackQuote = null) => {
   const c = pick(bodyOf(doc), key)
   const ev = c?.evidence ?? null
-  return { doc_id: doc.doc_id, kind: doc.kind, value: c?.value ?? null, page: ev?.page ?? null, section: ev?.section ?? null, quote: ev?.quote ?? fallbackQuote, ev }
+  return { doc_id: doc.doc_id, kind: doc.kind, value: c?.value ?? null, page: ev?.page ?? null, section: ev?.section ?? null, quote: ev?.quote ?? fallbackQuote, ev, scan: isScan(doc) }
 }
 
 /**
