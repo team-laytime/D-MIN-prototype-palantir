@@ -294,6 +294,10 @@ export default function Compare() {
               risks={riskOf(gSim.id).data?.risks ?? []} fixedSet={fixedSet} onToggleFix={toggleFix} canEdit={isScheduler} onOpenCard={(vid) => openVessel(focusSim.id, vid, { mode: 'evidence' })} />
           </Panel>
 
+          <DemList title={`${focusSim.label} 체선 발생 선박`} focusVid={focus.vid} onPick={toGantt}
+            items={demOf(focusSim).sort((a, b) => b.dem.cents - a.dem.cents).map((p) => ({ vid: p.vid, name: vname(p.vid), berth: shortBerth(bById[p.bid], p.bid), etb: p.etb, cents: p.dem.cents, min: p.dem.excessMin }))} />
+          <SimilarCases scen={scen} all={all} risks={risks} pendingIncs={pendingIncs} />
+
         </div>
 
         <aside className="risk-sidebar stack">
@@ -340,9 +344,6 @@ export default function Compare() {
             </div>
           </Panel>
           {fixedNow && <Button icon="arrow-left" onClick={() => setShowCands(false)}>확정 화면으로</Button>}
-          <SimilarCases scen={scen} all={all} risks={risks} pendingIncs={pendingIncs} />
-          <DemList title={`${focusSim.label} 체선 발생 선박`} focusVid={focus.vid} onPick={toGantt}
-            items={demOf(focusSim).sort((a, b) => b.dem.cents - a.dem.cents).map((p) => ({ vid: p.vid, name: vname(p.vid), berth: shortBerth(bById[p.bid], p.bid), etb: p.etb, cents: p.dem.cents, min: p.dem.excessMin }))} />
         </aside>
       </div>
 
