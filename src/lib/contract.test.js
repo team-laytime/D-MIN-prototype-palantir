@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { dealRows, detectKind, findInQuote, findQuoteInText, fmtValue, weatherDeductPct } from './contract.js'
+import { FIELDS, dealRows, detectKind, editKind, findInQuote, findQuoteInText, fmtValue, fromDraft, toDraft, weatherDeductPct } from './contract.js'
 
 const load = (name) => JSON.parse(readFileSync(new URL(`../mock/contract/${name}.json`, import.meta.url), 'utf8'))
 const deals = load('deals')
@@ -151,4 +151,21 @@ test('파서 layout · unread 출력: 특약 범위 · Box M, OCR 못 읽음', (
   assert.deepEqual([ld.reason, ld.srcTag, ld.src.doc_id, ld.check.doc_id], ['unread', '임시', 'SYN-SC-302', 'SYN-CP-304'])
   // 글자층 C/P 사본이 같이 있으면 그 값이 기준이라 검토 필수가 아니다
   assert.equal(row(dealRows([cp, load('SYN-CP-302'), load('SYN-SC-302')], dealOf('SYN-CP-304')), 'load_laydays_from').status, 'rule')
+})
+
+test('값 고치기: 칸 종류마다 입력 꼴, 입력 → 문서 JSON과 같은 꼴', () => {
+  const f = (k) => FIELDS.find((x) => x.key === k)
+  assert.deepEqual(['dwt', 'weather', 'berth_shift_counts', 'load_laydays_from', 'half_rate_events', 'imo'].map((k) => editKind(f(k))),
+    ['number', 'weather', 'bool', 'datetime', 'list', 'text'])
+  assert.equal(toDraft(f('load_laydays_from'), '2025-11-13T00:00:00'), '2025-11-13T00:00')
+  assert.equal(fromDraft(f('load_laydays_from'), '2025-11-14T08:30'), '2025-11-14T08:30:00')
+  assert.equal(fromDraft(f('load_laydays_from'), '14/11'), undefined)
+  assert.equal(fromDraft(f('dwt'), '157900'), 157900)
+  assert.equal(fromDraft(f('dwt'), '-1'), undefined)
+  assert.equal(fromDraft(f('berth_shift_counts'), 'false'), false)
+  assert.equal(toDraft(f('half_rate_events'), ['PORT_CONGESTION', '파업']), '항만 혼잡, 파업')
+  assert.deepEqual(fromDraft(f('half_rate_events'), '화재, 파업 ,'), ['화재', '파업'])
+  assert.equal(toDraft(f('laytime_terms'), 'SHINC_NONREV'), 'SHINC, 비가역')
+  assert.equal(fromDraft(f('imo'), ' 1007017 '), '1007017')
+  assert.equal(fromDraft(f('imo'), '  '), undefined)
 })

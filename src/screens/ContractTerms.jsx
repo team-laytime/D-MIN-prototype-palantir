@@ -6,7 +6,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } f
 import { Button, ButtonGroup, Callout, Checkbox, Drawer, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { dealViews, docFile, pageCount, pageImage, pickDeal, review, reviewMany, useContract } from '../state/useContract.js'
-import { GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, findInQuote, findQuoteInText, fmtValue, norm } from '../lib/contract.js'
+import { GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, editKind, findInQuote, findQuoteInText, fmtValue, fromDraft, norm, toDraft } from '../lib/contract.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import './contract.css'
 
@@ -126,19 +126,27 @@ function StatusCell({ row, rv }) {
   return <span className="faint">값 없음</span>
 }
 
-// 값 고치기: 숫자 3개는 입력, 기상 조항은 산입 기준 3가지 중 하나(계산 공제 %를 같이 보인다).
+// 값 고치기: 원본과 다르면 검토하는 사람이 바로잡는다(모든 칸). 입력 꼴은 칸 종류마다(editKind), 저장 값은 문서 JSON과 같은 꼴(fromDraft).
+// 계산에는 「계산」 표시가 있는 4개만 쓰이고, 나머지 칸의 고친 값은 검토 기록(직접 수정)으로 남는다.
+const UNIT = { usd: 'USD /일', h: '시간', t: 't' }
 function Editor({ row, current, onSave }) {
-  const [draft, setDraft] = useState(current ?? (row.fmt === 'weather' ? 'HALF' : ''))
-  const n = Number(draft)
-  const ok = row.fmt === 'weather' ? draft in WEATHER : draft !== '' && Number.isFinite(n) && n >= 0
+  const kind = editKind(row)
+  const start = toDraft(row, current)
+  const [draft, setDraft] = useState(start)
+  const value = fromDraft(row, draft)
+  const label = `${row.label} 고칠 값`
+  const set = (e) => setDraft(e.target.value)
   return (
     <div className="ct-edit">
-      {row.fmt === 'weather'
-        ? <HTMLSelect value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={`${row.label} 값`}
-          options={Object.entries(WEATHER).map(([value, w]) => ({ value, label: `${w.label} (계산 공제 ${w.deduct}%)` }))} />
-        : <input className="bp6-input num" type="number" min="0" step={row.fmt === 'usd' ? 100 : 1} value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={`${row.label} 값`} />}
-      <span className="faint tiny">{row.fmt === 'usd' ? 'USD /일' : row.fmt === 'h' ? '시간' : ''}</span>
-      <Button icon="edit" text="고친 값 저장" disabled={!ok || (row.fmt === 'weather' ? draft : n) === current} onClick={() => onSave(row.fmt === 'weather' ? draft : n)} />
+      {kind === 'weather' && <HTMLSelect value={draft} onChange={set} aria-label={label}
+        options={Object.entries(WEATHER).map(([v, w]) => ({ value: v, label: `${w.label} (계산 공제 ${w.deduct}%)` }))} />}
+      {kind === 'bool' && <HTMLSelect value={draft} onChange={set} aria-label={label} options={[{ value: 'true', label: '예' }, { value: 'false', label: '아니오' }]} />}
+      {kind === 'number' && <input className="bp6-input num" type="number" min="0" step={row.fmt === 'usd' ? 100 : 1} value={draft} onChange={set} aria-label={label} />}
+      {kind === 'datetime' && <input className="bp6-input num" type="datetime-local" value={draft} onChange={set} aria-label={label} />}
+      {(kind === 'text' || kind === 'list') && <input className="bp6-input ct-edit-text" type="text" value={draft} onChange={set} aria-label={label}
+        placeholder={kind === 'list' ? '쉼표로 나눠 적기 (예: 화재, 파업)' : '원본에 적힌 값'} />}
+      {UNIT[row.fmt] && <span className="faint tiny">{UNIT[row.fmt]}</span>}
+      <Button icon="edit" text="고친 값 저장" disabled={value === undefined || draft === start} onClick={() => onSave(value)} />
     </div>
   )
 }
@@ -157,9 +165,22 @@ function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPic
     <div className="ct-detail-body" ref={ref}>
       {row.note && <p className="ct-note">{row.note}</p>}
       {row.sources.map((s) => <Source key={s.doc_id ?? s.clause} s={s} row={row} cur={cur} pick={pick} onOpen={onOpen} />)}
-      {todo && peers.length > 0 && (
+      {/* 이 항목: 원본과 맞으면 확인, 다르면 그 자리에서 값을 고친다 */}
+      <div className="ct-actions">
+        {todo && !pick && !fill && <Button intent="primary" icon="tick" text={verb} onClick={onConfirm} />}
+        {todo && fill && <span className="c-amber small">값을 넣어 저장하면 검토가 끝납니다.</span>}
+        {todo && pick && row.sources.filter((s) => s.value != null && !s.clause).map((s) => (
+          <Button key={s.doc_id} intent={norm(s.value) === norm(row.value) ? 'primary' : 'none'} icon="tick" text={`${KIND[s.kind]} 값 적용`} onClick={() => onPick(s)} />
+        ))}
+        {rv && 'value' in rv && <span className="faint small">파서 값 <Val text={fmtValue(row, row.value, cur)} /></span>}
+        <span className="ct-edit-or faint small">{todo && !fill ? '원본과 다르면' : ''}</span>
+        <Editor row={row} current={rv && 'value' in rv ? rv.value : row.value} onSave={onSave} />
+        {!row.edit && <span className="faint small">고친 값은 「직접 수정」으로 남습니다. 계산에는 「계산」 표시가 있는 4개만 쓰입니다.</span>}
+      </div>
+      {/* 같은 쪽 · 같은 이유의 다른 검토 필수: 한꺼번에 확인(다른 값이 있으면 그 행을 열어 고친다) */}
+      {todo && !pick && !fill && peers.length > 0 && (
         <div className="ct-peers">
-          <div className="ct-src-head">{row.reason === 'scan' ? `같은 이유(스캔본 특약 미확인)의 다른 항목 ${peers.length}건` : `같은 쪽(${row.src.page}쪽)의 다른 검토 필수 ${peers.length}건`}</div>
+          <div className="ct-src-head">{row.reason === 'scan' ? `같은 이유(스캔본 특약 미확인)의 다른 항목 ${peers.length}건` : `같은 쪽(${row.src.page}쪽)의 다른 검토 필수 ${peers.length}건`} · 다른 값이 있으면 그 행을 열어 고칩니다</div>
           <ul>
             {peers.map((r) => {
               const v = fmtValue(r, r.value, cur)
@@ -172,19 +193,9 @@ function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPic
               )
             })}
           </ul>
+          <div className="ct-actions"><Button icon="tick-circle" text={`${verb}: 이 항목과 위 ${peers.length}건 모두 (${peers.length + 1}건)`} onClick={onConfirmAll} /></div>
         </div>
       )}
-      <div className="ct-actions">
-        {todo && !pick && !fill && <Button intent="primary" icon="tick" text={verb} onClick={onConfirm} />}
-        {todo && fill && <span className="c-amber small">값을 넣어 저장하면 검토가 끝납니다.</span>}
-        {todo && !pick && !fill && peers.length > 0 && <Button icon="tick-circle" text={`${verb}: 위 ${peers.length}건까지 모두 (${peers.length + 1}건)`} onClick={onConfirmAll} />}
-        {todo && pick && row.sources.filter((s) => s.value != null && !s.clause).map((s) => (
-          <Button key={s.doc_id} intent={norm(s.value) === norm(row.value) ? 'primary' : 'none'} icon="tick" text={`${KIND[s.kind]} 값 적용`} onClick={() => onPick(s)} />
-        ))}
-        {rv && 'value' in rv && <span className="faint small">파서 값 <Val text={fmtValue(row, row.value, cur)} /></span>}
-        {row.edit && <Editor row={row} current={rv?.value ?? norm(row.value)} onSave={onSave} />}
-        {!row.edit && !todo && row.status !== 'empty' && <span className="faint small">원문 확인만 하는 항목입니다. 값은 계산에 쓰는 4개만 고칠 수 있습니다.</span>}
-      </div>
     </div>
   )
 }

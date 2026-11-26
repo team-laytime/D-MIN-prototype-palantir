@@ -185,6 +185,33 @@ export function fmtValue(f, v, cur = 'USD') {
   return CODE[v] ?? String(v)
 }
 
+// 값 고치기: 칸 종류마다 입력 방식(검토하는 사람이 원본과 다른 값을 바로잡는다. 계산에는 edit 표시 4개만 쓰인다)
+const LIST_KEYS = new Set(['half_rate_events', 'no_demurrage_events', 'laytime_exclusions'])
+const BOOL_KEYS = new Set(['berth_shift_counts', 'anchorage_to_berth_counts'])
+/** number · weather · bool · datetime(Laycan · Laydays) · list(사유 목록, 쉼표로) · text */
+export const editKind = (f) => (f.fmt === 'weather' ? 'weather' : ['h', 'usd', 't'].includes(f.fmt) ? 'number' : BOOL_KEYS.has(f.key) ? 'bool'
+  : /_(from|to)$/.test(f.key) ? 'datetime' : LIST_KEYS.has(f.key) ? 'list' : 'text')
+/** 입력 칸에 넣을 글자. 코드 값(SHINC_NONREV · PRO_RATA:n)은 화면 문구로 */
+export function toDraft(f, v) {
+  const kind = editKind(f)
+  if (v == null || v === '') return kind === 'weather' ? 'HALF' : kind === 'bool' ? 'false' : ''
+  if (kind === 'datetime') return norm(v).replace(' ', 'T')
+  if (kind === 'list') return (Array.isArray(v) ? v : [v]).map((x) => CODE[x] ?? x).join(', ')
+  if (kind === 'number' || kind === 'bool' || kind === 'weather') return String(v)
+  return fmtValue(f, v)
+}
+/** 입력 글자 → 저장할 값(문서 JSON과 같은 꼴). 못 쓰는 입력이면 undefined */
+export function fromDraft(f, d) {
+  const kind = editKind(f)
+  const t = String(d ?? '').trim()
+  if (kind === 'number') { const n = Number(t); return t !== '' && Number.isFinite(n) && n >= 0 ? n : undefined }
+  if (kind === 'weather') return t in WEATHER ? t : undefined
+  if (kind === 'bool') return t === 'true' ? true : t === 'false' ? false : undefined
+  if (kind === 'datetime') return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(t) ? `${t}:00` : undefined
+  if (kind === 'list') { const xs = t.split(',').map((x) => x.trim()).filter(Boolean); return xs.length ? xs : undefined }
+  return t || undefined
+}
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 /**

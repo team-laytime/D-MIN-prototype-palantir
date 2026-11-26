@@ -98,6 +98,7 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
 ## 5. 아직 없는 것
 
 - **검토 결과 모양**: 화면의 검토 기록은 `{by, at}`(원문과 일치 · 변경 조항 없음), `{by, at, value}`(직접 수정), `{by, at, value, from}`(문서 간 불일치에서 고른 문서 값)이다. 같은 쪽 묶음 확인은 칸마다 `{by, at}`를 남긴다.
+  - 값 고치기는 모든 칸에서 된다(원본과 다르면 검토하는 사람이 바로잡음). 저장 값은 문서 JSON과 같은 꼴이다(`contract.js`의 `editKind` · `fromDraft`): 숫자 · `true`/`false` · 날짜 `YYYY-MM-DDTHH:MM:00` · 사유 목록은 글자 배열 · 나머지는 글자. 파서 `edits.py`의 `set`이 칸 형식으로 바꿀 수 있는 꼴이다. 계산에는 「계산」 표시가 있는 4개만 쓰인다.
 
 - **검토 기록 저장**: 파서에 이미 저장소가 있다. `cp_extract/edits.py`의 `data/review/edits.jsonl`이고, 한 줄에 `{at, by, doc, field, action: confirm|set, old, new, note}`이며 덧붙이기만 한다. 화면의 「원문과 일치」는 `confirm`, 「고친 값 저장」은 `set`에 맞는다. `reconcile.load`가 이 기록을 반영한다.
   - 화면의 검토 key는 거래 단위(`<거래 key>:<칸>`)이고 파서는 문서 단위(`doc`, `field`)다. 쓸 때 그 행의 출처 문서(`row.src.doc_id`)로 바꿔야 한다.

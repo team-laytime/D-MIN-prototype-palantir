@@ -61,6 +61,8 @@
 .ct-crop img { position: absolute; max-width: none; }
 .ct-box { position: absolute; outline: 2px solid var(--accent); background: var(--accent-wash); mix-blend-mode: multiply; pointer-events: none; }
 .ct-box.other { outline: 1px dashed var(--blue); background: none; }
+.ct-peers { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.ct-edit-or:empty { display: none; }
 .ct-peers ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .ct-peers li { display: grid; grid-template-columns: 160px 200px minmax(0, 420px); gap: 10px; align-items: center; }
 .ct-peer-label { color: var(--fg-2); }
@@ -92,6 +94,8 @@
 .ct-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ct-edit { display: inline-flex; align-items: center; gap: 6px; }
 .ct-edit input { width: 130px; }
+.ct-edit input[type='datetime-local'] { width: 200px; }
+.ct-edit .ct-edit-text { width: 300px; }
 
 @media (max-width: 1180px) {
   .ct-reg, .ct-grid { grid-template-columns: minmax(0, 1fr); }
