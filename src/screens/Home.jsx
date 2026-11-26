@@ -4,6 +4,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useInbox } from '../state/useInbox.js'
 import { useApp } from '../state/app.jsx'
+import { activePlan } from '../lib/workspace.js'
 import { Panel, St } from '../ui/kit.jsx'
 import { berthStatus as berthStatusOf, isNight as isNightAt, spanOf, stateAt } from '../lib/plan.js'
 import { MAP_CONTEXT, anchorageFor } from '../lib/vesselState.js'
@@ -53,8 +54,8 @@ function shipIcon({ name, phase, cog, selected, ticking, extra = '', next = 0 })
 
 
 export default function Home() {
-  const { scen, all, result } = useApp()
-  if (!scen || !all.length) {
+  const { scen, result } = useApp()
+  if (!scen) {
     return (
       <div className="home-console">
         <div className="home-loading small muted">{result.loading ? '데이터셋을 불러오는 중입니다' : result.error ?? '후보가 아직 없습니다'}</div>
@@ -65,13 +66,18 @@ export default function Home() {
 }
 
 function HomeMap() {
-  const { all: plans, result, scen, current, version, openVessel, go, setMailFilter, isScheduler, drawer } = useApp()
+  const { result, scen, current, openVessel, go, setMailFilter, isScheduler, drawer } = useApp()
   // 11-24 고도화: 반영 여부를 정하지 않은 돌발 상황이 있을 때만 「입항 예정」 아래에 같은 모양의 창을 띄운다.
   const { incidents } = useInbox()
-  // 운영 현황은 운영만 보여 준다: 확정안이 있으면 확정안, 없으면 최저 후보를 '확정 전 예상'으로.
-  const fixed = current && current.version === version
-  const plan = (fixed && plans.find((p) => p.id === current.candId)) || result.candidates[0]
-  const span = useMemo(() => spanOf(fixed ? [plan] : plans), [fixed, plan, plans])
+  // 운영 현황 = 지금 운영 중인 상황 (11-26 사용자 결정). 후보(확정 전 안)는 보이지 않는다.
+  //   확정 전: 이전 계획. 따로 없으므로 데이터에 든 예정 ETA · 접안 · 이안(실제 접안 기록)을 최적화 전 계획으로 본다(scen.existing).
+  //            후보 A를 계산하면 같은 계획을 엔진 계산식으로 평가한 값(체선 · 정박시간)이 채워진다 — 계획 자체는 그대로.
+  //   확정 뒤: 확정한 계획(확정 스냅숏, 이 데이터셋에서 확정한 것만). 확정 뒤 계획 조건을 고쳐도 그대로다.
+  const confirmed = current ? activePlan() : null
+  const plan = useMemo(() => (confirmed && confirmed.scenName === scen.name
+    ? { id: confirmed.candId, label: `확정 계획 v${confirmed.no}`, placements: confirmed.placements }
+    : scen.existing), [confirmed, scen])
+  const span = useMemo(() => spanOf([plan]), [plan])
   const START = NOW
   const end = Math.max(START + 24 * 60, span.end)
   const [t, setT] = useState(NOW)
@@ -393,7 +399,6 @@ function HomeMap() {
     }
     // 이동 가이드선 (11-24 화면 리뷰 결정): 스케줄된 배 전부가 아니라 「선택한 배」의 예상 이동 경로만 그린다.
     //   배를 누르면 선박 카드(제원 등)는 그대로 열리고, 그 배가 배정된 선석으로 가는 길만 지도에 나타난다.
-    //   확정 전에는 최저 후보 기준 「예상」 경로(옅은 점선), 확정 뒤에는 그 스케줄 경로를 진하게.
     //   색 지도 위에서도 보이게 흰 테두리를 깔고, 구간마다 진행 방향 화살표를 둔다.
     //   이름표는 접안이 빠른 순서로 몇 척만 쌓고 나머지는 「외 N척」으로 줄인다.
     routeLayer.current.clearLayers()
@@ -426,10 +431,10 @@ function HomeMap() {
       const color = sel ? '#ff7043' : '#ffab8f'
       const op = sel ? 0.95 : 0.6
       L.polyline(path, { color: '#ffffff', weight: sel ? 6 : 4, opacity: 0.6, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)
-      L.polyline(path, { color, weight: sel ? 3 : 2, dashArray: fixed ? '8 5' : '4 5', opacity: op, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)
+      L.polyline(path, { color, weight: sel ? 3 : 2, dashArray: '8 5', opacity: op, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)
       for (let i = 0; i < path.length - 1; i++) if (i % 2 === 0) arrow(path[i], path[i + 1], color, op)
     }
-  }, [plan, scen, states, selected, t, openVessel, berthSel, fixed, near, piers, bById, zoom, viewTick, hover, spotOf]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [plan, scen, states, selected, t, openVessel, berthSel, near, piers, bById, zoom, viewTick, hover, spotOf]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 마우스오버 강조는 표식 내용을 바꾸지 않고 클래스만 붙였다 뗀다(요소가 바뀌면 마우스가 벗어나도 툴팁이 안 닫힘)
   useEffect(() => {
