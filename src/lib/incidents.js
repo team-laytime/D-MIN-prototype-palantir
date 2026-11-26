@@ -1,8 +1,8 @@
 // 11-25 계획 조건을 바꾸는 받은 메일(시연용). 실데이터 묶음에는 이런 메일이 없어, 데이터셋의 실제 선박 · 부두로 정해진 규칙에 따라 만든다.
 // 메일마다 change 하나가 있고, 「반영」하면 계획 조건(scen)에 들어간다(applyChange). 후보는 「다시 계산」해야 바뀐다.
-//   eta   선사 대리점: 도착 지연                → scen.vessels[].eta
 //   block 부두 운영팀: 설비 고장 · 점검           → scen.blocks (EQUIPMENT)
-//   (11-26 강풍 예보 메일은 뺐다: 기상은 데이터셋의 시간별 풍속으로 이미 들어가 있고, 데이터와 다른 풍속을 지어내게 된다)
+//   (11-26 강풍 예보 · ETA 지연 메일은 뺐다. 강풍은 기상이 데이터셋의 시간별 풍속으로 이미 들어가 있어 데이터와 다른 풍속을 지어내게 되고,
+//    ETA 지연은 사용자 결정. 「반영」의 eta 처리(applyChange)는 다른 경로를 위해 남겨 둔다)
 //   fix   출하팀: 고객사 선적 일정으로 우선 접안   → scen.fixes
 //   param 생산계획팀: 탱크 안전재고 상한 조정      → scen.params.tank.safe_max_pct
 import { dayStart, fmt, toMin } from './time.js'
@@ -21,20 +21,7 @@ export function seedIncidents({ vessels, berths, window }, plan, base) {
   const used = new Set()
   const d0 = dayStart(window.start)
 
-  // 1) 도착 지연: 기준 시각 6~30시간 뒤 도착 예정인 첫 배를 8시간 늦춘다
-  const late = vessels.filter((v) => v.eta >= 6 * 60 && v.eta <= 30 * 60).sort((a, b) => a.eta - b.eta)[0]
-  if (late) {
-    used.add(late.id)
-    const to = round10(late.eta + 8 * 60)
-    out.push({
-      id: 'eta-delay', kind: 'ETA 지연', from: '선사 대리점', fromAddr: 'agent@example.com', at: -150,
-      title: `${late.name} 도착 지연, ETA ${fmt(late.eta)} → ${fmt(to)}`,
-      body: `스케줄러님,\n\n${late.name}(${late.callSign})이 전 항구 출항이 늦어져 울산 도착이 약 8시간 늦어집니다.\n\n변경 전 ETA: ${fmt(late.eta)}\n변경 후 ETA: ${fmt(to)}\n\n접안 일정 조정 부탁드립니다.\n대리점 드림`,
-      change: { type: 'eta', vid: late.id, from: late.eta, to },
-    })
-  }
-
-  // 2) 설비 고장: 둘째 날 가장 붐비는 선석을 08~16시 사용 불가
+  // 1) 설비 고장: 둘째 날 가장 붐비는 선석을 08~16시 사용 불가
   const day2 = [d0 + 1440, d0 + 2 * 1440]
   const busy = {}
   for (const p of plan) { const t = toMin(p.etb); if (t >= day2[0] && t < day2[1]) busy[p.berth] = (busy[p.berth] ?? 0) + 1 }
@@ -49,7 +36,7 @@ export function seedIncidents({ vessels, berths, window }, plan, base) {
     })
   }
 
-  // 3) 우선 접안 요청: 12~48시간 뒤 접안하는 첫 반출선을 기존 계획 부두 · 시각으로 고정
+  // 2) 우선 접안 요청: 12~48시간 뒤 접안하는 첫 반출선을 기존 계획 부두 · 시각으로 고정
   //    (11-26 엔진 계획 없이 만든다. 최적화는 이 배를 옮길 수 있으므로 고정은 늘 의미 있는 조건)
   const pick = base
     .map((b) => ({ b, v: vById[b.vessel_id], etb: round10(toMin(b.etb)) }))
@@ -66,7 +53,7 @@ export function seedIncidents({ vessels, berths, window }, plan, base) {
     })
   }
 
-  // 4) 탱크 상한 조정: 원유 입고가 몰려 안전재고 상한을 75%로
+  // 3) 탱크 상한 조정: 원유 입고가 몰려 안전재고 상한을 75%로
   out.push({
     id: 'tank-max', kind: '탱크 운영', from: '생산계획팀', fromAddr: 'production@example.com', at: -20,
     title: '원유 입고 집중, 탱크 안전재고 상한 75%로 운영 요청',
