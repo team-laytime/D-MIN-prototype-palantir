@@ -201,7 +201,6 @@
 .tf-guides { position: absolute; left: 62px; right: 0; top: 0; bottom: 40px; pointer-events: none; z-index: 1; }
 .tf-guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--line-3); }
 .tf-tick { position: absolute; top: 2px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; line-height: 1.2; white-space: nowrap; }
-.tf-tick.low { top: 20px; }
 .tf-tick b { font-size: calc(10.5px * var(--fs)); color: var(--fg); }
 .tf-tick span { font-size: calc(10px * var(--fs)); color: var(--fg-3); }
 .tf-seg.dem { overflow: visible; }
@@ -209,4 +208,4 @@
 .tf-tick.end { transform: translateX(-100%); align-items: flex-end; }
 .tf-axis .tf-track { overflow: visible; }
 .tf-seg em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.tf-axis .tf-track { height: 58px; } .tf-tick.low { top: 30px; } .tf-guides { bottom: 58px; }
+.tf-tick.start { transform: none; align-items: flex-start; }

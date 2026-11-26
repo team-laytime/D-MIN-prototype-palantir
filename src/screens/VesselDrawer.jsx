@@ -90,6 +90,20 @@ export default function VesselDrawer() {
   }
   const X = (m) => `${(3 + pos(m) * 94).toFixed(2)}%`
   const W = (a, b) => `${Math.max(1.2, (pos(b) - pos(a)) * 94).toFixed(2)}%`
+  // 그림 아래 시각 글자: 가까운 시각끼리 겹치지 않게 줄을 나눈다(왼쪽부터, 앞 글자와 GAP% 안이면 다음 줄)
+  const TICK_GAP = 22, TICK_ROW_PX = 28
+  const ticks = (() => {
+    const ms = [{ k: '도착', at: eta }, { k: '접안', at: p.etb }, { k: '호스 분리', at: p.hose }, { k: '이안', at: p.etu }]
+      .filter((m) => m.at != null).map((m) => ({ ...m, x: 3 + pos(m.at) * 94 })).sort((a, b) => a.x - b.x)
+    const last = []
+    for (const m of ms) {
+      let row = last.findIndex((x) => m.x - x >= TICK_GAP)
+      if (row < 0) row = last.length
+      last[row] = m.x
+      m.row = row
+    }
+    return { ms, h: Math.max(1, last.length) * TICK_ROW_PX + 2 }
+  })()
 
   return (
     <Drawer
@@ -190,10 +204,10 @@ export default function VesselDrawer() {
               </div>
             </div>
 
-            {/* 11-25 시간 흐름: 범례 없이 줄 이름과 칸 안의 글로 읽힌다 */}
-            <Panel title="시간 흐름" pad>
+            {/* 11-25 구간별 일정: 범례 없이 줄 이름과 칸 안의 글로 읽힌다 */}
+            <Panel title="구간별 일정" pad>
               <div className="tf" role="img" aria-label={`도착 ${fmt(eta)}, 접안 ${fmt(p.etb)}, 정박시간 개시 ${fmt(p.ls)}, 호스 분리 ${fmt(p.hose)}, 체선 ${fmtDur(d.excessMin)}`}>
-                <div className="tf-guides" aria-hidden="true">{[eta, p.etb, p.hose, p.etu].map((at, i) => <span key={i} className="tf-guide" style={{ left: X(at) }} />)}</div>
+                <div className="tf-guides" aria-hidden="true" style={{ bottom: ticks.h }}>{[eta, p.etb, p.hose, p.etu].map((at, i) => <span key={i} className="tf-guide" style={{ left: X(at) }} />)}</div>
                 <div className="tf-lane">
                   <span className="tf-name">배 위치</span>
                   <div className="tf-track">
@@ -217,10 +231,8 @@ export default function VesselDrawer() {
                 </div>
                 <div className="tf-axis">
                   <span className="tf-name" />
-                  <div className="tf-track">
-                    {[
-                      { k: '도착', at: eta }, { k: '접안', at: p.etb }, { k: '호스 분리', at: p.hose }, { k: '이안', at: p.etu },
-                    ].map((m, i, arr) => <span key={m.k} className={`tf-tick ${i % 2 ? 'low' : ''} ${i === arr.length - 1 ? 'end' : ''}`} style={{ left: X(m.at) }}><b>{m.k}</b><span className="num">{fmt(m.at)}</span></span>)}
+                  <div className="tf-track" style={{ height: ticks.h }}>
+                    {ticks.ms.map((m) => <span key={m.k} className={`tf-tick ${m.x > 88 ? 'end' : m.x < 12 ? 'start' : ''}`} style={{ left: `${m.x.toFixed(2)}%`, top: 2 + m.row * TICK_ROW_PX }}><b>{m.k}</b><span className="num">{fmt(m.at)}</span></span>)}
                   </div>
                 </div>
               </div>
