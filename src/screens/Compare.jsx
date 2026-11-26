@@ -12,7 +12,6 @@ import { SEV, KIND, checkRisks, riskLabel, riskShip, sortRisks } from '../lib/ri
 import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
 import { changeText } from '../lib/incidents.js'
 import SimilarCases from './SimilarCases.jsx'
-import BootCallout from '../ui/BootCallout.jsx'
 import { groupsFor } from '../lib/mailGroups.js'
 import { useApp } from '../state/app.jsx'
 import { Panel, Screen, St } from '../ui/kit.jsx'
@@ -92,7 +91,7 @@ export default function Compare() {
     return <Screen tab="compare" title="후보 비교·확정"><div className="cmp-none"><Spinner size={20} /> {result.error ?? '데이터셋을 불러오는 중입니다'}</div></Screen>
   }
   if (!all.length && result.boot) {
-    return <Screen tab="compare" title="후보 비교·확정"><BootCallout boot={result.boot} /></Screen>
+    return <Screen tab="compare" title="후보 비교·확정"><CompareLoading /></Screen>
   }
   if (!all.length) {
     return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '계산 결과가 비어 있습니다.'}</Callout></Screen>
@@ -463,5 +462,36 @@ function RiskDialog({ sim, rk, tab, setTab, vname, onClose, onPick }) {
         {data.notes?.length > 0 && <p className="cmp-rd-note">{data.notes.join(' · ')}</p>}
       </>}
     </Dialog>
+  )
+}
+
+/** 11-26 처음 여는 기준 시각의 후보 계산 중: 화면 틀(후보 비교 표 · 배치 결과 · 확정)은 그대로 보이고 값 자리에 「계산 중」 */
+function CompareLoading() {
+  const cols = [['후보 A', '기본'], ['후보 B', '상황형'], ['후보 C', '배별 지연 대비']]
+  const busy = <span className="cmp-running"><Spinner size={12} /> 계산 중</span>
+  return (
+    <div className="risk-layout">
+      <div className="stack">
+        <Panel code="CAND-REPORT" title="후보 비교">
+          <table className="dt cmp-report">
+            <colgroup><col className="cmp-c-label" />{cols.map(([id]) => <col key={id} />)}</colgroup>
+            <thead><tr><th />{cols.map(([id, sub]) => <th key={id}><span className="cmp-col">{id}<span className="cmp-col-sub">{sub}</span></span></th>)}</tr></thead>
+            <tbody>
+              {['총 예상 체선료', '최저안 대비', '체선 발생', '고정한 배', '리스크'].map((row, i) => (
+                <tr key={row}><th>{row}</th>{cols.map(([id]) => <td key={id} className={i ? 'muted' : ''}>{i ? '—' : busy}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+        <Panel code="BERTH PLAN" title="배치 결과">
+          <div className="cmp-none">{busy}</div>
+        </Panel>
+      </div>
+      <aside className="risk-sidebar stack">
+        <Panel code="PLAN-DECIDE" title="이 안으로 확정" pad>
+          <div className="cmp-none">{busy}</div>
+        </Panel>
+      </aside>
+    </div>
   )
 }
