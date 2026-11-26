@@ -37,6 +37,22 @@ test('검토 필수: OCR · LLM · 문서 간 불일치', () => {
   assert.equal(row(llm, 'load_laydays_from').sources.length, 2)
 })
 
+test('스캔본: 특약 값은 confidence 0.8이어도, 양식 기본값도 검토 필수(스캔본 특약 미확인)', () => {
+  const rows = dealRows([load('SYN-CP-304'), load('SYN-SC-302')], dealOf('SYN-CP-304'))
+  const rider = row(rows, 'berth_shift_counts')
+  assert.equal(rider.src.ev.confidence, 0.8)
+  assert.equal(rider.reason, 'ocr')
+  const nor = row(rows, 'nor_notice_h')
+  assert.equal(nor.reason, 'scan')
+  assert.equal(nor.value, 6)
+  assert.equal(nor.sources[1].page, 3) // 원본 특약 쪽
+  assert.equal(row(rows, 'weather').reason, 'scan')
+  // 글자층 있는 C/P가 같이 있으면 기본값은 그냥 양식 기본값, 값도 글자층 쪽에서
+  const both = dealRows([load('SYN-CP-304'), load('SYN-CP-302'), load('SYN-SC-302')], dealOf('SYN-CP-304'))
+  assert.equal(row(both, 'nor_notice_h').status, 'default')
+  assert.equal(row(both, 'laytime_total_h').src.doc_id, 'SYN-CP-302')
+})
+
 test('일 체선료: 매매 확인서가 CP 요율 준용이면 C/P 값이 기준', () => {
   // SYN VEGA: 스캔 C/P에서 못 읽음 → 매매 확인서 값을 임시로 쓰고 검토 필수
   const vega = row(dealRows([load('SYN-CP-304'), load('SYN-SC-302')], dealOf('SYN-CP-304')), 'demurrage_rate_per_day')

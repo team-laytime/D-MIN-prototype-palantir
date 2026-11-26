@@ -1,5 +1,5 @@
 // 추출값 검토: 왼쪽 선박(거래) 목록, 오른쪽 추출값 표. 행을 누르면 바로 아래에 원문 문장이 열리고 추출된 부분이 강조된다.
-// 검토 필수(스캔 문자 인식 · LLM 판정 · 문서끼리 다름)는 「원문과 일치」나 값 수정으로 끝내고, 다음 검토 항목으로 넘어간다.
+// 검토 필수는 「원문과 일치」(스캔본 양식 기본값은 「변경 조항 없음 확인」)나 값 수정으로 끝내고, 다음 검토 항목으로 넘어간다.
 import { Fragment, useState } from 'react'
 import { Button, Callout, Checkbox, HTMLSelect, NonIdealState } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
@@ -17,11 +17,13 @@ function Quote({ text, value }) {
   return <p className="ct-quote">{hit ? <>{hit[0]}<mark>{hit[1]}</mark>{hit[2]}</> : <mark>{text}</mark>}</p>
 }
 
+const CONFIRM = { scan: '변경 조항 없음 확인' }
+
 function StatusCell({ row, rv }) {
   if (rv) {
     return (
       <span className="ct-rv">
-        {'value' in rv ? <span className="chip blue">직접 수정</span> : <St tone="ok">원문과 일치</St>}
+        {'value' in rv ? <span className="chip blue">직접 수정</span> : <St tone="ok">{row.reason === 'scan' ? '변경 조항 없음' : '원문과 일치'}</St>}
         <span className="faint tiny">{rv.by} · {rv.at.slice(11)}</span>
       </span>
     )
@@ -65,7 +67,7 @@ function Detail({ row, rv, cur, onConfirm, onSave }) {
         </div>
       ))}
       <div className="ct-actions">
-        {row.status === 'review' && !rv && <Button intent="primary" icon="tick" text="원문과 일치" onClick={onConfirm} />}
+        {row.status === 'review' && !rv && <Button intent="primary" icon="tick" text={CONFIRM[row.reason] ?? '원문과 일치'} onClick={onConfirm} />}
         {rv && 'value' in rv && <span className="faint small">원래 값 {fmtValue(row, row.value, cur)}</span>}
         {row.edit && <Editor row={row} current={rv?.value ?? norm(row.value)} onSave={onSave} />}
         {!row.edit && row.status !== 'review' && row.status !== 'empty' && <span className="faint small">원문 확인만 하는 항목입니다. 값은 계산 조건 4개만 고칠 수 있습니다.</span>}
@@ -110,7 +112,7 @@ export default function ContractTerms() {
   const visible = view.rows.filter((r) => showEmpty || r.status !== 'empty' || r.edit)
 
   return (
-    <Screen tab="terms" title="추출값 검토" desc="검토 필수는 스캔 문자 인식, LLM 판정, 문서 간 불일치뿐입니다. 나머지는 원문만 볼 수 있습니다.">
+    <Screen tab="terms" title="추출값 검토" desc="검토 필수는 스캔본 값 · 스캔본의 양식 기본값, LLM 판정, 문서 간 불일치입니다. 나머지는 원문만 볼 수 있습니다.">
       <div className="ct-grid">
         <Panel code="VESSELS" title="선박" desc={`${views.length}척`}>
           <ul className="ct-vessels">

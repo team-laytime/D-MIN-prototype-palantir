@@ -2,13 +2,14 @@
 //   문서 JSON: { doc_id, kind: cp|recap|sales, cp|sales: { 필드: { value, evidence } }, review, link? }
 //   evidence: { doc_id, page, section, quote, confidence, method: rule|llm|manual, ocr, reviewed_by }
 //   deals.json: [{ documents, conflicts(C/P↔recap), mismatches(C/P↔매매 확인서), cp_gaps(C/P 빈칸을 매매 확인서로 채움) }]
-// 검토 필수: 스캔본 문자 인식(evidence.ocr), 규칙에 안 맞아 LLM이 판정(method llm), 문서 간 불일치(deals · 체선료 요율 기준), C/P 요율을 못 읽음.
-// 파서 review[]의 「필수 칸 없음」·「확신도 낮음(빈칸 표기)」은 이 기준에 들지 않아 쓰지 않는다.
+// 검토 필수: 스캔본 문자 인식(evidence.ocr, confidence와 상관없이), 스캔본만 있을 때의 양식 기본값(특약을 못 읽었을 수 있음),
+// 규칙에 안 맞아 LLM이 판정(method llm), 문서 간 불일치(deals · 체선료 요율 기준), C/P 요율을 못 읽음.
+// 파서 review[]는 쓰지 않는다: 스캔본 특약 값은 confidence 0.8이라 review[]에 안 들어가고, 「필수 칸 없음」은 이 기준이 아니다.
 
 export const KIND = { cp: 'C/P', recap: 'Recap', sales: '매매 확인서' }
 // recap · sales 구역은 문서 종류와 같아 출처에 다시 쓰지 않는다
 export const SECTION = { part1: 'Part I', rider: 'Rider' }
-export const REASON = { ocr: '스캔 문자 인식', llm: 'LLM 판정', diff: '문서 간 불일치', rate: 'C/P 요율 미확인' }
+export const REASON = { ocr: '스캔 문자 인식', scan: '스캔본 특약 미확인', llm: 'LLM 판정', diff: '문서 간 불일치', rate: 'C/P 요율 미확인' }
 export const GROUPS = ['체선료 계산 조건', '선박·화물', '계약 당사자·양식', '그 외 특약']
 
 // edit가 있는 4개만 값을 고칠 수 있다(계산에 쓰는 값). weather는 파서의 weather_rule + bad_weather_half를 한 줄로 합친 것.
@@ -61,6 +62,10 @@ export const bodyOf = (doc) => doc.cp ?? doc.sales ?? {}
 export const vesselOf = (doc) => bodyOf(doc).vessel_name?.value ?? doc.link?.vessel_name ?? null
 // 스캔본: 문자 인식한 칸이 하나라도 있는 문서(파서 reconcile._ocr와 같은 기준)
 export const isScan = (doc) => Object.values(bodyOf(doc)).some((c) => c?.evidence?.ocr)
+const riderPage = (doc) => {
+  const pages = Object.values(bodyOf(doc)).filter((c) => c?.evidence?.section === 'rider').map((c) => c.evidence.page)
+  return pages.length ? Math.min(...pages) : null
+}
 // 문서 JSON은 2028-02-14T00:00:00, deals.json은 2028-02-14 00:00이라 비교 전에 맞춘다
 export const norm = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(v) ? v.slice(0, 16).replace('T', ' ') : v)
 
@@ -79,7 +84,7 @@ const source = (doc, key, fallbackQuote = null) => {
 /**
  * 한 거래(같은 선박의 문서 묶음)의 추출값 행.
  * docs = 등록이 끝난 이 거래의 파서 문서들, deal = deals.json 항목(없으면 null).
- * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|llm|diff|rate|null, src, sources[], note }
+ * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|null, src, sources[], note }
  */
 export function dealRows(docs, deal) {
   // 같은 종류면 글자층이 있는 문서를 먼저(파서 reconcile과 같이 C/P 원본이 스캔 사본보다 앞)
@@ -92,6 +97,7 @@ export function dealRows(docs, deal) {
   for (const g of deal?.cp_gaps ?? []) if (byId[deal.documents[0]] && byId[g.sc]) diffs[g.field] = { resolved: g.resolved_value, docs: [deal.documents[0], g.sc], cpText: g.cp_text, why: 'C/P에 값이 없어(「' + g.cp_text + '」) 매매 확인서 값을 씁니다.' }
   const form = ds.map((d) => bodyOf(d).cp_form?.value).find(Boolean) ?? ''
   const cps = ds.filter((d) => d.kind === 'cp')
+  const scanOnly = cps.length > 0 && cps.every(isScan)
 
   return FIELDS.map((f) => {
     const row = { ...f, value: null, status: 'empty', reason: null, src: null, sources: [], note: null }
@@ -127,7 +133,11 @@ export function dealRows(docs, deal) {
     const def = form.startsWith('ASBATANKVOY') ? FORM_DEFAULTS[f.key] : null
     if (def) {
       const src = { clause: `${form} ${def.clause}`, quote: def.text }
-      return { ...row, value: def.value, src, sources: [src], status: 'default', note: '특약에 바꾸는 조항이 없어 양식 기본값을 씁니다.' }
+      if (!scanOnly) return { ...row, value: def.value, src, sources: [src], status: 'default', note: '특약에 바꾸는 조항이 없어 양식 기본값을 씁니다.' }
+      // 스캔본은 특약에 조항이 없는 건지 문자 인식이 못 읽은 건지 모른다 → 원본 특약 쪽을 보고 확인
+      const page = { doc_id: cps[0].doc_id, kind: 'cp', value: null, page: riderPage(cps[0]), section: 'rider', quote: null, scan: true }
+      return { ...row, value: def.value, src, sources: [src, page], status: 'review', reason: 'scan',
+        note: '스캔본이라 특약에 이 조항을 바꾸는 문장이 없는 건지, 문자 인식이 못 읽은 건지 알 수 없습니다. 원본 특약 쪽에 바꾸는 조항이 없으면 확인하십시오. 그때까지는 양식 기본값을 씁니다.' }
     }
     return { ...row, note: '문서에서 이 항목을 찾지 못했습니다.' }
   })
