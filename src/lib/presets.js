@@ -32,7 +32,7 @@ export function windGrade(scen) {
   return { g, text: `예보 최대 ${top} m/s, ${grp} 중단 기준 ${th[grp][0]} m/s까지 ${Math.round(margin * 10) / 10} m/s (σ ${SIGMA_MS})`, th }
 }
 
-export const BASE_PRESET = { id: 'base', label: '기본', desc: '팀 엔진 기본 파라미터', params: {} }
+export const BASE_PRESET = { id: 'base', label: '기본', desc: '기본 기준 그대로', params: {} }
 export const C_PRESET = { id: 'vessel_buffer', label: '배별 지연 대비', desc: '배마다 늦어질 만큼 앞뒤 간격을 비워 둔 계획 (작업 여유 · 도착 여유, 데이터 팀 안 3)',
   params: { shifting: { vessel_buffer: true } } }
 const B_TANK = { id: 'tank', label: '안전재고 강화', desc: '탱크 안전 범위를 20~80%에서 25~75%로 좁힘', params: { tank: { safe_min_pct: 25, safe_max_pct: 75 } } }

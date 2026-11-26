@@ -110,7 +110,7 @@ def main():
         'range': {'from': f'{year}-01-01', 'to': f'{year}-12-31'},
         'default_start': a.default_start,
         'shortcuts': [x.strip() for x in a.shortcuts.split(',') if x.strip()],
-        'source': f'데이터 팀 묶음 {bundle.name} (실제 접안 실적 + 합성 값, 계약은 가상) · 팀 엔진 berth_sim CP-SAT',
+        'source': f'데이터 팀 묶음 {bundle.name} (실제 접안 실적 + 합성 값, 계약은 가상)',
         'meta_bundle': {k: meta.get(k) for k in ('dropped_bunker', 'multi_berth', 'berth_fit')},
         'meta': {k: meta.get(k) for k in ('plan_start', 'plan_days', 'current_shipments', 'past_shipments')},
         'request': req,
