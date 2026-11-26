@@ -9,7 +9,7 @@ import { Button, Callout, Checkbox, Dialog, SegmentedControl, Spinner, TextArea 
 import { NOW, fmt, fmtDur, money, toMin } from '../lib/time.js'
 import { spanOf, stateAt } from '../lib/plan.js'
 import { SEV, KIND, checkRisks, riskLabel, riskShip, sortRisks } from '../lib/risk.js'
-import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace } from '../lib/workspace.js'
+import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
 import { changeText } from '../lib/incidents.js'
 import SimilarCases from './SimilarCases.jsx'
 import { useApp } from '../state/app.jsx'
@@ -58,7 +58,7 @@ function Elapsed({ since }) {
 }
 
 export default function Compare() {
-  const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, risks,
+  const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, risks, scenarioId,
     whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision } = useApp()
   useWorkspace() // 확정, 취소, 보낸 메일이 바로 보이게 구독
   const [reason, setReason] = useState('')
@@ -88,7 +88,7 @@ export default function Compare() {
   if (!scen || result.loading) {
     return <Screen tab="compare" title="후보 비교·확정"><div className="cmp-none"><Spinner size={20} /> {result.error ?? '데이터셋을 불러오는 중입니다'}</div></Screen>
   }
-  if (!all.length && result.boot) {
+  if (!all.length && (result.boot || result.running)) { // 처음 계산 중이거나, 처음 계산을 버리고 다시 계산 중(아직 A 없음)
     return <Screen tab="compare" title="후보 비교·확정"><CompareLoading /></Screen>
   }
   if (!all.length) {
@@ -130,6 +130,12 @@ export default function Compare() {
     const shown = monitor.filter((m) => monFilter === 'all' || (monFilter === 'warn' ? m.tone !== 'ok' : m.phase === monFilter))
     const prange = spanOf([psim])
     const pdem = plan.placements.filter((p) => p.dem > 0)
+    // 11-26 리스크와 반영하지 않은 조건 변경 요청을 따로 (전에 확정한 기록은 한 목록에 '결정 안 한 조건 변경: '을 붙여 두었다)
+    const OLD = '결정 안 한 조건 변경: '
+    const fixRisks = (plan.uncheckedRisks ?? []).filter((r) => !r.startsWith(OLD))
+    const fixSkipped = plan.skippedChanges ?? (plan.uncheckedRisks ?? []).filter((r) => r.startsWith(OLD)).map((r) => r.slice(OLD.length))
+    const fixApplied = plan.appliedChanges ?? null // 전에 확정한 기록에는 없음 → 그 칸은 「기록 없음」
+    const fixChecked = plan.checkedRisks ?? null
     return (
       <Screen tab="compare" title="접안 계획 확정됨" bodyClass="plan-stack cmp-fixed" actions={<Button icon="comparison" onClick={() => setShowCands(true)}>후보 비교 다시 보기</Button>}>
         <div className="cmp-banner">
@@ -162,12 +168,21 @@ export default function Compare() {
             </div>
           </Panel>
           <Panel code="FIX-NOTE" title="판단 근거" pad actions={<Button size="small" icon="undo" disabled={!isScheduler} onClick={() => cancelPlan('스케줄러 확정 취소')}>확정 취소</Button>}>
-            {/* 11-26 입력한 줄바꿈 그대로, 함께 확정한 리스크 · 조건 변경은 한 줄에 하나씩 */}
-            <p className="fix-reason">{plan.reason}</p>
-            {plan.uncheckedRisks.length > 0 && <div className="fix-unchecked">
-              <div className="small c-amber strong">확인하지 않은 리스크 · 결정 안 한 조건 변경 {plan.uncheckedRisks.length}건과 함께 확정</div>
-              <ul>{plan.uncheckedRisks.map((r, i) => <li key={i}>{r}</li>)}</ul>
-            </div>}
+            {/* 11-26 작업자 판단 근거 → 조건(반영 / 반영 안 함) → 리스크(확인 / 확인 안 함) */}
+            <section className="fix-sec">
+              <h4>작업자 판단 근거</h4>
+              <p className="fix-reason">{plan.reason}</p>
+            </section>
+            <section className="fix-sec">
+              <h4>조건 변경 요청</h4>
+              <FixList title="반영함" items={fixApplied} tone="ok" empty="반영한 요청 없음" />
+              <FixList title="반영하지 않음" note="이 계획에 넣지 않고 확정했습니다" items={fixSkipped} tone="skip" empty="반영하지 않은 요청 없음" />
+            </section>
+            <section className="fix-sec">
+              <h4>리스크</h4>
+              <FixList title="확인함" items={fixChecked} tone="ok" empty="확인한 리스크 없음" />
+              <FixList title="확인하지 않음" items={fixRisks} tone="warn" empty="확인하지 않은 리스크 없음" />
+            </section>
           </Panel>
           <DemList title="체선 발생 선박" items={[...pdem].sort((a, b) => b.dem - a.dem).map((p) => ({ vid: p.vid, name: p.name, berth: p.berth, etb: p.etb, cents: p.dem }))} focusVid={focus.vid} onPick={toGantt} />
         </div>
@@ -184,11 +199,16 @@ export default function Compare() {
   const focusRisk = riskOf(focusSim.id)
   const toCheck = checkRisks(focusRisk.data)
   const checkKey = (k) => `${version}:${focusSim.id}:${k}`
-  // 결정하지 않은 조건 변경이 남아 있으면 확정할 때 함께 묻고 기록에 남긴다
-  const unchecked = [
-    ...toCheck.filter((r) => !checks[checkKey(r.id)]).map((r) => riskLabel(r, vname)),
-    ...mails.map(({ inc }) => `결정 안 한 조건 변경: ${changeText(scen, inc)}`),
-  ]
+  // 확인하지 않은 리스크와 결정하지 않은 조건 변경 요청이 남아 있으면 확정할 때 함께 묻고 기록에 따로 남긴다
+  //   (11-26 결정 안 한 조건 변경 요청은 이 계획에 반영하지 않은 채 확정한 것)
+  const uncheckedRisks = toCheck.filter((r) => !checks[checkKey(r.id)]).map((r) => riskLabel(r, vname))
+  const checkedRisks = toCheck.filter((r) => checks[checkKey(r.id)]).map((r) => riskLabel(r, vname))
+  // 조건 변경 요청: 반영한 것 · 반영하지 않기로 한 것 · 결정하지 않은 것(= 반영하지 않고 확정)
+  const incText = (inc) => `${changeText(scen, inc)} (${inc.from})`
+  const incStatus = (inc) => ws.inbox[`inc:${scenarioId}:${inc.id}`]?.status
+  const appliedChanges = scen.incidents.filter((i) => i.change && incStatus(i) === 'applied').map(incText)
+  const skippedChanges = [...scen.incidents.filter((i) => i.change && incStatus(i) === 'dismissed'), ...mails.map(({ inc }) => inc)].map(incText)
+  const unchecked = [...uncheckedRisks, ...mails.map(({ inc }) => incText(inc))]
   const checkTotal = toCheck.length
   const checkedN = toCheck.filter((r) => checks[checkKey(r.id)]).length
   const blocked = result.stale || result.running
@@ -201,7 +221,7 @@ export default function Compare() {
   const fix = (force) => {
     if (blocked || waitBC || riskWait) return
     if (unchecked.length && !force) { setAsking(true); return }
-    fixPlan({ cand: focusSim, scen, version, reason: reason.trim() || '(사유 미입력)', uncheckedRisks: unchecked })
+    fixPlan({ cand: focusSim, scen, version, reason: reason.trim() || '(사유 미입력)', uncheckedRisks, checkedRisks, appliedChanges, skippedChanges })
     setAsking(false); setReason(''); setShowCands(false)
   }
   const pick = (id) => { setAsking(false); setFocusId(id) }
@@ -327,7 +347,7 @@ export default function Compare() {
                 : waitBC && <p className="small c-amber">후보 B · C 계산이 끝나면 확정할 수 있습니다.</p>}
               {asking ? (
                 <Callout className="risk-confirmation" intent="warning" icon="warning-sign">
-                  <p className="small"><b>확인하지 않은 리스크 · 결정 안 한 조건 변경 {unchecked.length}건</b>이 확정 기록에 함께 남습니다.</p>
+                  <p className="small"><b>{[uncheckedRisks.length && `확인하지 않은 리스크 ${uncheckedRisks.length}건`, mails.length && `결정하지 않은 조건 변경 요청 ${mails.length}건`].filter(Boolean).join(' · ')}</b>이 확정 기록에 함께 남습니다.{mails.length > 0 && ' 결정하지 않은 요청은 반영하지 않은 것으로 남고 이 계획에 들어가지 않습니다.'}</p>
                   <div className="risk-buttons"><Button size="small" onClick={() => setAsking(false)}>돌아가기</Button><Button size="small" intent="warning" onClick={() => fix(true)}>그래도 확정</Button></div>
                 </Callout>
               ) : <Button intent="primary" icon="endorsed" fill disabled={!isScheduler || blocked || waitBC || riskWait} onClick={() => fix(false)}>{focusSim.label}로 확정</Button>}
@@ -439,6 +459,16 @@ function RiskDialog({ sim, rk, tab, setTab, vname, onClose, onPick }) {
         {data.notes?.length > 0 && <p className="cmp-rd-note">{data.notes.join(' · ')}</p>}
       </>}
     </Dialog>
+  )
+}
+
+/** 11-26 확정 판단 근거의 한 묶음 (반영함 · 확인하지 않음 등). items가 null이면 그 확정 때는 기록하지 않던 항목 */
+function FixList({ title, note, items, tone, empty }) {
+  return (
+    <div className={`fix-list ${tone}`}>
+      <div className="fix-list-h"><b>{title}</b> <span className="num">{items ? `${items.length}건` : '기록 없음'}</span>{note && items?.length > 0 && <span className="tiny muted"> · {note}</span>}</div>
+      {items?.length ? <ul>{items.map((r, i) => <li key={i}>{r}</li>)}</ul> : items && <p className="tiny muted">{empty}</p>}
+    </div>
   )
 }
 

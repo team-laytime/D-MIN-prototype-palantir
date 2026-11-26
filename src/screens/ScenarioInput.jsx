@@ -783,8 +783,7 @@ function MailChanges({ scen, pick, setPick }) {
     <section className="pi-mail" data-tour="mail-changes">
       <header className="pi-mail-head">
         <Icon icon="envelope" size={14} />
-        <b>받은 메일의 조건 변경</b>
-        <span className={pendingIds.size ? 'c-amber' : 'c-green'}>{pendingIds.size ? `반영할 메일을 체크하십시오 · 정하지 않은 메일 ${pendingIds.size}건 · 「후보 비교」를 누르면 한꺼번에 정합니다` : '모두 정함'}</span>
+        <b>메일로 요청받은 조건 변경</b>
         <span className="pi-mail-btns">
           {mailDecision && <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={undoMailDecision}>결정 되돌리기</Button>}
         </span>

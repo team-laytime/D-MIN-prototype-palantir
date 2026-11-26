@@ -4,10 +4,11 @@
 //  - 부서마다 템플릿, 미리보기, 첨부가 다르다. 보고서는 체선료 지불 부서에만 붙는다.
 //  - 값은 확정 스냅숏에서 읽는다. 시연판은 실제로 발송하지 않고 메일함의 「보낸메일함」에 저장한다.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Callout, HTMLSelect, Icon } from '@blueprintjs/core'
+import { Alert, Button, HTMLSelect, Icon } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { activePlan, logActivity, sendMail, useWorkspace, ws } from '../lib/workspace.js'
-import { DEPTS, TAGS, TEMPLATES, attachmentsFor, groupsFor, makeFill } from '../lib/mailGroups.js'
+import { samplePlan } from '../lib/mailSample.js'
+import { DEPTS, GROUPS, ONCE_TAGS, TAGS, TEMPLATES, attachmentsFor, groupsFor, makeFill } from '../lib/mailGroups.js'
 import MailBody, { plainBody } from './MailBody.jsx'
 import { Screen } from '../ui/kit.jsx'
 import AttachmentDialog, { AttachmentButtons } from './MailAttachment.jsx'
@@ -60,7 +61,7 @@ function TagEditor({ value, onChange, resetKey, single = false, disabled, apiRef
 }
 
 export default function Mail() {
-  const { go, isScheduler } = useApp()
+  const { go, isScheduler, scen } = useApp()
   useWorkspace()
   const plan = activePlan()
   const [groupId, setGroupId] = useState(null)
@@ -73,26 +74,20 @@ export default function Mail() {
   const [justSent, setJustSent] = useState(null) // 방금 보낸 받는 곳 id (단추에 잠깐 「보냄」)
   const [done, setDone] = useState(null) // 보낸 뒤 완료 창에 띄울 받는 곳 목록
   const bodyApi = useRef(null)
-  const groups = useMemo(() => (plan ? groupsFor(plan) : []), [plan])
-  const fill = useMemo(() => (plan ? makeFill({ plan }) : () => ''), [plan])
-
-  if (!plan) {
-    return (
-      <Screen tab="mail" title="확정 통보 메일" step={3} bodyClass="rpt-page">
-        <Callout intent="primary" icon="lock" title="확정한 뒤에 씁니다">
-          통보 메일은 확정된 일정만 보냅니다. 「후보 비교·확정」에서 안을 확정하면 이 화면이 열립니다.
-          <div style={{ marginTop: 10 }}><Button intent="primary" icon="comparison" onClick={() => go('compare')}>후보 비교·확정으로</Button></div>
-        </Callout>
-      </Screen>
-    )
-  }
+  // 11-26 확정 전: 받는 곳 · 템플릿은 그대로 쓰고, 미리보기는 늘 같은 더미 계획(mailSample)으로 채운다.
+  //   맨 위에 「미리보기용 예시」를 붙이고, 복사 · 보내기는 확정 뒤에만
+  const locked = !plan
+  const sample = useMemo(() => (plan ? null : samplePlan({ no: ws.plans.length + 1, nightPilot: scen?.nightPilot ?? null })), [plan, scen?.nightPilot])
+  const shown = plan ?? sample // 미리보기에 쓰는 계획 (확정 계획 또는 예시)
+  const groups = useMemo(() => (shown ? groupsFor(shown) : GROUPS), [shown])
+  const fill = useMemo(() => (shown ? makeFill({ plan: shown }) : () => ''), [shown])
 
   const group = groups.find((g) => g.id === groupId) ?? groups[0]
   const draft = drafts[group.id] ?? defaultDraft(group)
   const setDraft = (patch) => setDrafts((d) => ({ ...d, [group.id]: { ...(d[group.id] ?? defaultDraft(group)), ...patch } }))
-  const outOf = (g) => { const d = drafts[g.id] ?? defaultDraft(g); return { subject: fill(d.subject, g), body: fill(d.body, g), attachments: attachmentsFor(g, plan) } }
-  const out = outOf(group)
-  const sentOf = (g) => ws.sent.filter((s) => s.kind === 'notice' && s.planNo === plan.no && s.groupId === g.id).at(-1)
+  const outOf = (g) => { const d = drafts[g.id] ?? defaultDraft(g); return { subject: fill(d.subject, g), body: fill(d.body, g), attachments: attachmentsFor(g, shown) } }
+  const out = shown ? outOf(group) : null
+  const sentOf = (g) => (locked ? null : ws.sent.filter((s) => s.kind === 'notice' && s.planNo === plan.no && s.groupId === g.id).at(-1))
   const sentCount = groups.filter((g) => sentOf(g)).length
   const editorKey = `${group.id}:${draft.tpl}:${resetNo}`
 
@@ -107,13 +102,24 @@ export default function Mail() {
     setAsking(null)
   }
   const copy = async () => {
+    if (locked) return
     try { await navigator.clipboard.writeText(`제목: ${out.subject}\n\n${plainBody(out.body, plan)}`); setCopied(true); logActivity('메일', '메일 복사', out.subject); setTimeout(() => setCopied(false), 1500) } catch { /* 복사 실패는 화면에서 직접 선택 */ }
   }
   const usedTags = new Set([...`${draft.subject}${draft.body}`.matchAll(/\{\{(.+?)\}\}/g)].map((m) => m[1]))
+  const bodyTags = new Set([...draft.body.matchAll(/\{\{(.+?)\}\}/g)].map((m) => m[1]))
   const sent = sentOf(group)
 
   return (
     <Screen tab="mail" title="확정 통보 메일" step={3} bodyClass="rpt-page ml-page">
+      {locked && (
+        <div className="ml-lockbar" role="status">
+          <Icon icon="lock" size={14} />
+          <div>
+            <b>아직 확정한 접안 계획이 없습니다</b>
+          </div>
+          <Button size="small" intent="primary" icon="comparison" onClick={() => go('compare')}>후보 비교·확정으로</Button>
+        </div>
+      )}
       <div className="ml-grid3">
         {/* 받는 곳: 왼쪽 목록, 부서 종류마다 접고 펴는 드롭다운 */}
         <aside className="ml-card ml-side">
@@ -147,7 +153,7 @@ export default function Mail() {
             })}
           </div>
           <footer className="ml-side-foot">
-            <Button fill icon="send-to" disabled={!isScheduler || sentCount === groups.length} onClick={() => setAsking(groups.filter((g) => !sentOf(g)))}>{justSent === 'all' ? '모두 보냈습니다' : '안 보낸 곳 모두 보내기'}</Button>
+            <Button fill icon={locked ? 'lock' : 'send-to'} disabled={locked || !isScheduler || sentCount === groups.length} onClick={() => setAsking(groups.filter((g) => !sentOf(g)))}>{justSent === 'all' ? '모두 보냈습니다' : '안 보낸 곳 모두 보내기'}</Button>
           </footer>
         </aside>
 
@@ -165,10 +171,13 @@ export default function Mail() {
             </div>
             <div className="ml-tags">
               <span className="ml-label">넣을 내용</span>
-              {TAGS.map(([t, hint]) => (
-                <button type="button" key={t} title={hint} className={usedTags.has(t) ? 'used' : ''} disabled={!isScheduler}
-                  onMouseDown={(e) => e.preventDefault()} onClick={() => bodyApi.current?.insert(t)}>{t}</button>
-              ))}
+              {TAGS.map(([t, hint]) => {
+                const once = ONCE_TAGS.has(t) && bodyTags.has(t) // 그림 · 표 · 긴 글은 본문에 이미 있으면 다시 못 넣음
+                return (
+                  <button type="button" key={t} title={once ? `${hint} · 본문에 이미 있어 한 번만 넣을 수 있습니다` : hint} className={usedTags.has(t) ? 'used' : ''} disabled={!isScheduler || once}
+                    onMouseDown={(e) => e.preventDefault()} onClick={() => bodyApi.current?.insert(t)}>{t}</button>
+                )
+              })}
             </div>
             <TagEditor value={draft.body} resetKey={editorKey} disabled={!isScheduler} onChange={(v) => setDraft({ body: v })} apiRef={bodyApi} label="메일 본문" />
           </div>
@@ -179,12 +188,18 @@ export default function Mail() {
           <header className="ml-card-head">
             <h3>미리보기</h3>
             <div className="ml-card-actions">
-              <Button icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
-              <Button intent="primary" icon={justSent === group.id ? 'tick' : 'send-message'} disabled={!isScheduler} onClick={() => setAsking([group])}>{justSent === group.id ? '보냈습니다' : sent ? '다시 보내기' : '보내기'}</Button>
+              <Button icon={copied ? 'tick' : 'duplicate'} disabled={locked} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
+              <Button intent="primary" icon={locked ? 'lock' : justSent === group.id ? 'tick' : 'send-message'} disabled={locked || !isScheduler} title={locked ? '후보를 확정한 뒤에 보낼 수 있습니다' : undefined}
+                onClick={() => setAsking([group])}>{justSent === group.id ? '보냈습니다' : sent ? '다시 보내기' : '보내기'}</Button>
             </div>
           </header>
           <div className="ml-card-body ml-paper-wrap">
-            <article className="ml-paper">
+            {!out ? (
+              <div className="ml-paper ml-paper-locked">
+                <div className="ml-locked"><Icon icon="lock" size={20} /><b>후보를 확정하면 미리보기가 나옵니다</b></div>
+              </div>
+            ) : <article className={`ml-paper ${locked ? 'is-sample' : ''}`}>
+              {locked && <div className="ml-sample-note">미리보기용 예시 · 확정하면 확정한 일정으로 바뀝니다</div>}
               <dl className="ml-head">
                 <dt>받는 사람</dt><dd>{group.name} &lt;{group.to}&gt;</dd>
                 <dt>제목</dt><dd className="strong">{out.subject}</dd>
@@ -195,13 +210,13 @@ export default function Mail() {
                   </dd>
                 </>}
               </dl>
-              <MailBody text={out.body} plan={plan} />
-            </article>
+              <MailBody text={out.body} plan={shown} />
+            </article>}
           </div>
         </section>
       </div>
 
-      <AttachmentDialog file={viewing} plan={plan} onClose={() => setViewing(null)} />
+      <AttachmentDialog file={viewing} plan={shown} onClose={() => setViewing(null)} />
       <Alert isOpen={!!asking} icon="send-message" intent="primary" className="ml-confirm"
         confirmButtonText="예" cancelButtonText="아니오" onConfirm={confirmSend} onCancel={() => setAsking(null)} canEscapeKeyCancel>
         {asking && (asking.length === 1

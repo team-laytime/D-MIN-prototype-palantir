@@ -416,6 +416,11 @@ async function runJob(text, idem, signal) {
   }
 }
 
+// 11-26 엔진이 끝난 작업 결과를 1시간 들고 있어서, 같은 Idempotency-Key면 다시 계산하지 않고 그 결과를 준다.
+//   시연 초기화 때 이 값을 바꿔(newRun) 엔진도 새로 계산하게 한다. 한 번의 실행 안에서는 같은 요청이 한 작업을 같이 기다린다.
+let runNonce = Date.now().toString(36)
+export function newRun() { runNonce = Date.now().toString(36) }
+
 /** 엔진 계획 계산 (저장된 결과가 있으면 그것). 계획을 찾은 결과만 남긴다. 오류는 status를 붙여 던진다(429 = 대기열이 참) */
 export async function solveCached(request, signal) {
   const text = JSON.stringify(request)
@@ -424,7 +429,7 @@ export async function solveCached(request, signal) {
   const key = ver && `plan:${ver}:${hash}`
   const hit = key && await cacheGet(key)
   if (hit) return hit
-  const body = await runJob(text, `${ver ?? 'x'}:${hash}`, signal)
+  const body = await runJob(text, `${ver ?? 'x'}:${hash}:${runNonce}`, signal)
   if (key && body?.plan) cacheSet(key, body)
   return body
 }

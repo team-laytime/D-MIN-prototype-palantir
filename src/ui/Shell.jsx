@@ -75,7 +75,7 @@ export function Shell({ children }) {
             <DatasetPicker datasets={datasets} scenarioId={scenarioId} onOpen={setScenarioId} />
           )}
           <Clock />
-          <ThemeToggle />
+          {/* 11-26 라이트 모드만 씀: <ThemeToggle /> (다크 코드는 남김, 주소에 ?theme=dark면 다크) */}
           {isScheduler && (
             <Tooltip content="화면을 하나씩 짚는 안내" placement="bottom">
               <Button className="help-btn" data-tour="help-btn" variant="minimal" size="small" icon="help" text="사용법" onClick={tour.start} />

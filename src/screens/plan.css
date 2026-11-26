@@ -481,11 +481,12 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .bp6-alert .bp6-alert-footer .bp6-button { height: 34px; padding: 0 16px; font-size: calc(13px * var(--fs)); font-weight: 600; }
 
 /* 11-25 받은 메일의 조건 변경 요청 (계획 조건 위) */
-.pi-mail { border: 1px solid var(--line-2); border-left: 3px solid var(--amber); background: var(--bg-2); }
-.pi-mail-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: calc(12px * var(--fs)); }
+.pi-mail { border: 1px solid var(--line-2); background: var(--bg-2); }
+.pi-mail-head { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-bottom: 1px solid var(--line-2); background: var(--bg-3); font-size: calc(13px * var(--fs)); color: var(--fg); }
+.pi-mail-head .bp6-icon { color: var(--fg-3); }
 .pi-mail-btns { margin-left: auto; display: inline-flex; gap: 6px; }
-.pi-mail ul { list-style: none; margin: 0; padding: 0; }
-.pi-mail li { display: grid; grid-template-columns: 70px 92px minmax(0, 1fr); align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.pi-mail ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); }
+.pi-mail li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; column-gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .pi-mail li:last-child { border-bottom: 0; }
 .pi-mail li.applied { background: var(--green-wash); }
 .pi-mail li.dismissed { opacity: .6; }
@@ -537,5 +538,12 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .tp-wait { display: block; padding: 0 8px; color: var(--fg-3); font-size: calc(12px * var(--fs)); }
 /* 11-26 확정 화면 판단 근거: 입력 줄바꿈 유지, 함께 확정한 항목은 목록 */
 .fix-reason { margin: 0; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.6; font-size: calc(12.5px * var(--fs)); }
-.fix-unchecked { margin-top: 12px; padding: 8px 10px; border-left: 3px solid var(--amber); background: var(--amber-wash); }
-.fix-unchecked ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: calc(12px * var(--fs)); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; color: var(--fg-2); }
+/* 11-26 판단 근거 세 묶음: 작업자 판단 근거 → 조건 변경 요청 → 리스크 */
+.fix-sec + .fix-sec { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-2); }
+.fix-sec h4 { margin: 0 0 6px; font-size: calc(12.5px * var(--fs)); font-weight: 600; color: var(--fg); }
+.fix-list { margin-top: 6px; padding: 6px 10px; border-left: 3px solid var(--line-3); background: var(--bg-3); }
+.fix-list.ok { border-left-color: var(--green); }
+.fix-list.warn { border-left-color: var(--amber); background: var(--amber-wash); }
+.fix-list-h { font-size: calc(12px * var(--fs)); }
+.fix-list ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: calc(12px * var(--fs)); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; color: var(--fg-2); }
+.fix-list p { margin: 2px 0 0; }

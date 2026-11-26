@@ -3,7 +3,8 @@
 //   - 데이터셋을 불러오면 후보 3개(엔진 프리셋별 계획)가 바로 있다.
 //   - 계획 조건(ETA·부두 사용 불가·고정·파라미터)을 고치면 「다시 계산」으로 엔진 API에 보낸다(약 1분).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { buildRequest, buildScen, engineFacts, fetchRisks, initialResults, loadDataset, loadIndex, rankSims, recalc as engineRecalc, scenarioIdOf } from '../lib/dataset.js'
+import { buildRequest, buildScen, engineFacts, fetchRisks, initialResults, loadDataset, loadIndex, newRun, rankSims, recalc as engineRecalc, scenarioIdOf } from '../lib/dataset.js'
+import { cacheClear } from '../lib/cache.js'
 import { setTimeBase } from '../lib/time.js'
 import { applyChange } from '../lib/incidents.js'
 import { chooseB, presetsFor } from '../lib/presets.js'
@@ -47,6 +48,15 @@ export function AppProvider({ children }) {
     setLoadError(null)
     bootRef.current?.abort()
     const ctl = new AbortController(); bootRef.current = ctl
+    // 11-26 기준 시각이 바뀌면 앞 시각의 것을 모두 버린다: 진행 중인 다시 계산(엔진 작업도 취소), 조건 변경 결정(되돌리기 스냅숏),
+    //   리스크 확인 체크, 「반영하면?」 미리 계산. 안 버리면 앞 시각의 결정이 새 시각 화면에 보이고, 되돌리기가 앞 시각의 계획 조건을
+    //   새 시각에 되살려 다른 기준 시각으로 엔진을 부른다(10-03 화면에서 11-09 요청이 나가던 문제)
+    if (scenarioIdRef.current !== id) {
+      abortRef.current?.abort()
+      setMailDecision(null)
+      setChecks({})
+      setWhatIf({})
+    }
     // 11-26 다른 기준 시각을 고르면 앞 화면을 비우고(불러오는 중) 그 시각의 하역 속도부터 받는다
     if (scenRef.current.scen && scenarioIdRef.current !== id) {
       replaceScen({ scen: null, version: scenRef.current.version + 1 })
@@ -306,7 +316,7 @@ export function AppProvider({ children }) {
     const fresh = c0.version === v0 && !c0.running
     if (applyIds.length) editScen((d) => { for (const i of d.incidents) if (applyIds.includes(i.id)) applyChange(d, i, true) })
     for (const i of pend) setAlertStatus(alertIdOf(i.id), applyIds.includes(i.id) ? 'applied' : 'dismissed', `[${i.kind}] ${i.title}`)
-    setMailDecision({ applied: applyIds, dismissed: pend.filter((i) => !applyIds.includes(i.id)).map((i) => i.id), at: nowText(), snap: { scen: s0, version: v0, calc: c0, whatIf: keep, statuses } })
+    setMailDecision({ scenarioId: scenarioIdRef.current, applied: applyIds, dismissed: pend.filter((i) => !applyIds.includes(i.id)).map((i) => i.id), at: nowText(), snap: { scen: s0, version: v0, calc: c0, whatIf: keep, statuses } })
     logActivity('입력', '조건 변경 결정', `반영 ${applyIds.length}건 · 반영 안 함 ${pend.length - applyIds.length}건`)
     if (!applyIds.length) { if (!fresh) recalc(); return } // 반영 없음: 조건이 이미 바뀌어 있었으면 그대로 다시 계산
     if (pre?.state === 'done' && fresh) setCalc({ sims: pre.sims, version: scenRef.current.version, error: null, running: false, at: nowText().slice(0, 16) })
@@ -315,6 +325,7 @@ export function AppProvider({ children }) {
   const undoMailDecision = useCallback(() => {
     const md = mailDecisionRef.current
     if (!md) return
+    if (md.scenarioId !== scenarioIdRef.current) { setMailDecision(null); return } // 다른 기준 시각에서 한 결정은 되살리지 않는다
     abortRef.current?.abort()
     const v = scenRef.current.version + 1
     replaceScen({ scen: md.snap.scen, version: v })
@@ -350,6 +361,13 @@ export function AppProvider({ children }) {
   const logout = useCallback(() => { setRole(null); setDrawer(null); setTourIdx(null) }, [])
   // 시연 초기화: 확정 기록·리스크 확인·입력을 처음 값으로 되돌리고 운영 현황으로 돌아간다.
   const resetDemo = useCallback(() => {
+    // 11-26 진행 중인 계산(다시 계산 · 처음 계산 · 미리 계산)을 모두 버리고 엔진 작업도 취소, 후보도 비운 뒤 같은 기준 시각을 새로 연다
+    //   (안 버리면 초기화 전 조건으로 계산하던 결과가 초기화 뒤에 도착해 후보 자리를 채웠다)
+    abortRef.current?.abort()
+    bootCalcRef.current?.abort(); bootCalcRef.current = null
+    bootRef.current?.abort()
+    setBoot(null)
+    setCalc({ sims: [], version: 0, error: null, running: false, at: null })
     resetWorkspace()
     setChecks({})
     setMailDecision(null)
@@ -360,7 +378,9 @@ export function AppProvider({ children }) {
     setFocusId('A')
     setResetKey((k) => k + 1)
     setTab('home')
-    if (scenarioIdRef.current) open(scenarioIdRef.current)
+    // 11-26 저장해 둔 엔진 · 리스크 계산 결과도 지워 후보를 처음부터 다시 계산한다 (하역 속도 전처리 결과는 계산 결과가 아니라 남긴다)
+    newRun()
+    cacheClear(['plan:', 'risk:']).then(() => { if (scenarioIdRef.current) open(scenarioIdRef.current) })
   }, [open])
 
   const value = {
@@ -369,7 +389,7 @@ export function AppProvider({ children }) {
     tab, go, focusId, setFocusId,
     drawer, drawerSim, openVessel, closeDrawer,
     checks, setCheck, current, tour, reportDraft, setReportDraft, risks,
-    whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision,
+    whatIf, whatIfKey, pendingIncs, mailDecision: mailDecision?.scenarioId === scenarioId ? mailDecision : null, decideMails, undoMailDecision,
     mailFilter, setMailFilter, applyIncident,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

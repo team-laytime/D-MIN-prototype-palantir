@@ -47,6 +47,20 @@ export function cachePrune(prefix, keep) {
   })
 }
 
+/** 11-26 시연 초기화: prefixes 중 하나로 시작하는 항목을 모두 지운다 (계산 결과를 버리고 다시 계산하게) */
+export function cacheClear(prefixes) {
+  return run('readwrite', (s) => {
+    const req = s.openCursor()
+    req.onsuccess = () => {
+      const c = req.result
+      if (!c) return
+      if (prefixes.some((p) => String(c.key).startsWith(p))) c.delete()
+      c.continue()
+    }
+    return null
+  })
+}
+
 /** 문자열 해시 (FNV-1a 두 번 + 길이). 키 충돌이 나도 같은 길이 · 같은 해시 두 개가 맞아야 해서 사실상 없다 */
 export function hashText(s) {
   let h1 = 2166136261, h2 = 5381
