@@ -1,6 +1,6 @@
 // 콘솔 틀: 상단 명령 바 · 왼쪽 레일 · 작업 영역 · 하단 상태 바. 화면 내용은 children.
 import { Button, HTMLSelect, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { NAV, canUse, groupOf } from '../lib/workspace.js'
@@ -125,14 +125,25 @@ export function Shell({ children }) {
 }
 
 /**
- * 11-26 데이터셋 고르기: 1년치 데이터셋은 기준 시각(날짜 · 시각)을 직접 고른다. 「열기」를 눌러야 바뀐다
- * (바꿀 때마다 하역 속도 · 후보 계산이 돌기 때문). 시연용 바로가기는 목록에서 바로 연다. 날짜별 파일은 예전처럼 목록.
+ * 11-26 데이터셋 고르기: 상단에는 「기준 시각 2025/11/09 09:00」 버튼 하나. 누르면 시연 날짜(바로 열림)와 직접 고르기(날짜 · 정시 + 열기).
+ * 직접 고를 때 「열기」를 눌러야 바뀐다(바꿀 때마다 하역 속도 · 후보 계산이 돌기 때문). 날짜별 파일은 예전처럼 목록.
  */
 function DatasetPicker({ datasets, scenarioId, onOpen }) {
   const [file, start] = (scenarioId ?? '').split('@')
   const d = datasets.find((x) => x.id === file) ?? datasets.at(-1)
   const [draft, setDraft] = useState(start ?? '')
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
   useEffect(() => { setDraft(start ?? '') }, [start])
+  // 바깥을 누르거나 Esc면 닫는다
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e) => { if (!wrapRef.current?.contains(e.target)) { setOpen(false); setDraft(start ?? '') } }
+    const onKey = (e) => { if (e.key === 'Escape') { setOpen(false); setDraft(start ?? '') } }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [open, start])
   if (!d || d.kind !== 'year') {
     return (
       <label className="scen-select" id="scen" data-tour="scen">
@@ -144,17 +155,35 @@ function DatasetPicker({ datasets, scenarioId, onOpen }) {
   }
   const [day, hm] = draft.split(' ')
   const valid = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(draft) && day >= d.range.from && day <= d.range.to
-  const go = () => { if (valid && draft !== start) onOpen(`${d.id}@${draft}`) }
+  const close = () => { setOpen(false); setDraft(start ?? '') }
+  const pick = (to) => { setOpen(false); if (to && to !== start) onOpen(`${d.id}@${to}`) }
+  const hours = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
   return (
-    <div className="scen-select scen-picker" id="scen" data-tour="scen">
-      <span className="faint tiny">기준 시각</span>
-      <input type="date" className="scen-date num" value={day ?? ''} min={d.range.from} max={d.range.to} aria-label="기준 날짜"
-        onChange={(e) => setDraft(`${e.target.value} ${hm ?? '09:00'}`)} onKeyDown={(e) => e.key === 'Enter' && go()} />
-      <input type="time" className="scen-time num" value={hm ?? ''} step={3600} aria-label="기준 시각"
-        onChange={(e) => setDraft(`${day ?? d.default_start.split(' ')[0]} ${e.target.value}`)} onKeyDown={(e) => e.key === 'Enter' && go()} />
-      <Button size="small" variant="minimal" intent="primary" text="열기" disabled={!valid || draft === start} onClick={go} />
-      <HTMLSelect minimal value="" aria-label="시연 바로가기" onChange={(e) => e.target.value && onOpen(`${d.id}@${e.target.value}`)}
-        options={[{ value: '', label: '바로가기' }, ...d.shortcuts.map((x) => ({ value: x, label: x }))]} />
+    <div className="scen-wrap" ref={wrapRef}>
+      <button type="button" className="scen-select scen-trigger" id="scen" data-tour="scen" aria-expanded={open} onClick={() => (open ? close() : setOpen(true))} aria-label="기준 시각 고르기">
+        <Icon icon="calendar" size={13} className="faint" />
+        <span className="faint tiny">기준 시각</span>
+        <b className="num">{start ? start.replace(/-/g, '/') : '불러오는 중'}</b>
+        <Icon icon={open ? 'caret-up' : 'caret-down'} size={12} className="faint" />
+      </button>
+      {open && (
+        <div className="scen-pop" role="dialog" aria-label="기준 시각 고르기">
+          <div className="scen-pop-k">시연 날짜</div>
+          <div className="scen-pop-list">
+            {d.shortcuts.map((x) => (
+              <button key={x} type="button" className={`scen-pop-item num ${x === start ? 'on' : ''}`} onClick={() => pick(x)} title={x}>{x.slice(5).replace('-', '/')}</button>
+            ))}
+          </div>
+          <div className="scen-pop-k">직접 고르기 <span className="faint">{d.range.from.slice(0, 4)}년 안</span></div>
+          <div className="scen-pop-pick">
+            <input type="date" className="scen-pop-date num" value={day ?? ''} min={d.range.from} max={d.range.to} aria-label="기준 날짜"
+              onChange={(e) => setDraft(`${e.target.value} ${hm ?? '09:00'}`)} />
+            <HTMLSelect value={hm ?? '09:00'} aria-label="기준 시각" onChange={(e) => setDraft(`${day ?? d.default_start.split(' ')[0]} ${e.target.value}`)}
+              options={hours.includes(hm) || !hm ? hours : [hm, ...hours]} />
+            <Button intent="primary" text="열기" disabled={!valid || draft === start} onClick={() => pick(draft)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
