@@ -91,13 +91,15 @@ export default function ScenarioInput() {
     const def = shiftDef[g] ?? [0, 0]
     if (v < def[idx]) return `기본값 ${def[idx]}h 미만으로는 설정할 수 없습니다.`
     if (v > SHIFT_MAX_H) return `${SHIFT_MAX_H}h 이하로 입력해 주세요.`
+    // 엔진은 shifting.hours를 통째로 바꾼다(그룹 하나만 보내면 나머지 그룹이 없어 계산이 실패) → 항상 표 전체를 보낸다
     editScen((d) => {
-      const hrs = ((d.params.shifting ??= {}).hours ??= {})
-      const next = [...(hrs[g] ?? def)]
-      next[idx] = v
-      if (next[0] === def[0] && next[1] === def[1]) delete hrs[g]; else hrs[g] = next
-      if (!Object.keys(hrs).length) delete d.params.shifting.hours
-      if (!Object.keys(d.params.shifting).length) delete d.params.shifting
+      const hrs = { ...structuredClone(shiftDef), ...structuredClone(d.params.shifting?.hours ?? {}) }
+      hrs[g] = [...hrs[g]]
+      hrs[g][idx] = v
+      const same = Object.keys(shiftDef).every((k) => hrs[k][0] === shiftDef[k][0] && hrs[k][1] === shiftDef[k][1])
+      if (same) {
+        if (d.params.shifting) { delete d.params.shifting.hours; if (!Object.keys(d.params.shifting).length) delete d.params.shifting }
+      } else (d.params.shifting ??= {}).hours = hrs
     })
     return null
   }
@@ -257,30 +259,6 @@ function DateTimeField({ value, label, onChange, bad = false }) {
       </button>
       <input ref={ref} type="datetime-local" className="dtf-input" tabIndex={-1} aria-hidden="true" value={value == null ? '' : toInput(value)} onChange={(e) => onChange(e.target.value)} />
     </span>
-  )
-}
-
-/** 11-26 선택한 선석의 부두 그룹 Switching · Direction 시간. 그룹 공통이고 기본값 미만으로는 못 내린다 */
-function ShiftEdit({ group, shift }) {
-  const cur = shift.of(group), def = shift.def[group] ?? [0, 0]
-  const row = (k, name, note) => (
-    <label className={`pin ${cur[k] !== def[k] ? 'changed' : ''}`} title={note}>
-      <span className="pin-k">{name}</span>
-      <NumField value={cur[k]} label={`${SHIFT_LABEL[group] ?? group} ${name}`} onCommit={(v) => shift.set(group, k, v)} />
-      <span className="pin-u">h</span>
-      {cur[k] !== def[k]
-        ? <button type="button" className="vt-undo" title={`기본값 ${def[k]}h로`} aria-label={`${name} 기본값으로`} onClick={() => shift.set(group, k, def[k])}><Icon icon="undo" size={13} /></button>
-        : <span className="pin-def">기본</span>}
-    </label>
-  )
-  return (
-    <section className="bt-shift">
-      <h4>Switching · Direction <small>{SHIFT_LABEL[group] ?? group} 공통 · 기본값 {def[0]}h · {def[1]}h 미만 불가</small></h4>
-      <div className="bt-shift-row">
-        {row(0, 'Switching', '같은 선석에서 앞 선박 이안 뒤 다음 접안까지 교대 시간')}
-        {row(1, 'Direction', '선석이 비어 있을 때 ETA 뒤 접안까지 시간 (도선 · 이동)')}
-      </div>
-    </section>
   )
 }
 
@@ -499,7 +477,13 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
                       <td className={`bt-st ${bl.length ? 'on' : ''}`}>{bl.length ? `${bl.length}건` : '없음'}</td>
                       {[0, 1].map((k) => {
                         const gp = shiftGroup(x.id), v = shift.of(gp)[k]
-                        return <td key={k} className={`r num bt-sh ${v !== shift.def[gp]?.[k] ? 'changed' : ''}`}>{v}h</td>
+                        return (
+                          <td key={k} className={`r bt-sh ${v !== shift.def[gp]?.[k] ? 'changed' : ''}`} onClick={(e) => e.stopPropagation()}
+                            title={`${SHIFT_LABEL[gp] ?? gp} 공통 · 기본값 ${shift.def[gp]?.[k]}h 미만 불가`}>
+                            <NumField value={v} label={`${label(x)} ${k ? 'Direction' : 'Switching'} (${SHIFT_LABEL[gp] ?? gp} 공통)`} onCommit={(nv) => shift.set(gp, k, nv)} />
+                            <span className="pin-u">h</span>
+                          </td>
+                        )
                       })}
                     </tr>
                   )
@@ -523,7 +507,6 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
                 <tr><th>크기</th><td>{b.size ?? '-'}</td></tr>
               </tbody>
             </table>
-            <ShiftEdit group={shiftGroup(b.id)} shift={shift} />
             <div className="bt-prod">
               <div className="bt-cap">취급 제품 <span>{b.products.length}</span></div>
               <ul>{b.products.map((p) => <li key={p}>{p}</li>)}</ul>

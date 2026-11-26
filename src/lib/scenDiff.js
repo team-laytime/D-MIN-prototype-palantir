@@ -86,6 +86,7 @@ export function diffScen(prev, next) {
   for (const path of new Set([...Object.keys(pp), ...Object.keys(np)])) {
     if (pp[path] === np[path]) continue
     if (JSON.stringify(pp[path]) === JSON.stringify(np[path])) continue
+    if (path.startsWith('shifting.hours.')) { const g = path.slice(15); if (JSON.stringify(pp[path] ?? SHIFT_DEFAULT[g]) === JSON.stringify(np[path] ?? SHIFT_DEFAULT[g])) continue }
     const f = PARAM_FIELDS.find((x) => x.path.join('.') === path)
     const wg = path.startsWith('weather.thresholds_ms.') ? WIND_GROUPS.find((g) => path.endsWith(g.key)) : null
     const sg = path.startsWith('shifting.hours.') ? path.slice('shifting.hours.'.length) : null

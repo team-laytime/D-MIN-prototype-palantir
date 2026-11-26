@@ -524,11 +524,13 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .bt-bar .pin-def { white-space: nowrap; }
 .wx-at { margin-left: 8px; font-size: calc(14px * var(--fs)); font-weight: 600; color: var(--fg-2); }
 /* 11-26 부두 탭: 선석 목록의 Switching · Direction 열, 선택한 선석 그룹의 편집 칸 */
-.bt-c-sh { width: 20%; }
+.bt-c-sh { width: 23%; }
 .bt-table .bt-c-st { width: 22%; }
 .bt-table thead th.r { text-align: right; white-space: nowrap; }
-.bt-sh { color: var(--fg-2); }
-.bt-sh.changed { color: var(--accent); font-weight: 700; }
+.bt-sh { color: var(--fg-2); white-space: nowrap; }
+.bt-sh .pin-in { width: 54px; height: 28px; padding: 0 6px; font-size: calc(13px * var(--fs)); }
+.bt-sh .pin-u { margin-left: 3px; color: var(--fg-3); }
+.bt-sh.changed .pin-in { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .bt-shift { margin: 4px 0 14px; }
 .bt-shift h4 { margin: 0 0 8px; font-size: calc(13.5px * var(--fs)); }
 .bt-shift h4 small { margin-left: 8px; font-weight: 400; color: var(--fg-3); font-size: calc(11.5px * var(--fs)); }
