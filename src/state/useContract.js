@@ -48,6 +48,7 @@ const fresh = () => {
 }
 
 let state = fresh()
+let gen = 0 // 시연 초기화 횟수: 초기화 전에 시작한 「추출 중」이 끝나도 새 목록에 붙지 않게
 let rev = 0
 const listeners = new Set()
 const set = (patch) => { state = { ...state, ...patch }; rev++; listeners.forEach((l) => l()) }
@@ -69,7 +70,9 @@ function add({ form, name, empty, dupKey, probe }, by) {
   const r = { ...reg(null, form, name, at, error, by), dupKey, status: error ? 'error' : 'extracting' }
   set({ regs: [...state.regs, r] })
   if (error) return
+  const g = gen
   setTimeout(() => {
+    if (g !== gen) return
     const kind = detectKind(probe)
     // 파일 이름에 문서 번호(SYN-CP-312 등)나 선박명(마지막 단어, 예: BELLATRIX)이 있으면 그 결과를 먼저 붙인다
     const free = kind ? POOL[kind].filter((id) => !usedIds().has(id)) : []
@@ -93,6 +96,8 @@ export function registerText(text, by) {
   add({ form: 'paste', name: text.trim().split('\n')[0].slice(0, 80), empty: !text.trim(), dupKey: `paste:${text.trim()}`, probe: text }, by)
 }
 export function pickDeal(key) { set({ pick: key }) }
+/** 시연 초기화(상단 메뉴): 등록 문서 · 검토 기록을 처음 상태로. 다른 화면처럼 메모리에만 있어 새로고침해도 처음으로 돌아간다. */
+export function resetContract() { gen++; state = fresh(); set({}) }
 /** 검토 기록. value가 없으면 「원문과 일치」, 있으면 고친 값(이것도 검토 완료). from = 문서 간 불일치에서 고른 문서 종류(C/P · 매매 확인서 …). */
 export function review(dealKey, field, by, value, from) {
   set({ reviews: { ...state.reviews, [`${dealKey}:${field}`]: { by, at: clock().slice(0, 16), ...(value !== undefined ? { value } : {}), ...(from ? { from } : {}) } } })

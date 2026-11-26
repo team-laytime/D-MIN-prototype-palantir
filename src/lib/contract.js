@@ -9,7 +9,7 @@
 export const KIND = { cp: 'C/P', recap: 'Recap', sales: '매매 확인서' }
 // recap · sales 구역은 문서 종류와 같아 출처에 다시 쓰지 않는다
 export const SECTION = { part1: 'Part I', rider: 'Rider' }
-export const REASON = { ocr: 'OCR 판독', scan: '스캔본 특약 미확인', llm: 'AI 판독', diff: '문서 간 불일치', rate: 'C/P 요율 미확인' }
+export const REASON = { ocr: 'OCR 판독', scan: '스캔본 특약 미확인', llm: 'AI 판독', diff: '문서 간 불일치', rate: 'C/P 요율 미확인', missing: '계산 값 없음' }
 // 계산에 쓰는 4개(값을 고칠 수 있는 칸)를 맨 위에 따로 둔다
 export const GROUPS = ['계산에 쓰는 값', '정박시간 · 레이데이즈', '선박·화물', '계약 당사자·양식', '그 외 특약']
 
@@ -85,7 +85,7 @@ const source = (doc, key, fallbackQuote = null) => {
 /**
  * 한 거래(같은 선박의 문서 묶음)의 추출값 행.
  * docs = 등록이 끝난 이 거래의 파서 문서들, deal = deals.json 항목(없으면 null).
- * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|null, src, sources[], note,
+ * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|missing|null, src, sources[], note,
  *       srcTag: 출처가 확인 대상이 아닐 때 붙이는 말(임시 · 양식 기본값), check: 실제로 확인할 문서 { doc_id, kind, page, section, scan } }
  */
 export function dealRows(docs, deal) {
@@ -143,6 +143,12 @@ export function dealRows(docs, deal) {
       const page = { doc_id: cps[0].doc_id, kind: 'cp', value: null, page: riderPage(cps[0]), section: 'rider', quote: null, scan: true }
       return { ...row, value: def.value, src, sources: [page, src], status: 'review', reason: 'scan', srcTag: '양식 기본값', check: page,
         note: '스캔본이라 특약에 이 조항을 바꾸는 문장이 없는 건지, OCR이 못 읽은 건지 알 수 없습니다. 원본 특약 쪽에 바꾸는 조항이 없으면 확인하십시오. 그때까지는 양식 기본값을 씁니다.' }
+    }
+    // 계산에 쓰는 값이 비면 계산을 못 한다 → 검토 필수. 문서에 빈칸 표기(To be advised · TBA)가 있으면 그 문장을 근거로 보인다
+    if (f.edit) {
+      const blank = ds.map((d) => source(d, f.key)).filter((s) => s.ev)
+      return { ...row, src: blank[0] ?? null, sources: blank, status: 'review', reason: 'missing',
+        note: `계산에 쓰는 값인데 문서에 값이 없습니다${blank.length ? `(「${blank[0].quote}」)` : ''}. 받은 값을 직접 넣어야 계산할 수 있습니다.` }
     }
     return { ...row, note: '문서에서 이 항목을 찾지 못했습니다.' }
   })

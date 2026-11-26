@@ -79,6 +79,7 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
   - AI 판독(`method: "llm"`).
   - 문서 간 불일치(deals).
   - C/P 요율 미확인.
+  - 계산 값 없음: 계산에 쓰는 4개(허용 정박시간 · 체선료율 · NOR 후 정박시간 개시 · 악천후 조항)가 어느 문서에도 없을 때. 빈칸 표기(To be advised · TBA) 문장이 있으면 근거로 보이고, 값을 직접 넣어야 끝난다.
 
   파서의 `review[]`는 쓰지 않는다. 「필수 칸 없음」 같은 이유가 화면 기준과 달라서다.
 - **체선료율**: 매매 확인서 `rate_basis`가 「CP 요율 준용」이면 C/P 값이 기준이다.

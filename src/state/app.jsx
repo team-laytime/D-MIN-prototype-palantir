@@ -10,6 +10,7 @@ import { chooseB, presetsFor } from '../lib/presets.js'
 import { diffScen } from '../lib/scenDiff.js'
 import { ROLES, activePlan, canUse, groupOf, logActivity, nowText, recordChange, resetWorkspace, restoreAlertStatus, setAlertStatus, setRole, useWorkspace, ws } from '../lib/workspace.js'
 import { TOUR as TOUR_ALL } from '../tour.js'
+import { resetContract } from './useContract.js'
 
 const TOUR = TOUR_ALL.filter((s) => groupOf(s.tab === 'risk' ? 'compare' : s.tab)).map((s) => (s.tab === 'risk' ? { ...s, tab: 'compare' } : s))
 
@@ -323,6 +324,7 @@ export function AppProvider({ children }) {
   // 시연 초기화: 확정 기록·리스크 확인·입력을 처음 값으로 되돌리고 운영 현황으로 돌아간다.
   const resetDemo = useCallback(() => {
     resetWorkspace()
+    resetContract() // 11-26 계약 문서 담당 화면(문서 등록 · 추출값 검토)도 처음으로
     setChecks({})
     setMailDecision(null)
     setWhatIf({})

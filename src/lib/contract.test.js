@@ -69,9 +69,10 @@ test('일 체선료: 매매 확인서가 CP 요율 준용이면 C/P 값이 기�
   assert.equal(diff.reason, 'diff')
   assert.equal(diff.value, 46300)
   assert.equal(diff.src.doc_id, 'SYN-CP-302')
-  // 별도 요율은 다른 계약이라 쓰지 않는다
+  // 별도 요율은 다른 계약이라 쓰지 않는다 → C/P에도 값이 없으니 계산 값 없음
   sc.sales.rate_basis.value = '별도'
-  assert.equal(row(dealRows([load('SYN-CP-304'), sc], null), 'demurrage_rate_per_day').status, 'empty')
+  const own = row(dealRows([load('SYN-CP-304'), sc], null), 'demurrage_rate_per_day')
+  assert.deepEqual([own.status, own.reason, own.value], ['review', 'missing', null])
 })
 
 test('cp_gaps: C/P가 비어 매매 확인서 값을 적용값으로, C/P 쪽 원문은 deals의 cp_text', () => {
@@ -119,4 +120,12 @@ test('원본 본문에서 근거 문장 찾기: 시연용으로 옮긴 날짜도
   assert.equal(at('LAYCAN : 16-18 NOV 2025'), 'LAYCAN : 06-08 NOV 2028')
   assert.equal(at('LAYCAN : 16-18 Dec 2025'), 'LAYCAN : 06-08 NOV 2028')
   assert.equal(at('FREIGHT : WS 95'), null)
+})
+
+test('계산에 쓰는 값이 비면 검토 필수(계산 값 없음): C/P 빈칸 표기를 근거로', () => {
+  const r = row(dealRows([load('SYN-CP-307')], dealOf('SYN-CP-307')), 'demurrage_rate_per_day')
+  assert.deepEqual([r.status, r.reason, r.value], ['review', 'missing', null])
+  assert.equal(r.src.quote, 'Demurrage per day: To be advised')
+  // 매매 확인서가 있으면 지금처럼 문서 간 불일치(C/P 빈칸을 매매 확인서 값으로)
+  assert.equal(row(dealRows([load('SYN-CP-307'), load('SYN-SC-306')], dealOf('SYN-CP-307')), 'demurrage_rate_per_day').reason, 'diff')
 })

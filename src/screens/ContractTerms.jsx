@@ -143,9 +143,10 @@ function Editor({ row, current, onSave }) {
 
 function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPick, onSave, onOpen }) {
   const ref = useRef(null)
-  // 앞 항목을 확인하고 넘어왔으면 이 항목의 첫 동작에 초점(키보드로 이어서 검토)
-  useEffect(() => { if (autoFocus) ref.current?.querySelector('.ct-actions button:not([disabled])')?.focus() }, [autoFocus])
+  // 앞 항목을 확인하고 넘어왔으면 이 항목의 첫 동작(값을 넣어야 하는 행은 입력 칸)에 초점: 키보드로 이어서 검토
+  useEffect(() => { if (autoFocus) ref.current?.querySelector('.ct-actions button:not([disabled]), .ct-actions input, .ct-actions select')?.focus() }, [autoFocus])
   const pick = row.reason === 'diff' || row.reason === 'rate'
+  const fill = row.reason === 'missing' // 값이 없으니 「일치」가 아니라 받은 값을 넣어 끝낸다
   const todo = row.status === 'review' && !rv
   const verb = CONFIRM[row.reason] ?? '원문과 일치'
   return (
@@ -170,8 +171,9 @@ function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPic
         </div>
       )}
       <div className="ct-actions">
-        {todo && !pick && <Button intent="primary" icon="tick" text={verb} onClick={onConfirm} />}
-        {todo && !pick && peers.length > 0 && <Button icon="tick-circle" text={`${verb}: 위 ${peers.length}건까지 모두 (${peers.length + 1}건)`} onClick={onConfirmAll} />}
+        {todo && !pick && !fill && <Button intent="primary" icon="tick" text={verb} onClick={onConfirm} />}
+        {todo && fill && <span className="c-amber small">값을 넣어 저장하면 검토가 끝납니다.</span>}
+        {todo && !pick && !fill && peers.length > 0 && <Button icon="tick-circle" text={`${verb}: 위 ${peers.length}건까지 모두 (${peers.length + 1}건)`} onClick={onConfirmAll} />}
         {todo && pick && row.sources.filter((s) => s.value != null && !s.clause).map((s) => (
           <Button key={s.doc_id} intent={norm(s.value) === norm(row.value) ? 'primary' : 'none'} icon="tick" text={`${KIND[s.kind]} 값 적용`} onClick={() => onPick(s)} />
         ))}
