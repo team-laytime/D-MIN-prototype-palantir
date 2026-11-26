@@ -105,6 +105,7 @@ function HomeMap() {
   useEffect(() => { setT((now) => Math.min(now, end)) }, [end])
   const mapElement = useRef(null)
   const mapRef = useRef(null)
+  const clampRef = useRef(null) // 지도 위 상세(툴팁)를 보이는 영역 안으로 (지도 만들 때 채움)
   const markerLayer = useRef(null)
   const routeLayer = useRef(null)
   const markers = useRef(new Map())
@@ -191,6 +192,33 @@ function HomeMap() {
     setZoom(map.getZoom())
     map.on('zoomend', () => setZoom(map.getZoom()))
     map.on('moveend', () => setViewTick((x) => x + 1))
+    // 11-26 지도 위 상세(툴팁)가 지도 밖으로 나가 잘리지 않게, 열릴 때 · 지도를 옮길 때 지도 안으로 밀어 넣는다
+    //   기준은 실제로 보이는 영역: 지도 요소와, 넘치는 부분을 가리는 바깥 틀들의 겹치는 부분
+    const visibleRect = () => {
+      let { left, top, right, bottom } = map.getContainer().getBoundingClientRect()
+      for (let p = map.getContainer().parentElement; p && p !== document.body; p = p.parentElement) {
+        const cs = getComputedStyle(p)
+        if (cs.overflow === 'visible' && cs.overflowX === 'visible' && cs.overflowY === 'visible') continue
+        const b = p.getBoundingClientRect()
+        left = Math.max(left, b.left); top = Math.max(top, b.top); right = Math.min(right, b.right); bottom = Math.min(bottom, b.bottom)
+      }
+      return { left, top, right, bottom }
+    }
+    const clampTip = (tip) => {
+      const el = tip?.getElement?.()
+      if (!el) return
+      el.style.marginLeft = ''; el.style.marginTop = ''
+      requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect(), c = visibleRect(), pad = 6
+        const dx = r.right > c.right - pad ? c.right - pad - r.right : r.left < c.left + pad ? c.left + pad - r.left : 0
+        const dy = r.bottom > c.bottom - pad ? c.bottom - pad - r.bottom : r.top < c.top + pad ? c.top + pad - r.top : 0
+        el.style.marginLeft = dx ? `${dx}px` : ''
+        el.style.marginTop = dy ? `${dy}px` : ''
+      })
+    }
+    map.on('tooltipopen', (e) => clampTip(e.tooltip))
+    clampRef.current = clampTip
+    map.on('moveend zoomend', () => map.eachLayer((l) => { const tip = l.getTooltip?.(); if (tip && l.isTooltipOpen?.()) clampTip(tip) }))
     // 11-25 배 움직임 애니메이션: 5분 칸 사이를 CSS 전환으로 채운다. 확대, 축소 중에는 끈다(배가 늦게 따라오는 것 방지).
     const el = mapElement.current
     el.classList.add('anim')
@@ -222,7 +250,8 @@ function HomeMap() {
       wanted.add(key)
       let marker = markers.current.get(key)
       if (!marker) {
-        marker = L.marker(pos, { icon, title, zIndexOffset }).addTo(markerLayer.current)
+        marker = L.marker(pos, { icon, zIndexOffset }).addTo(markerLayer.current) // title을 주면 브라우저 기본 툴팁이 상세 창을 가린다
+        marker.getElement()?.setAttribute('aria-label', title)
         markers.current.set(key, marker)
       } else {
         marker.setLatLng(pos).setZIndexOffset(zIndexOffset)
@@ -240,7 +269,7 @@ function HomeMap() {
         marker.on('mouseout', marker._hov.off)
       }
       if (tooltip) {
-        if (marker.getTooltip()) marker.setTooltipContent(tooltip)
+        if (marker.getTooltip()) { marker.setTooltipContent(tooltip); if (marker.isTooltipOpen()) clampRef.current?.(marker.getTooltip()) } // 내용이 바뀌면 크기도 바뀐다
         else marker.bindTooltip(tooltip, { direction: 'auto', offset: [14, 0], className: 'home-map-tip', opacity: 1 })
       } else if (marker.getTooltip()) marker.unbindTooltip()
     }

@@ -636,3 +636,28 @@ body:has(.home-console) { min-width: 0; }
    남은 시간 칸 폭을 고정하고 숫자 폭을 같게 해서 옆 칸이 움직이지 않게 한다 */
 .home-arr-left { flex: none; min-width: 7.2em; text-align: right; font-variant-numeric: tabular-nums; }
 .home-arr-time b { font-variant-numeric: tabular-nums; }
+
+/* 11-26 지도 위 부두 표시 · 상세(툴팁)를 테마 색으로 — 라이트 모드에서도 주변과 같은 밝은 바탕 (다크는 전과 비슷) */
+.hud-tag { border-color: var(--line-3); background: color-mix(in srgb, var(--bg-2) 92%, transparent); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.hud-tag em { color: var(--fg-2); border-left-color: var(--line-2); }
+.hud-tag i { background: var(--fg-3); }
+.hud-tag.st-busy i { background: var(--green); box-shadow: 0 0 0 3px var(--green-wash); }
+.hud-tag.st-busy em { color: var(--green); }
+.hud-tag.st-blocked i { background: var(--red); }
+.hud-tag.st-blocked em { color: var(--red); }
+.hud-tag.hl { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.home-map-tip { border-color: var(--line-3) !important; background: var(--bg-2) !important; color: var(--fg) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, .18) !important; }
+.home-map-tip .tip-head b { color: var(--fg); }
+.home-map-tip .tip-chip { color: var(--fg-2); }
+.home-map-tip .tip-chip.ok { color: var(--green); }
+.home-map-tip .tip-chip.warn { color: var(--amber); }
+.home-map-tip .tip-chip.bad { color: var(--red); }
+.home-map-tip .tip-sub, .home-map-tip .tip-rows dt, .home-map-tip .tip-rows dd.idle { color: var(--fg-3); }
+.home-map-tip .tip-rows { border-top-color: var(--line); }
+.home-map-tip .tip-rows dd, .home-map-tip .tip-rows dd.busy { color: var(--fg); }
+.home-map-tip .tip-rows .tip-bar, .tip-meter span { background: var(--bg-4); }
+.home-map-tip .tip-rows .tip-bar i, .tip-meter span.on { background: var(--green); }
+.tip-meter span.bad { background: var(--red); }
+.home-map-tip .tip-rows .tip-pct { color: var(--green); }
+.home-map-tip .tip-big b { color: var(--amber); }
+.home-map-tip .tip-big span { color: var(--fg-2); }
