@@ -6,7 +6,8 @@
   ],
   "conflicts": [],
   "mismatches": [],
-  "cp_gaps": []
+  "cp_gaps": [],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -16,7 +17,8 @@
   ],
   "conflicts": [],
   "mismatches": [],
-  "cp_gaps": []
+  "cp_gaps": [],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -42,7 +44,8 @@
     "needs_review": true
    }
   ],
-  "cp_gaps": []
+  "cp_gaps": [],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -75,7 +78,8 @@
    }
   ],
   "mismatches": [],
-  "cp_gaps": []
+  "cp_gaps": [],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -94,7 +98,8 @@
     "resolved_value": 12800.0,
     "needs_review": true
    }
-  ]
+  ],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -116,7 +121,8 @@
    }
   ],
   "mismatches": [],
-  "cp_gaps": []
+  "cp_gaps": [],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -135,7 +141,8 @@
     "resolved_value": 26400.0,
     "needs_review": true
    }
-  ]
+  ],
+  "cp_unread": []
  },
  {
   "documents": [
@@ -143,6 +150,7 @@
   ],
   "conflicts": [],
   "mismatches": [],
-  "cp_gaps": []
+  "cp_gaps": [],
+  "cp_unread": []
  }
 ]

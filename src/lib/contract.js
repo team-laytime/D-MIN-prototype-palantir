@@ -56,7 +56,8 @@ export const FORM_DEFAULTS = {
   anchorage_to_berth_counts: { value: false, clause: 'Part II', text: '정박지·대기 장소에서 선석까지 이동하는 시간은 산입하지 않는다.' },
 }
 
-const CODE = { HOSES_OFF: '호스 분리 시 종료', PORT_CONGESTION: '항만 혼잡', CRUDE: '원유' }
+// 파서 rider.py가 내는 코드 → 화면 문구. NONREV = 선적 · 양하 허용시간을 따로 두고 합산하지 않음(비가역)
+const CODE = { HOSES_OFF: '호스 분리 시 종료', PORT_CONGESTION: '항만 혼잡', CRUDE: '원유', SHINC_NONREV: 'SHINC, 비가역', SHEX_NONREV: 'SHEX, 비가역' }
 const ORDER = { cp: 0, recap: 1, sales: 2 }
 
 export const bodyOf = (doc) => doc.cp ?? doc.sales ?? {}
@@ -179,6 +180,8 @@ export function fmtValue(f, v, cur = 'USD') {
   }
   if (typeof v === 'boolean') return v ? '예' : '아니오'
   if (Array.isArray(v)) return v.map((x) => CODE[x] ?? x).join(', ')
+  const pro = String(v).match(/^PRO_RATA:(\d+)$/) // 부분 적재 비례 배분, 숫자는 만재 기준 톤
+  if (pro) return `비례 배분 (만재 ${Number(pro[1]).toLocaleString('en-US')} t 기준)`
   return CODE[v] ?? String(v)
 }
 

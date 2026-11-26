@@ -20,8 +20,11 @@
       0.2618,
       0.0977
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "vessel_name": {
    "value": "SYN ARCTURUS",
@@ -47,8 +50,11 @@
       1.0,
       0.1546
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "imo": {
    "value": "1007055",
@@ -74,8 +80,17 @@
       0.5141,
       0.2718
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "dwt": {
    "value": 17900.0,
@@ -101,8 +116,17 @@
       0.6019,
       0.3757
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "owner": {
    "value": "SYN Valletta Chemical Shipping Ltd.",
@@ -128,8 +152,11 @@
       1.0,
       0.1546
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "charterer": {
    "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
@@ -155,16 +182,21 @@
       1.0,
       0.1546
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "laycan_from": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laycan_to": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "load_laydays_from": {
    "value": "2025-11-15T00:00:00",
@@ -190,8 +222,17 @@
       0.554,
       0.6679
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "load_laydays_to": {
    "value": "2025-11-17T16:00:00",
@@ -217,8 +258,17 @@
       0.554,
       0.6887
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "load_ports": {
    "value": "IDTBN",
@@ -244,8 +294,11 @@
       0.8173,
       0.7719
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "discharge_ports": {
    "value": "KRUSN",
@@ -271,8 +324,11 @@
       0.7535,
       0.8134
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "cargo": {
    "value": "XYL",
@@ -298,8 +354,11 @@
       0.562,
       0.8758
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "cp_qty_t": {
    "value": 12000.0,
@@ -325,8 +384,22 @@
       0.5301,
       0.855
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "qty_vs_dwt",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_total_h": {
    "value": 48.0,
@@ -352,8 +425,17 @@
       0.4742,
       0.1963
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "demurrage_rate_per_day": {
    "value": null,
@@ -379,44 +461,56 @@
       0.562,
       0.2586
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "laytime_terms": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_load_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_discharge_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_prorate": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "nor_notice_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_start_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_end_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "anchorage_to_berth_counts": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "berth_shift_counts": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "half_rate_events": {
    "value": "PORT_CONGESTION",
@@ -442,24 +536,31 @@
       0.9733,
       0.3394
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "no_demurrage_events": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_exclusions": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "bad_weather_half": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "weather_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "currency": {
    "value": "USD",
@@ -479,8 +580,11 @@
       0.6258,
       0.0989
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   }
  },
  "review": [
@@ -488,5 +592,31 @@
    "field": "demurrage_rate_per_day",
    "reason": "필수 칸 없음"
   }
- ]
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
 }

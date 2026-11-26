@@ -21,8 +21,10 @@
       0.1008
      ]
     ],
-    "ocr_conf": 0.91
-   }
+    "ocr_conf": 0.932,
+    "unread": false
+   },
+   "checks": []
   },
   "vessel_name": {
    "value": "SYN VEGA",
@@ -49,8 +51,10 @@
       0.1583
      ]
     ],
-    "ocr_conf": 0.412
-   }
+    "ocr_conf": 0.412,
+    "unread": false
+   },
+   "checks": []
   },
   "imo": {
    "value": "1007017",
@@ -71,8 +75,16 @@
       0.2607
      ]
     ],
-    "ocr_conf": 0.009
-   }
+    "ocr_conf": 0.009,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "dwt": {
    "value": 157900.0,
@@ -93,8 +105,16 @@
       0.3646
      ]
     ],
-    "ocr_conf": 0.489
-   }
+    "ocr_conf": 0.489,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "owner": {
    "value": "SYN Ionian Crude Carriers S.A.",
@@ -121,8 +141,10 @@
       0.1583
      ]
     ],
-    "ocr_conf": 0.412
-   }
+    "ocr_conf": 0.412,
+    "unread": false
+   },
+   "checks": []
   },
   "charterer": {
    "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
@@ -149,16 +171,20 @@
       0.1583
      ]
     ],
-    "ocr_conf": 0.412
-   }
+    "ocr_conf": 0.412,
+    "unread": false
+   },
+   "checks": []
   },
   "laycan_from": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laycan_to": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "load_laydays_from": {
    "value": "2025-11-13T00:00:00",
@@ -173,20 +199,22 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.4624,
+      0.1364,
       0.6356,
       0.5361,
-      0.6514
-     ],
-     [
-      0.138,
-      0.6614,
-      0.168,
-      0.6778
+      0.6581
      ]
     ],
-    "ocr_conf": 0.675
-   }
+    "ocr_conf": 0.675,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "load_laydays_to": {
    "value": "2025-11-15T16:00:00",
@@ -207,12 +235,21 @@
       0.68
      ]
     ],
-    "ocr_conf": 0.885
-   }
+    "ocr_conf": 0.957,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "load_ports": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "discharge_ports": {
    "value": "KRUSN",
@@ -233,8 +270,10 @@
       0.8038
      ]
     ],
-    "ocr_conf": 0.4
-   }
+    "ocr_conf": 0.4,
+    "unread": false
+   },
+   "checks": []
   },
   "cargo": {
    "value": "CRUDE",
@@ -242,7 +281,7 @@
     "doc_id": "SYN-CP-304",
     "page": 1,
     "section": "part1",
-    "quote": "(ii) Description: Crude Oil fF FREIGHT ae = : @) Worldscale rate:",
+    "quote": "(ii) Description: Crude Oil",
     "confidence": 0.63,
     "method": "rule",
     "ocr": true,
@@ -250,29 +289,20 @@
     "boxes": [
      [
       0.1534,
-      0.844,
+      0.8461,
       0.53,
       0.8666
-     ],
-     [
-      0.0967,
-      0.8622,
-      0.7087,
-      0.8847
-     ],
-     [
-      0.0962,
-      0.8884,
-      0.2986,
-      0.9059
      ]
     ],
-    "ocr_conf": 0.0
-   }
+    "ocr_conf": 0.961,
+    "unread": false
+   },
+   "checks": []
   },
   "cp_qty_t": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_total_h": {
    "value": 72.0,
@@ -280,7 +310,7 @@
     "doc_id": "SYN-CP-304",
     "page": 2,
     "section": "part1",
-    "quote": "Total laytime in in running hours: 72 i Metric tons 'per hour: Demurrage pe per r day: USD 46,300 PDPR Hes \"LAW AND ARBITRATION - [ L - — a areata 2 ce = ee oe ones —e — a a oe — Bad General average 'and arbitration: London",
+    "quote": "Total laytime in in running hours: 72",
     "confidence": 0.63,
     "method": "rule",
     "ocr": true,
@@ -291,76 +321,88 @@
       0.1586,
       0.4636,
       0.185
-     ],
-     [
-      0.1171,
-      0.1831,
-      0.3119,
-      0.209
-     ],
-     [
-      0.1194,
-      0.222,
-      0.5729,
-      0.2477
-     ],
-     [
-      0.0791,
-      0.2824,
-      0.907,
-      0.31
-     ],
-     [
-      0.0786,
-      0.2932,
-      0.9089,
-      0.313
-     ],
-     [
-      0.1255,
-      0.3051,
-      0.5015,
-      0.336
      ]
     ],
-    "ocr_conf": 0.0
-   }
+    "ocr_conf": 0.0,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "demurrage_rate_per_day": {
-   "value": null,
-   "evidence": null
+   "value": 46300.0,
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 2,
+    "section": "part1",
+    "quote": "Demurrage pe per r day: USD 46,300 PDPR",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1376,
+      0.2233,
+      0.5729,
+      0.2477
+     ]
+    ],
+    "ocr_conf": 0.912,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_terms": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_load_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_discharge_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_prorate": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "nor_notice_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_start_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_end_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "anchorage_to_berth_counts": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "berth_shift_counts": {
    "value": false,
@@ -369,7 +411,7 @@
     "page": 3,
     "section": "rider",
     "quote": "Clause 9 - Inter-Berth Moves: When the Vessel moves between berths, the period from unmooring until she is again securely moored is for Owners' account in time and counts neither towards laytime nor towards demurrage.",
-    "confidence": 0.8,
+    "confidence": 0.56,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
@@ -393,28 +435,35 @@
       0.7367
      ]
     ],
-    "ocr_conf": 0.784
-   }
+    "ocr_conf": 0.933,
+    "unread": false
+   },
+   "checks": []
   },
   "half_rate_events": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "no_demurrage_events": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_exclusions": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "bad_weather_half": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "weather_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "currency": {
    "value": "USD",
@@ -422,21 +471,23 @@
     "doc_id": "SYN-CP-304",
     "page": 2,
     "section": "part1",
-    "quote": "Currency: USD",
-    "confidence": 0.63,
+    "quote": "Demurrage pe per r day: USD 46,300 PDPR",
+    "confidence": 0.504,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
     "boxes": [
      [
-      0.5138,
-      0.0583,
-      0.6124,
-      0.0784
+      0.1376,
+      0.2233,
+      0.5729,
+      0.2477
      ]
     ],
-    "ocr_conf": 0.96
-   }
+    "ocr_conf": 0.912,
+    "unread": false
+   },
+   "checks": []
   }
  },
  "review": [
@@ -449,56 +500,113 @@
    "reason": "필수 칸 없음"
   },
   {
-   "field": "demurrage_rate_per_day",
-   "reason": "필수 칸 없음"
-  },
-  {
    "field": "cp_form",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "vessel_name",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "imo",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "dwt",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "owner",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "charterer",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "load_laydays_from",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "load_laydays_to",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "discharge_ports",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "cargo",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "laytime_total_h",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "스캔본 계산 값(OCR, 0.63): 원본 쪽과 대조"
+  },
+  {
+   "field": "demurrage_rate_per_day",
+   "reason": "스캔본 계산 값(OCR, 0.50): 원본 쪽과 대조"
+  },
+  {
+   "field": "berth_shift_counts",
+   "reason": "스캔본 계산 값(OCR, 0.56): 원본 쪽과 대조"
   },
   {
    "field": "currency",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.50): 다른 엔진·recap·선박 표의 확인 없음"
+  }
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": "tesseract",
+  "second_engine": null,
+  "vessels": false
+ },
+ "ocr_pages": [
+  {
+   "page": 1,
+   "conf_mean": 0.761,
+   "low_words": 0.255
+  },
+  {
+   "page": 2,
+   "conf_mean": 0.689,
+   "low_words": 0.347
+  },
+  {
+   "page": 3,
+   "conf_mean": 0.96,
+   "low_words": 0.003
+  },
+  {
+   "page": 4,
+   "conf_mean": 0.957,
+   "low_words": 0.003
+  },
+  {
+   "page": 5,
+   "conf_mean": 0.954,
+   "low_words": 0.01
   }
  ]
 }

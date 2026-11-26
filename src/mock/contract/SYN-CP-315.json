@@ -21,12 +21,15 @@
       0.1044
      ]
     ],
-    "ocr_conf": 0.84
-   }
+    "ocr_conf": 0.854,
+    "unread": false
+   },
+   "checks": []
   },
   "vessel_name": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "imo": {
    "value": "1007110",
@@ -47,28 +50,66 @@
       0.2339
      ]
     ],
-    "ocr_conf": 0.331
-   }
+    "ocr_conf": 0.632,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "dwt": {
-   "value": null,
-   "evidence": null
+   "value": 46900.0,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Sameer deadweight 46.900 mnecerx tows",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1312,
+      0.2887,
+      0.399,
+      0.3137
+     ]
+    ],
+    "ocr_conf": 0.727,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "owner": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "charterer": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laycan_from": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laycan_to": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "load_laydays_from": {
    "value": null,
@@ -76,7 +117,7 @@
     "doc_id": "SYN-CP-315",
     "page": 1,
     "section": "part1",
-    "quote": "Commencing: 1$.11. 2025 (4) Cancettimg: 17 11 N25 (a) Part 11 Cl. Seb) applies Yes Ov) Addatemnal commcnts",
+    "quote": "Commencing: 1$.11. 2025",
     "confidence": 0.35,
     "method": "rule",
     "ocr": true,
@@ -87,48 +128,37 @@
       0.4701,
       0.2792,
       0.4902
-     ],
-     [
-      0.0855,
-      0.4838,
-      0.2641,
-      0.5017
-     ],
-     [
-      0.0839,
-      0.4983,
-      0.3016,
-      0.5166
-     ],
-     [
-      0.0833,
-      0.5123,
-      0.2629,
-      0.5324
      ]
     ],
-    "ocr_conf": 0.0
-   }
+    "ocr_conf": 0.0,
+    "unread": true
+   },
+   "checks": []
   },
   "load_laydays_to": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "load_ports": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "discharge_ports": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "cargo": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "cp_qty_t": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_total_h": {
    "value": 21.0,
@@ -136,7 +166,7 @@
     "doc_id": "SYN-CP-315",
     "page": 1,
     "section": "part1",
-    "quote": "Total laytime @ remeing hours 60 Demerrage per day: 21 390 USD POFR tn} Metric toms por hewr:",
+    "quote": "Total laytime @ remeing hours 60 Demerrage per day: 21 390 USD POFR",
     "confidence": 0.63,
     "method": "rule",
     "ocr": true,
@@ -147,56 +177,118 @@
       0.7578,
       0.7549,
       0.7964
-     ],
-     [
-      0.0633,
-      0.7724,
-      0.2332,
-      0.792
      ]
     ],
-    "ocr_conf": 0.0
-   }
+    "ocr_conf": 0.687,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "demurrage_rate_per_day": {
-   "value": null,
-   "evidence": null
+   "value": 21390.0,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "60 Demerrage per day: 21 390 USD POFR",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.3038,
+      0.7661,
+      0.7549,
+      0.7964
+     ]
+    ],
+    "ocr_conf": 0.687,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_terms": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_load_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_discharge_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_prorate": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "nor_notice_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_start_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_end_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "anchorage_to_berth_counts": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "berth_shift_counts": {
-   "value": null,
-   "evidence": null
+   "value": false,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 3,
+    "section": "rider",
+    "quote": "Clause 9 - Vessel Repositionmg: Laytine and demurrage are suspended while the Vessel shifts between berths, and resume when the 1s all fast at the new berth.",
+    "confidence": 0.56,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0927,
+      0.6094,
+      0.9207,
+      0.6548
+     ],
+     [
+      0.0949,
+      0.6445,
+      0.4551,
+      0.6731
+     ]
+    ],
+    "ocr_conf": 0.53,
+    "unread": false
+   },
+   "checks": []
   },
   "half_rate_events": {
    "value": "PORT_CONGESTION",
@@ -204,8 +296,8 @@
     "doc_id": "SYN-CP-315",
     "page": 5,
     "section": "rider",
-    "quote": "Clause 24 - Vetting Questionnaire: By the fixture date the Owner shall deliver the Veasel's latest OCIMP harmonixed queshonnaire and a lest af the vetting inspections Camicd out in the Last six (6) months, with the observations raised and closed. Any later change of manager, fag or classification saceety shall be advised to the Charterer before the Vessel arrives at the loading port. the crew shall wear personal gas detectors and the respiratory protection recommended by the safety data sheet, and the Master shail restrict access to the deck white tanks are open. The shipper shall supply the safety data shect to the Vessel before haading begins. Claume 26 - Quewe at Termnal: Owners agree that hours on demurrage attributable to congestion of the port are to be mvoiced at half the Part demurrage rate; all other demurrage remains payable im full.",
-    "confidence": 0.8,
+    "quote": "Clause 24 - Vetting Questionnaire: By the fixture date the Owner shall deliver the Veasel's latest OCIMP harmonixed queshonnaire and a lest af the vetting inspections Camicd out in the Last six (6) months, with the observations raised and closed. Any later change of manager, fag or classification saceety shall be advised to the Charterer before the Vessel arrives at the loading port. the crew shall wear personal gas detectors and the respiratory protection recommended by the safety data sheet. and the Master shail restnict access to the deck while tanks are open. The shipper shall supply the safety data shect to the Vessel before haading begins. Claume 26 - Quewe at Termnal: Owners agree that hours on demurrage attributable to congestion of the port are to be mvoiced at half the Part demurrage rate; all other demurrage remains payable im full.",
+    "confidence": 0.56,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
@@ -230,21 +322,21 @@
      ],
      [
       0.1053,
-      0.1059,
-      0.5371,
-      0.1345
+      0.1063,
+      0.537,
+      0.1349
      ],
      [
       0.1031,
       0.1516,
-      0.9331,
-      0.1921
+      0.9317,
+      0.1917
      ],
      [
       0.1021,
       0.1697,
-      0.9079,
-      0.2091
+      0.907,
+      0.2094
      ],
      [
       0.101,
@@ -265,28 +357,54 @@
       0.2689
      ]
     ],
-    "ocr_conf": 0.171
-   }
+    "ocr_conf": 0.893,
+    "unread": false
+   },
+   "checks": []
   },
   "no_demurrage_events": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_exclusions": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "bad_weather_half": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "weather_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "currency": {
-   "value": null,
-   "evidence": null
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "60 Demerrage per day: 21 390 USD POFR",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.3038,
+      0.7661,
+      0.7549,
+      0.7964
+     ]
+    ],
+    "ocr_conf": 0.687,
+    "unread": false
+   },
+   "checks": []
   }
  },
  "review": [
@@ -315,16 +433,8 @@
    "reason": "필수 칸 없음"
   },
   {
-   "field": "demurrage_rate_per_day",
-   "reason": "필수 칸 없음"
-  },
-  {
-   "field": "currency",
-   "reason": "필수 칸 없음"
-  },
-  {
    "field": "load_laydays_from",
-   "reason": "필수 칸 없음"
+   "reason": "OCR 못 읽음"
   },
   {
    "field": "load_laydays_to",
@@ -332,15 +442,84 @@
   },
   {
    "field": "cp_form",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "imo",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
+  },
+  {
+   "field": "dwt",
+   "reason": "확신도 낮음(OCR 값, 0.50): 다른 엔진·recap·선박 표의 확인 없음"
   },
   {
    "field": "laytime_total_h",
-   "reason": "확신도 낮음(OCR 값, 0.63)"
+   "reason": "스캔본 계산 값(OCR, 0.63): 원본 쪽과 대조"
+  },
+  {
+   "field": "demurrage_rate_per_day",
+   "reason": "스캔본 계산 값(OCR, 0.50): 원본 쪽과 대조"
+  },
+  {
+   "field": "berth_shift_counts",
+   "reason": "스캔본 계산 값(OCR, 0.56): 원본 쪽과 대조"
+  },
+  {
+   "field": "half_rate_events",
+   "reason": "스캔본 계산 값(OCR, 0.56): 원본 쪽과 대조"
+  },
+  {
+   "field": "currency",
+   "reason": "확신도 낮음(OCR 값, 0.50): 다른 엔진·recap·선박 표의 확인 없음"
+  }
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": "tesseract",
+  "second_engine": null,
+  "vessels": false
+ },
+ "ocr_pages": [
+  {
+   "page": 1,
+   "conf_mean": 0.605,
+   "low_words": 0.419
+  },
+  {
+   "page": 2,
+   "conf_mean": 0.669,
+   "low_words": 0.337
+  },
+  {
+   "page": 3,
+   "conf_mean": 0.873,
+   "low_words": 0.075
+  },
+  {
+   "page": 4,
+   "conf_mean": 0.854,
+   "low_words": 0.097
+  },
+  {
+   "page": 5,
+   "conf_mean": 0.853,
+   "low_words": 0.107
   }
  ]
 }

@@ -37,10 +37,11 @@ test('검토 필수: OCR · LLM · 문서 간 불일치', () => {
   assert.equal(row(llm, 'load_laydays_from').sources.length, 2)
 })
 
-test('스캔본: 특약 값은 confidence 0.8이어도, 양식 기본값도 검토 필수(스캔본 특약 미확인)', () => {
+test('스캔본: 특약 값은 confidence와 상관없이(evidence.ocr), 양식 기본값도 검토 필수(스캔본 특약 미확인)', () => {
   const rows = dealRows([load('SYN-CP-304'), load('SYN-SC-302')], dealOf('SYN-CP-304'))
   const rider = row(rows, 'berth_shift_counts')
-  assert.equal(rider.src.ev.confidence, 0.8)
+  assert.equal(rider.src.section, 'rider')
+  assert.equal(rider.src.ev.ocr, true)
   assert.equal(rider.reason, 'ocr')
   const nor = row(rows, 'nor_notice_h')
   assert.equal(nor.reason, 'scan')
@@ -56,8 +57,10 @@ test('스캔본: 특약 값은 confidence 0.8이어도, 양식 기본값도 검�
 })
 
 test('일 체선료: 매매 확인서가 CP 요율 준용이면 C/P 값이 기준', () => {
-  // SYN VEGA: 스캔 C/P에서 못 읽음 → 매매 확인서 값을 임시로 쓰고 검토 필수
-  const vega = row(dealRows([load('SYN-CP-304'), load('SYN-SC-302')], dealOf('SYN-CP-304')), 'demurrage_rate_per_day')
+  // 스캔 C/P에서 못 읽음(예시: SYN-CP-304의 체선료율을 비움) → 매매 확인서 값을 임시로 쓰고 검토 필수
+  const unreadCp = load('SYN-CP-304')
+  unreadCp.cp.demurrage_rate_per_day = { value: null, evidence: null }
+  const vega = row(dealRows([unreadCp, load('SYN-SC-302')], dealOf('SYN-CP-304')), 'demurrage_rate_per_day')
   assert.equal(vega.reason, 'rate')
   assert.equal(vega.value, 46300)
   assert.deepEqual(vega.sources.map((x) => x.doc_id), ['SYN-CP-304', 'SYN-SC-302'])
@@ -71,7 +74,7 @@ test('일 체선료: 매매 확인서가 CP 요율 준용이면 C/P 값이 기�
   assert.equal(diff.src.doc_id, 'SYN-CP-302')
   // 별도 요율은 다른 계약이라 쓰지 않는다 → C/P에도 값이 없으니 계산 값 없음
   sc.sales.rate_basis.value = '별도'
-  const own = row(dealRows([load('SYN-CP-304'), sc], null), 'demurrage_rate_per_day')
+  const own = row(dealRows([unreadCp, sc], null), 'demurrage_rate_per_day')
   assert.deepEqual([own.status, own.reason, own.value], ['review', 'missing', null])
 })
 
@@ -106,6 +109,8 @@ test('원문 강조: 숫자·날짜 표기를 바꿔 찾고, 숫자 일부에는
 test('값 표시와 종류 판정', () => {
   assert.equal(fmtValue({ fmt: 'usd' }, 64500), 'USD 64,500 /일')
   assert.equal(fmtValue({ fmt: 'weather' }, 'FULL'), '전부 산입 (계산 공제 0%)')
+  assert.equal(fmtValue({}, 'SHINC_NONREV'), 'SHINC, 비가역')
+  assert.equal(fmtValue({}, 'PRO_RATA:75000'), '비례 배분 (만재 75,000 t 기준)')
   assert.equal(fmtValue({}, '2028-02-14T00:00:00'), '2028-02-14 00:00')
   assert.equal(detectKind('Fixture recap - SYN RIGEL'), 'recap')
   assert.equal(detectKind('SYN_VEGA_매매확인서.pdf'), 'sales')

@@ -20,8 +20,11 @@
       0.2698,
       0.0977
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "vessel_name": {
    "value": "SYN ALTAIR",
@@ -47,8 +50,11 @@
       0.985,
       0.1546
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "imo": {
    "value": "1007005",
@@ -68,8 +74,17 @@
       0.2459,
       0.2451
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "dwt": {
    "value": 299800.0,
@@ -89,8 +104,17 @@
       0.4294,
       0.3163
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "owner": {
    "value": "SYN Northlight VLCC Owning Ltd.",
@@ -116,8 +140,11 @@
       0.985,
       0.1546
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "charterer": {
    "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
@@ -143,16 +170,21 @@
       0.985,
       0.1546
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "laycan_from": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laycan_to": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "load_laydays_from": {
    "value": "2025-11-11T00:00:00",
@@ -172,8 +204,17 @@
       0.3416,
       0.4969
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "load_laydays_to": {
    "value": "2025-11-13T16:00:00",
@@ -193,8 +234,17 @@
       0.3496,
       0.5111
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "load_ports": {
    "value": null,
@@ -220,8 +270,11 @@
       0.182,
       0.5919
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "discharge_ports": {
    "value": "KRUSN",
@@ -247,8 +300,11 @@
       0.55,
       0.5919
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "cargo": {
    "value": "CRUDE",
@@ -268,8 +324,11 @@
       0.3017,
       0.6442
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "cp_qty_t": {
    "value": 265000.0,
@@ -289,8 +348,22 @@
       0.2778,
       0.6299
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "qty_vs_dwt",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_total_h": {
    "value": 84.0,
@@ -310,8 +383,22 @@
       0.5012,
       0.7867
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "words",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "demurrage_rate_per_day": {
    "value": 64500.0,
@@ -331,44 +418,159 @@
       0.8771,
       0.7867
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_terms": {
-   "value": null,
-   "evidence": null
+   "value": "SHINC_NONREV",
+   "evidence": {
+    "doc_id": "SYN-CP-301",
+    "page": 3,
+    "section": "rider",
+    "quote": "Clause 4 - Laytime Allocation: Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance; hours saved at one port shall not be credited to the other.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.3415,
+      1.0,
+      0.3579
+     ],
+     [
+      0.0863,
+      0.3599,
+      1.0,
+      0.3763
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "laytime_load_h": {
-   "value": null,
-   "evidence": null
+   "value": 40.0,
+   "evidence": {
+    "doc_id": "SYN-CP-301",
+    "page": 3,
+    "section": "rider",
+    "quote": "Clause 4 - Laytime Allocation: Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance; hours saved at one port shall not be credited to the other.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.3415,
+      1.0,
+      0.3579
+     ],
+     [
+      0.0863,
+      0.3599,
+      1.0,
+      0.3763
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "words",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_discharge_h": {
-   "value": null,
-   "evidence": null
+   "value": 44.0,
+   "evidence": {
+    "doc_id": "SYN-CP-301",
+    "page": 3,
+    "section": "rider",
+    "quote": "Clause 4 - Laytime Allocation: Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance; hours saved at one port shall not be credited to the other.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.3415,
+      1.0,
+      0.3579
+     ],
+     [
+      0.0863,
+      0.3599,
+      1.0,
+      0.3763
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "words",
+     "ok": true,
+     "detail": null
+    }
+   ]
   },
   "laytime_prorate": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "nor_notice_h": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_start_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_end_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "anchorage_to_berth_counts": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "berth_shift_counts": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "half_rate_events": {
    "value": "PORT_CONGESTION",
@@ -394,24 +596,31 @@
       1.0,
       0.1304
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   },
   "no_demurrage_events": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "laytime_exclusions": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "bad_weather_half": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "weather_rule": {
    "value": null,
-   "evidence": null
+   "evidence": null,
+   "checks": []
   },
   "currency": {
    "value": "USD",
@@ -431,8 +640,11 @@
       0.8771,
       0.7867
      ]
-    ]
-   }
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
   }
  },
  "review": [
@@ -440,5 +652,31 @@
    "field": "load_ports",
    "reason": "필수 칸 없음"
   }
- ]
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
 }
