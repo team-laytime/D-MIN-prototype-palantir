@@ -105,7 +105,7 @@ def main():
     ap.add_argument('--time-limit', type=int, default=60)
     ap.add_argument('--workers', type=int, default=8)
     ap.add_argument('--default-start', default='2025-11-09 09:00', help='화면이 처음 여는 기준 시각')
-    ap.add_argument('--shortcuts', default='2025-03-03 09:00,2025-06-13 09:00,2025-11-09 09:00', help='바로가기 기준 시각 (쉼표)')
+    ap.add_argument('--shortcuts', default='2025-03-03 09:00,2025-10-03 09:00,2025-11-09 09:00', help='바로가기 기준 시각 (쉼표)')
     ap.add_argument('--label')
     a = ap.parse_args()
     engine = Path(a.engine).resolve()

@@ -3,16 +3,15 @@
 //  - 리스크 = 팀 리스크 모델(berth_risk, POST /risk/risks)에 그 후보의 엔진 요청·응답을 그대로 보내 받은 목록. 화면에서 세지 않는다.
 //  - 비교 기준은 후보 A(최저안)뿐이다. 금액과 시각은 전부 엔진 값이고 화면에서 다시 계산하지 않는다.
 //  - 배치 그림에서 배를 누르면 산출 근거가 뜨고, 거기서 그 배정을 고정하면 계획 조건이 바뀐다 → 다시 계산하면 엔진이 그 고정을 지킨다.
-//  - 확정한 뒤에는 후보 정보를 빼고 확정 일정 모니터링(지금 시각 기준)과 통보 상태만 보인다.
+//  - 확정한 뒤에는 후보 정보를 빼고 확정 일정 · 모니터링(지금 시각 기준) · 판단 근거 · 체선 발생 선박을 위에서 아래로.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Callout, Checkbox, Dialog, SegmentedControl, Spinner, TextArea } from '@blueprintjs/core'
 import { NOW, fmt, fmtDur, money, toMin } from '../lib/time.js'
 import { spanOf, stateAt } from '../lib/plan.js'
 import { SEV, KIND, checkRisks, riskLabel, riskShip, sortRisks } from '../lib/risk.js'
-import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
+import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace } from '../lib/workspace.js'
 import { changeText } from '../lib/incidents.js'
 import SimilarCases from './SimilarCases.jsx'
-import { groupsFor } from '../lib/mailGroups.js'
 import { useApp } from '../state/app.jsx'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import PlanGantt, { demCentsOf, hm } from './PlanGantt.jsx'
@@ -59,7 +58,7 @@ function Elapsed({ since }) {
 }
 
 export default function Compare() {
-  const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, go, risks,
+  const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, risks,
     whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision } = useApp()
   useWorkspace() // 확정, 취소, 보낸 메일이 바로 보이게 구독
   const [reason, setReason] = useState('')
@@ -105,7 +104,7 @@ export default function Compare() {
   const fixedNow = current && current.version === version
   const toGantt = (vid, risk = null, riskSim = null) => { focusVessel(vid, Boolean(vid), risk, riskSim); ganttRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 
-  // ── 확정 뒤: 확정 일정 모니터링 + 통보 상태 ────────────────────────────
+  // ── 확정 뒤: 확정 일정 · 모니터링 · 판단 근거 · 체선 발생 선박 ─────────────
   if (fixedNow && !showCands && plan) {
     const psim = { id: plan.candId, label: plan.label, placements: plan.placements }
     const monitor = stateAt(psim, scen, NOW).map(({ v, p, phase }) => {
@@ -129,8 +128,6 @@ export default function Compare() {
       { value: 'coming', label: `입항 전 ${count((m) => m.phase === 'coming')}` },
     ]
     const shown = monitor.filter((m) => monFilter === 'all' || (monFilter === 'warn' ? m.tone !== 'ok' : m.phase === monFilter))
-    const groups = groupsFor(plan)
-    const sentN = new Set(ws.sent.filter((s) => s.kind === 'notice' && s.planNo === plan.no).map((s) => s.groupId)).size
     const prange = spanOf([psim])
     const pdem = plan.placements.filter((p) => p.dem > 0)
     return (
@@ -143,43 +140,36 @@ export default function Compare() {
           </div>
           <div className="cmp-banner-total"><span className="tiny">예상 체선료</span><b className="num">{money(plan.total)}</b></div>
         </div>
-        <div className="cmp-fixed-grid">
-          <div className="stack">
-            <Panel code="BERTH PLAN" title="확정 일정 · 부두별 배치" bodyClass="pg-body" ref={ganttRef}>
-              <GanttLegend keys={['bar', 'dem', 'wait', 'pin', 'night']} />
-              <PlanGantt sim={psim} scen={scen} range={prange} focus={focus} onFocus={onGanttFocus} onOpenCard={(vid) => openVessel(plan.candId, vid, { mode: 'card' })} />
-            </Panel>
-            <Panel code="PLAN-MONITOR" title="확정안 모니터링"
-              actions={<SegmentedControl size="small" value={monFilter} onValueChange={setMonFilter} options={filters} />}>
-              <div className="cmp-scroll">
-                <table className="dt cmp-monitor">
-                  <thead><tr><th>선박</th><th>화물</th><th>부두</th><th>지금</th><th>도착(ETA)</th><th>계획 접안</th><th>계획 이안</th><th className="r">체선료</th><th>판정</th></tr></thead>
-                  <tbody>{shown.map((m) => <tr key={m.p.vid} className={`click ${m.tone !== 'ok' ? 'warn' : ''} ${focus.vid === m.p.vid ? 'on' : ''}`} onClick={() => toGantt(m.p.vid)}>
-                    <td className="strong">{m.p.fixed && '🔒 '}{m.p.name}</td><td className="small">{m.p.product}, {m.p.dir}</td><td>{m.p.berth}</td><td><St tone={m.phaseTone}>{m.phaseText}</St></td>
-                    <td className="num">{fmt(m.v.eta)}{m.shift !== 0 && <span className="small muted"> (확정 때 {fmt(m.p.eta)})</span>}</td>
-                    <td className="num strong">{fmt(m.p.etb)}</td><td className="num">{fmt(m.p.etu)}</td>
-                    <td className={`r num ${m.p.dem ? 'c-red' : 'muted'}`}>{money(m.p.dem)}</td>
-                    <td><St tone={m.tone}>{m.verdict}</St></td>
-                  </tr>)}</tbody>
-                </table>
-              </div>
-            </Panel>
-          </div>
-          <div className="stack">
-            <Panel code="NOTIFY" title="통보 상태" pad>
-              <ul className="cmp-notify">
-                <li><St tone="ok">반영됨</St> 이용자 확정 일정 화면</li>
-                <li><St tone={sentN ? 'ok' : 'warn'}>{sentN ? `${sentN}/${groups.length}곳 보냄` : '보내기 전'}</St> 부서별 확정 통보 메일</li>
-              </ul>
-              <div className="risk-buttons"><Button intent="primary" icon="envelope" onClick={() => go('mail')}>부서별 통보 메일 쓰기</Button></div>
-            </Panel>
-            <Panel code="FIX-NOTE" title="판단 근거" pad>
-              <p className="small">{plan.reason}</p>
-              {plan.uncheckedRisks.length > 0 && <p className="small c-amber">확인하지 않은 리스크 {plan.uncheckedRisks.length}건과 함께 확정: {plan.uncheckedRisks.join(', ')}</p>}
-              <Button size="small" icon="undo" disabled={!isScheduler} onClick={() => cancelPlan('스케줄러 확정 취소')}>확정 취소</Button>
-            </Panel>
-            <DemList title="체선 발생 선박" items={[...pdem].sort((a, b) => b.dem - a.dem).map((p) => ({ vid: p.vid, name: p.name, berth: p.berth, etb: p.etb, cents: p.dem }))} focusVid={focus.vid} onPick={toGantt} />
-          </div>
+        {/* 11-26 통보 상태는 뺌. 판단 근거 · 체선 발생 선박은 후보 비교처럼 모니터링 밑에 */}
+        <div className="stack">
+          <Panel code="BERTH PLAN" title="확정 일정 · 부두별 배치" bodyClass="pg-body" ref={ganttRef}>
+            <GanttLegend keys={['bar', 'dem', 'wait', 'pin', 'night']} />
+            <PlanGantt sim={psim} scen={scen} range={prange} focus={focus} onFocus={onGanttFocus} onOpenCard={(vid) => openVessel(plan.candId, vid, { mode: 'card' })} />
+          </Panel>
+          <Panel code="PLAN-MONITOR" title="확정안 모니터링"
+            actions={<SegmentedControl size="small" value={monFilter} onValueChange={setMonFilter} options={filters} />}>
+            <div className="cmp-scroll">
+              <table className="dt cmp-monitor">
+                <thead><tr><th>선박</th><th>화물</th><th>부두</th><th>지금</th><th>도착(ETA)</th><th>계획 접안</th><th>계획 이안</th><th className="r">체선료</th><th>판정</th></tr></thead>
+                <tbody>{shown.map((m) => <tr key={m.p.vid} className={`click ${m.tone !== 'ok' ? 'warn' : ''} ${focus.vid === m.p.vid ? 'on' : ''}`} onClick={() => toGantt(m.p.vid)}>
+                  <td className="strong">{m.p.fixed && '🔒 '}{m.p.name}</td><td className="small">{m.p.product}, {m.p.dir}</td><td>{m.p.berth}</td><td><St tone={m.phaseTone}>{m.phaseText}</St></td>
+                  <td className="num">{fmt(m.v.eta)}{m.shift !== 0 && <span className="small muted"> (확정 때 {fmt(m.p.eta)})</span>}</td>
+                  <td className="num strong">{fmt(m.p.etb)}</td><td className="num">{fmt(m.p.etu)}</td>
+                  <td className={`r num ${m.p.dem ? 'c-red' : 'muted'}`}>{money(m.p.dem)}</td>
+                  <td><St tone={m.tone}>{m.verdict}</St></td>
+                </tr>)}</tbody>
+              </table>
+            </div>
+          </Panel>
+          <Panel code="FIX-NOTE" title="판단 근거" pad actions={<Button size="small" icon="undo" disabled={!isScheduler} onClick={() => cancelPlan('스케줄러 확정 취소')}>확정 취소</Button>}>
+            {/* 11-26 입력한 줄바꿈 그대로, 함께 확정한 리스크 · 조건 변경은 한 줄에 하나씩 */}
+            <p className="fix-reason">{plan.reason}</p>
+            {plan.uncheckedRisks.length > 0 && <div className="fix-unchecked">
+              <div className="small c-amber strong">확인하지 않은 리스크 · 결정 안 한 조건 변경 {plan.uncheckedRisks.length}건과 함께 확정</div>
+              <ul>{plan.uncheckedRisks.map((r, i) => <li key={i}>{r}</li>)}</ul>
+            </div>}
+          </Panel>
+          <DemList title="체선 발생 선박" items={[...pdem].sort((a, b) => b.dem - a.dem).map((p) => ({ vid: p.vid, name: p.name, berth: p.berth, etb: p.etb, cents: p.dem }))} focusVid={focus.vid} onPick={toGantt} />
         </div>
       </Screen>
     )
@@ -202,9 +192,14 @@ export default function Compare() {
   const checkTotal = toCheck.length
   const checkedN = toCheck.filter((r) => checks[checkKey(r.id)]).length
   const blocked = result.stale || result.running
+  // 11-26 처음 열 때 A만 먼저 보이고 B · C는 뒤에서 계산 중 (그동안 확정 · 조건 변경 결정은 기다린다)
+  const waitBC = result.pending > 0
+  const pend = [['후보 B', '상황형'], ['후보 C', '배별 지연 대비']].slice(2 - result.pending)
+  const pendTd = (body) => pend.map(([id]) => <td key={id} className="muted">{body}</td>)
+  const busyBC = <span className="cmp-running"><Spinner size={12} /> 계산 중</span>
   const riskWait = focusRisk.state === 'running'
   const fix = (force) => {
-    if (blocked || riskWait) return
+    if (blocked || waitBC || riskWait) return
     if (unchecked.length && !force) { setAsking(true); return }
     fixPlan({ cand: focusSim, scen, version, reason: reason.trim() || '(사유 미입력)', uncheckedRisks: unchecked })
     setAsking(false); setReason(''); setShowCands(false)
@@ -262,25 +257,25 @@ export default function Compare() {
         <div className={`cmp-top ${showReq ? 'with-req' : ''}`}>
             <Panel code="CAND-REPORT" title="후보 비교" data-tour="cards">
               <table className="dt cmp-report">
-                <colgroup><col className="cmp-c-label" />{cols.map((s) => <col key={s.id} />)}</colgroup>
+                <colgroup><col className="cmp-c-label" />{cols.map((s) => <col key={s.id} />)}{pend.map(([id]) => <col key={id} />)}</colgroup>
                 <thead><tr><th />{cols.map((sim) => <th key={sim.id} className={sim.id === focusSim.id ? 'on' : ''} onClick={() => pick(sim.id)}>
                   <button type="button" className="cmp-col"><span className="plan-radio" aria-hidden="true" />{sim.label}<span className="cmp-col-sub">{sim.preset?.label}</span>{sim.total === minTotal && <span className="chip green">최저</span>}{sim.sameAsA && <span className="chip" title="이 후보의 조건으로 풀어도 후보 A와 배치가 같습니다">A와 같음</span>}</button>
-                </th>)}</tr></thead>
+                </th>)}{pend.map(([id, sub]) => <th key={id}><span className="cmp-col">{id}<span className="cmp-col-sub">{sub}</span></span></th>)}</tr></thead>
                 <tbody>
                   <tr><th>총 예상 체선료</th>{cols.map((sim) => td(sim, <>
                     <span className={`cmp-money ${dim}`}><CountMoney cents={sim.total} /></span>
                     {result.running && runSince && <span className="cmp-running"><Spinner size={12} /> <Elapsed since={runSince} />s</span>}
-                  </>, `num cmp-total ${flash[sim.id] ? 'flash' : ''}`))}</tr>
-                  <tr><th>최저안 대비</th>{cols.map((sim) => td(sim, sim.total === minTotal ? '가장 낮음' : `+${money(sim.total - minTotal)} (${pctText(sim.total, minTotal)})`, `num ${dim} ${sim.total === minTotal ? 'c-green' : 'muted'}`))}</tr>
-                  <tr><th>체선 발생</th>{cols.map((sim) => { const d = demOf(sim); return td(sim, <>{d.length}척 <span className="muted small">· {hm(d.reduce((s, p) => s + p.dem.excessMin, 0))}</span></>, `num ${dim}`) })}</tr>
-                  <tr><th>고정한 배</th>{cols.map((sim) => td(sim, `${sim.placements.filter((p) => p.fixed).length}척`, `num ${dim}`))}</tr>
-                  <tr className="cmp-risk-row"><th>리스크</th>{cols.map((sim) => td(sim, riskCell(sim)))}</tr>
+                  </>, `num cmp-total ${flash[sim.id] ? 'flash' : ''}`))}{pendTd(busyBC)}</tr>
+                  <tr><th>최저안 대비</th>{cols.map((sim) => td(sim, sim.total === minTotal ? '가장 낮음' : `+${money(sim.total - minTotal)} (${pctText(sim.total, minTotal)})`, `num ${dim} ${sim.total === minTotal ? 'c-green' : 'muted'}`))}{pendTd('—')}</tr>
+                  <tr><th>체선 발생</th>{cols.map((sim) => { const d = demOf(sim); return td(sim, <>{d.length}척 <span className="muted small">· {hm(d.reduce((s, p) => s + p.dem.excessMin, 0))}</span></>, `num ${dim}`) })}{pendTd('—')}</tr>
+                  <tr><th>고정한 배</th>{cols.map((sim) => td(sim, `${sim.placements.filter((p) => p.fixed).length}척`, `num ${dim}`))}{pendTd('—')}</tr>
+                  <tr className="cmp-risk-row"><th>리스크</th>{cols.map((sim) => td(sim, riskCell(sim)))}{pendTd('—')}</tr>
                 </tbody>
               </table>
             </Panel>
           {showReq && <div className="cmp-top-side">
               <MailDecide scen={scen} all={all} mails={mails} decision={mailDecision} onDecide={decideMails} onUndo={undoMailDecision}
-                canEdit={isScheduler} running={result.running} blocked={blocked} />
+                canEdit={isScheduler} running={result.running || waitBC} blocked={blocked} />
           </div>}
         </div>
 
@@ -328,13 +323,14 @@ export default function Compare() {
                 <label htmlFor="risk-reason">판단 근거</label>
                 <TextArea id="risk-reason" fill rows={3} value={reason} disabled={!isScheduler} onChange={(e) => setReason(e.currentTarget.value)} placeholder="예: 체선료가 가장 낮고, 작업 간격이 빠듯한 7부두는 하역팀과 미리 조율" />
               </div>
-              {blocked && <p className="small c-amber">{result.running ? '다시 계산하는 중입니다.' : '계획 조건이 바뀌어 다시 계산한 뒤에 확정할 수 있습니다.'}</p>}
+              {blocked ? <p className="small c-amber">{result.running ? '다시 계산하는 중입니다.' : '계획 조건이 바뀌어 다시 계산한 뒤에 확정할 수 있습니다.'}</p>
+                : waitBC && <p className="small c-amber">후보 B · C 계산이 끝나면 확정할 수 있습니다.</p>}
               {asking ? (
                 <Callout className="risk-confirmation" intent="warning" icon="warning-sign">
                   <p className="small"><b>확인하지 않은 리스크 · 결정 안 한 조건 변경 {unchecked.length}건</b>이 확정 기록에 함께 남습니다.</p>
                   <div className="risk-buttons"><Button size="small" onClick={() => setAsking(false)}>돌아가기</Button><Button size="small" intent="warning" onClick={() => fix(true)}>그래도 확정</Button></div>
                 </Callout>
-              ) : <Button intent="primary" icon="endorsed" fill disabled={!isScheduler || blocked || riskWait} onClick={() => fix(false)}>{focusSim.label}로 확정</Button>}
+              ) : <Button intent="primary" icon="endorsed" fill disabled={!isScheduler || blocked || waitBC || riskWait} onClick={() => fix(false)}>{focusSim.label}로 확정</Button>}
             </div>
           </Panel>
           {fixedNow && <Button icon="arrow-left" onClick={() => setShowCands(false)}>확정 화면으로</Button>}

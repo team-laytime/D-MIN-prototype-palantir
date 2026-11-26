@@ -137,10 +137,7 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .cmp-banner p { margin: 4px 0 0; color: var(--fg-2); font-size: calc(12.5px * var(--fs)); }
 .cmp-banner-total { display: flex; flex-direction: column; align-items: flex-end; }
 .cmp-banner-total b { font-size: calc(22px * var(--fs)); }
-.cmp-fixed-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 10px; align-items: start; }
-.cmp-fixed-grid td { height: 40px; }
-.cmp-notify { margin: 0 0 12px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: calc(12.5px * var(--fs)); }
-.cmp-notify li { display: flex; gap: 10px; align-items: center; }
+.cmp-fixed td { height: 40px; }
 .cmp-monitor td { height: 36px; font-size: calc(12px * var(--fs)); }
 .cmp-monitor tr.warn td { background: var(--amber-wash); }
 
@@ -538,3 +535,7 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 /* 날짜 칸: 평소에는 연도까지, 화면이 좁으면 월/일 시:분만 */
 @media (max-width: 1440px) { .dtf-y { display: none; } }
 .tp-wait { display: block; padding: 0 8px; color: var(--fg-3); font-size: calc(12px * var(--fs)); }
+/* 11-26 확정 화면 판단 근거: 입력 줄바꿈 유지, 함께 확정한 항목은 목록 */
+.fix-reason { margin: 0; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.6; font-size: calc(12.5px * var(--fs)); }
+.fix-unchecked { margin-top: 12px; padding: 8px 10px; border-left: 3px solid var(--amber); background: var(--amber-wash); }
+.fix-unchecked ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: calc(12px * var(--fs)); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; color: var(--fg-2); }

@@ -2,7 +2,7 @@
 //  - 데이터셋 파일: public/data/<id>.json  (tools/real-data/build_dataset.py가 만든다, 비공개라 저장소에 없음)
 //  - request = 팀 엔진 PlanRequest 그대로. 11-26부터 계산 결과(results)는 넣지 않는다: 처음 열 때 initialResults가
 //    A → (A로 고른) B · C를 엔진으로 계산하고 브라우저 저장소에 남긴다(lib/cache.js). 다음부터는 저장된 결과로 바로 뜬다.
-//  - 계획 조건을 고치면 request를 고쳐 엔진 API(/engine/plans, vite가 127.0.0.1:8000으로 넘김)에 다시 보낸다.
+//  - 계획 조건을 고치면 request를 고쳐 엔진 API(/engine/plan-jobs 작업 접수 · 조회 · 취소, vite가 127.0.0.1:8000으로 넘김)에 다시 보낸다.
 import { toIso, toMin } from './time.js'
 import { cacheGet, cacheSet, hashText, versionOf } from './cache.js'
 import { BERTH_GEO } from './seaRoutes.js'
@@ -335,7 +335,7 @@ export function rankSims(results) {
  * 11-25 리스크 모델 API(POST /risk/risks, 팀 berth_risk): 엔진에 보낸 요청과 받은 응답을 그대로 보내 리스크 목록을 받는다.
  * 응답 {counts: {HIGH, MEDIUM, LOW}, risks[]: {id, kind, severity, title, vessel_ids, berth, tank, start, end, evidence, cost_per_hour}, notes[]}
  */
-//   탱크 리스크는 리스크 모델이 고정 마지노선(기본 20/80%, 1·4·7%p)으로 판정한다(계획의 안전 범위와 무관).
+//   탱크 리스크는 리스크 모델이 고정 마지노선(기본 20/80%, 2 · 3.5 · 5%p)으로 판정한다(계획의 안전 범위와 무관).
 //   요청이 1년치 실적을 담아 6MB가 넘고(지연 규칙이 1/1부터 탱크 재고를 다시 센다) 후보 하나에 5초 이상 걸린다.
 //   같은 요청의 결과는 이 브라우저 세션에 저장해 두고 다시 쓴다(새로고침·화면 이동 때 기다리지 않게).
 // 11-26 리스크 결과는 브라우저 저장소(lib/cache.js)에 리스크 모델 지문(GET /risk/health의 model.version)과 함께 남긴다.
@@ -383,18 +383,48 @@ const merge = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entrie
 //   같은 계획 조건 · 같은 후보면 엔진을 다시 부르지 않는다(처음 화면 · 다시 계산 · 「단독 반영 시」 모두).
 const engineVersion = () => versionOf('plan', '/engine/health', (b) => b?.engine && `${b.engine.version}.${String(b.engine.params_sha256).slice(0, 8)}`)
 
-/** 엔진 POST /plans (저장된 결과가 있으면 그것). 계획을 찾은 결과만 남긴다. 오류는 status를 붙여 던진다(429 = 대기열이 참) */
+const NO_ENGINE = '엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.'
+const problem = (body, status) => Object.assign(new Error(body?.detail ?? body?.title ?? `엔진 오류 ${status}`), { status })
+
+/**
+ * 11-26 엔진 계산 작업(POST /plan-jobs → GET으로 결과 조회). 화면이 계산을 버리면(signal abort) DELETE로 취소한다.
+ *   대기 중이던 작업은 대기열에서 빠지고, 계산 중인 작업은 엔진이 그 계산 프로세스를 끝낸다 — 버린 계산이 작업자를 붙잡지 않는다.
+ *   Idempotency-Key = 요청 내용: 같은 요청(예: 「반영하면?」 미리 계산과 결정 뒤 다시 계산)은 한 작업을 같이 기다린다.
+ *   같이 기다리던 쪽이 취소해 작업이 사라지면(404 · 취소됨) 다시 접수한다.
+ */
+async function runJob(text, idem, signal) {
+  for (;;) {
+    const r = await fetch('/engine/plan-jobs', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idem }, body: text, signal })
+      .catch((e) => { if (e.name === 'AbortError') throw e; return null })
+    if (!r) throw new Error(NO_ENGINE)
+    let job = await r.json().catch(() => null)
+    if (!r.ok) throw problem(job, r.status)
+    const id = job.job_id
+    const cancel = () => { fetch(`/engine/plan-jobs/${id}`, { method: 'DELETE', keepalive: true }).catch(() => {}) }
+    signal?.addEventListener('abort', cancel, { once: true })
+    try {
+      while (job && (job.status === 'QUEUED' || job.status === 'RUNNING')) {
+        await sleep(2000, signal)
+        const g = await fetch(`/engine/plan-jobs/${id}`, { signal }).catch((e) => { if (e.name === 'AbortError') throw e; return null })
+        if (!g) throw new Error(NO_ENGINE)
+        job = g.status === 404 ? null : await g.json()
+      }
+    } finally { signal?.removeEventListener('abort', cancel) }
+    if (job?.status === 'SUCCEEDED') return job.result
+    if (job && job.error?.code !== 'ERR_CONFLICT') throw problem(job.error, job.error?.status ?? 500)
+    // 작업이 사라졌거나 다른 쪽이 취소함 → 다시 접수
+  }
+}
+
+/** 엔진 계획 계산 (저장된 결과가 있으면 그것). 계획을 찾은 결과만 남긴다. 오류는 status를 붙여 던진다(429 = 대기열이 참) */
 export async function solveCached(request, signal) {
   const text = JSON.stringify(request)
   const ver = await engineVersion()
-  const key = ver && `plan:${ver}:${hashText(text)}`
+  const hash = hashText(text)
+  const key = ver && `plan:${ver}:${hash}`
   const hit = key && await cacheGet(key)
   if (hit) return hit
-  const r = await fetch('/engine/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text, signal })
-    .catch((e) => { if (e.name === 'AbortError') throw e; return null })
-  if (!r) throw new Error('엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.')
-  const body = await r.json().catch(() => null)
-  if (!r.ok) throw Object.assign(new Error(body?.detail ?? body?.title ?? `엔진 오류 ${r.status}`), { status: r.status })
+  const body = await runJob(text, `${ver ?? 'x'}:${hash}`, signal)
   if (key && body?.plan) cacheSet(key, body)
   return body
 }
@@ -408,7 +438,7 @@ export async function solveOne(scen, preset, signal) {
 /** 엔진 API로 다시 계산 (후보 프리셋마다 한 번, 동시에) */
 export async function recalc(scen, signal, presets = scen.presets) {
   const health = await fetch('/engine/health', { signal }).catch((e) => { if (e.name === 'AbortError') throw e; return null })
-  if (!health?.ok) throw new Error('엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.')
+  if (!health?.ok) throw new Error(NO_ENGINE)
   // 11-25 계획을 못 찾으면(NO_PLAN, 제한 시간이 짧거나 엔진이 바쁠 때) 그 후보만 제한 시간을 20초로 늘려 한 번 더 푼다
   const solve = async (preset, retry) => {
     const request = buildRequest(scen, preset)
@@ -441,10 +471,13 @@ const sleep = (ms, signal) => new Promise((resolve, reject) => {
  * 요청은 「다시 계산」과 같은 규칙(buildRequest)으로 만들어, 조건을 안 바꾸고 다시 계산하면 저장된 결과가 그대로 쓰인다.
  * onStep('A' | 'BC')로 진행을 알린다. 반환: [{preset, request, response}] × 3
  */
-export async function initialResults(ds, onStep, signal) {
+// 11-26 onA(a): A가 끝나는 대로 화면에 먼저 보이게 (B · C는 이어서 계산)
+export async function initialResults(ds, onStep, signal, onA) {
   onStep?.('A')
   const bare = { request: ds.request, vessels: [], blocks: [], fixes: [], params: {} }
   const [a] = await recalc(bare, signal, [BASE_PRESET])
+  if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+  onA?.(a)
   const scenA = buildScen({ ...ds, results: [a] })
   const b = chooseB(scenA, rankSims([a])[0])
   onStep?.('BC')
