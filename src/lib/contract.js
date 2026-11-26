@@ -10,7 +10,8 @@ export const KIND = { cp: 'C/P', recap: 'Recap', sales: '매매 확인서' }
 // recap · sales 구역은 문서 종류와 같아 출처에 다시 쓰지 않는다
 export const SECTION = { part1: 'Part I', rider: 'Rider' }
 export const REASON = { ocr: '스캔 문자 인식', scan: '스캔본 특약 미확인', llm: 'LLM 판정', diff: '문서 간 불일치', rate: 'C/P 요율 미확인' }
-export const GROUPS = ['체선료 계산 조건', '선박·화물', '계약 당사자·양식', '그 외 특약']
+// 계산에 쓰는 4개(값을 고칠 수 있는 칸)를 맨 위에 따로 둔다
+export const GROUPS = ['계산에 쓰는 값', '정박시간 · 레이데이즈', '선박·화물', '계약 당사자·양식', '그 외 특약']
 
 // edit가 있는 4개만 값을 고칠 수 있다(계산에 쓰는 값). weather는 파서의 weather_rule + bad_weather_half를 한 줄로 합친 것.
 const F = (key, label, group, fmt = null, edit = false) => ({ key, label, group, fmt, edit })
@@ -19,23 +20,23 @@ export const FIELDS = [
   F('demurrage_rate_per_day', '일 체선료', 0, 'usd', true),
   F('nor_notice_h', '정박시간 개시 (NOR 뒤)', 0, 'h', true),
   F('weather', '기상 조항', 0, 'weather', true),
-  F('laytime_terms', '정박시간 조건', 0),
-  F('laytime_load_h', '선적 허용시간', 0, 'h'),
-  F('laytime_discharge_h', '양하 허용시간', 0, 'h'),
-  F('load_port_laytime_h', '선적항 허용시간', 0, 'h'),
-  F('laytime_prorate', '부분 화물 비례 배분', 0),
-  F('laytime_start_rule', '정박시간 개시 규칙', 0),
-  F('laytime_end_rule', '정박시간 종료 규칙', 0),
-  F('laycan_from', '레이캔 시작', 0), F('laycan_to', '레이캔 끝', 0),
-  F('load_laydays_from', '선적 레이데이즈 시작', 0), F('load_laydays_to', '선적 레이데이즈 끝', 0),
-  F('discharge_laydays_from', '양하 레이데이즈 시작', 0), F('discharge_laydays_to', '양하 레이데이즈 끝', 0),
-  F('currency', '통화', 0),
-  F('vessel_name', '선박명', 1), F('imo', 'IMO', 1), F('dwt', '재화중량 (DWT)', 1, 't'), F('cargo', '화물', 1),
-  F('cp_qty_t', '계약 물량', 1, 't'), F('load_ports', '선적항', 1), F('discharge_ports', '양하항', 1),
-  F('cp_form', '계약 양식', 2), F('owner', '선주', 2), F('charterer', '용선자', 2),
-  F('incoterm', '인도 조건', 2), F('sk_role', '당사 역할', 2), F('rate_basis', '체선료 요율 기준', 2),
-  F('anchorage_to_berth_counts', '정박지→부두 이동 산입', 3), F('berth_shift_counts', '부두 이동 산입', 3),
-  F('half_rate_events', '반값 체선료 사유', 3), F('no_demurrage_events', '체선료 면제 사유', 3), F('laytime_exclusions', '정박시간 제외', 3),
+  F('laytime_terms', '정박시간 조건', 1),
+  F('laytime_load_h', '선적 허용시간', 1, 'h'),
+  F('laytime_discharge_h', '양하 허용시간', 1, 'h'),
+  F('load_port_laytime_h', '선적항 허용시간', 1, 'h'),
+  F('laytime_prorate', '부분 화물 비례 배분', 1),
+  F('laytime_start_rule', '정박시간 개시 규칙', 1),
+  F('laytime_end_rule', '정박시간 종료 규칙', 1),
+  F('laycan_from', '레이캔 시작', 1), F('laycan_to', '레이캔 끝', 1),
+  F('load_laydays_from', '선적 레이데이즈 시작', 1), F('load_laydays_to', '선적 레이데이즈 끝', 1),
+  F('discharge_laydays_from', '양하 레이데이즈 시작', 1), F('discharge_laydays_to', '양하 레이데이즈 끝', 1),
+  F('currency', '통화', 1),
+  F('vessel_name', '선박명', 2), F('imo', 'IMO', 2), F('dwt', '재화중량 (DWT)', 2, 't'), F('cargo', '화물', 2),
+  F('cp_qty_t', '계약 물량', 2, 't'), F('load_ports', '선적항', 2), F('discharge_ports', '양하항', 2),
+  F('cp_form', '계약 양식', 3), F('owner', '선주', 3), F('charterer', '용선자', 3),
+  F('incoterm', '인도 조건', 3), F('sk_role', '당사 역할', 3), F('rate_basis', '체선료 요율 기준', 3),
+  F('anchorage_to_berth_counts', '정박지→부두 이동 산입', 4), F('berth_shift_counts', '부두 이동 산입', 4),
+  F('half_rate_events', '반값 체선료 사유', 4), F('no_demurrage_events', '체선료 면제 사유', 4), F('laytime_exclusions', '정박시간 제외', 4),
 ]
 
 // 파서는 '산입' 기준(FULL = 악천후 시간을 정박시간에 전부 산입)이고 계산은 '공제' 기준(weather_deduct_pct)이라 방향이 반대다.
@@ -161,7 +162,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 /**
  * 원문 문장에서 추출값이 나온 부분 찾기 → [앞, 찾은 부분, 뒤] 또는 null(못 찾음: 화면은 문장 전체를 강조).
- * 파서가 값 위치(bbox, span)를 주지 않아 값의 표기를 바꿔 가며 찾는다: 64500 → 64,500 · 2028-02-14 → 14 February 2028.
+ * 문장 안의 값 위치는 파서가 주지 않아 값의 표기를 바꿔 가며 찾는다: 64500 → 64,500 · 2028-02-14 → 14 February 2028 · 14.02.2028 · 13-15 FEB 2028.
  */
 export function findInQuote(quote, value) {
   if (!quote || value == null || typeof value === 'boolean') return null
@@ -170,8 +171,11 @@ export function findInQuote(quote, value) {
   else {
     const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/)
     if (m) {
-      const d = Number(m[3]); const mon = MONTHS[Number(m[2]) - 1]
-      pats = [`${d} ${mon} ${m[1]}`, `${mon} ${d}, ${m[1]}`, `${d} ${mon}`, `${d} ${mon.slice(0, 3)}`, `${mon} ${d}`].map((s) => `(?<!\\d)${esc(s)}`)
+      const d = Number(m[3]); const mon = MONTHS[Number(m[2]) - 1]; const m3 = mon.slice(0, 3)
+      // 기간 표기(13-15 NOV 2025)는 시작 · 끝 어느 쪽이든 기간 전체를 강조한다
+      const range = [`0?${d}-\\d{1,2} ${m3} ${m[1]}`, `\\d{1,2}-0?${d} ${m3} ${m[1]}`]
+      pats = [...[`${m[3]}.${m[2]}.${m[1]}`, `${d} ${mon} ${m[1]}`, `${mon} ${d}, ${m[1]}`].map(esc), ...range, ...[`${d} ${mon}`, `${d} ${m3}`, `${mon} ${d}`].map(esc)]
+        .map((s) => `(?<!\\d)${s}`)
     } else pats = [esc(String(value))]
   }
   for (const p of pats) {

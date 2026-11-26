@@ -5,7 +5,7 @@ import { dealRows, detectKind, vesselOf } from '../lib/contract.js'
 import DEALS from '../mock/contract/deals.json'
 
 const DOCS = Object.fromEntries(Object.values(import.meta.glob('../mock/contract/SYN-*.json', { eager: true, import: 'default' })).map((d) => [d.doc_id, d]))
-export const FORM = { pdf: 'PDF', scan: '스캔 PDF', docx: 'DOCX', eml: '메일 (eml)', paste: '메일 붙여 넣기' }
+export const FORM = { pdf: 'PDF', scan: '스캔 PDF', docx: 'DOCX', eml: '메일 (eml)', txt: '텍스트 (txt)', paste: '메일 붙여 넣기' }
 export const ERROR = { vessel: '선박을 못 찾음', kind: '종류 판정 실패', empty: '글자를 하나도 못 읽음', duplicate: '중복 등록', pool: '시연용 추출 결과 없음' }
 const EXTRACT_MS = 1800
 // 시연 시계: 상단 기준 시각(데이터셋 기본 2025-11-09 09:00)에서 화면을 연 뒤 흐른 만큼. 등록 · 검토 시각이 실제 오늘 날짜와 섞이지 않게 한다.
@@ -17,21 +17,22 @@ const clock = () => new Date(T0 + Date.now() - OPENED + 9 * 3600e3).toISOString(
 // 처음부터 등록돼 있는 문서: [파서 doc_id | null, 형태, 파일 이름, 등록 월-일 시각(기준 시각 직전 며칠), 오류]
 const BY = '계약 담당 C'
 const SEED = [
-  ['SYN-CP-301', 'pdf', 'SYN_ALTAIR_CP_signed.pdf', '11-05 08:41'],
-  ['SYN-SC-301', 'pdf', 'SYN_ALTAIR_매매확인서.pdf', '11-05 08:42'],
-  ['SYN-CP-304', 'scan', 'SYN_VEGA_CP_scan.pdf', '11-06 08:47'],
-  ['SYN-SC-302', 'docx', 'SYN_VEGA_매매확인서.docx', '11-06 08:48'],
-  ['SYN-CP-303', 'pdf', 'SYN_DENEB_CP_signed.pdf', '11-06 08:55'],
-  ['SYN-SC-303', 'pdf', 'SYN_DENEB_매매확인서.pdf', '11-06 08:56'],
-  ['SYN-CP-305', 'pdf', 'SYN_RIGEL_CP_signed.pdf', '11-07 09:03'],
-  ['SYN-RECAP-305', 'paste', 'Fixture recap - SYN RIGEL', '11-07 09:05'],
-  ['SYN-SC-304', 'eml', 'SYN_RIGEL_매매확인서.eml', '11-07 09:06'],
-  ['SYN-CP-307', 'pdf', 'SYN_ARCTURUS_CP_signed.pdf', '11-07 09:12'],
-  ['SYN-SC-306', 'pdf', 'SYN_ARCTURUS_매매확인서.pdf', '11-07 09:13'],
-  ['SYN-CP-315', 'scan', 'scan_0412.pdf', '11-08 09:20'], // 문자 인식으로 선박명을 못 읽음 → 선박을 못 찾음
+  // 파일 이름은 합성 계약서 묶음(D-MIN_합성계약서 eval4)의 원본 이름 그대로
+  ['SYN-CP-301', 'pdf', 'SYN-CP-301.pdf', '11-05 08:41'],
+  ['SYN-SC-301', 'pdf', 'SYN-SC-301.pdf', '11-05 08:42'],
+  ['SYN-CP-304', 'scan', 'SYN-CP-304.pdf', '11-06 08:47'],
+  ['SYN-SC-302', 'pdf', 'SYN-SC-302.pdf', '11-06 08:48'],
+  ['SYN-CP-303', 'pdf', 'SYN-CP-303.pdf', '11-06 08:55'],
+  ['SYN-SC-303', 'pdf', 'SYN-SC-303.pdf', '11-06 08:56'],
+  ['SYN-CP-305', 'pdf', 'SYN-CP-305.pdf', '11-07 09:03'],
+  ['SYN-RECAP-305', 'txt', 'SYN-RECAP-305.txt', '11-07 09:05'],
+  ['SYN-SC-304', 'pdf', 'SYN-SC-304.pdf', '11-07 09:06'],
+  ['SYN-CP-307', 'pdf', 'SYN-CP-307.pdf', '11-07 09:12'],
+  ['SYN-SC-306', 'pdf', 'SYN-SC-306.pdf', '11-07 09:13'],
+  ['SYN-CP-315', 'scan', 'SYN-CP-315.pdf', '11-08 09:20'], // 문자 인식으로 선박명을 못 읽음 → 선박을 못 찾음
   [null, 'eml', 'Fwd_ 선적 일정 문의.eml', '11-08 09:24', 'kind'],
   [null, 'scan', 'scan_0413.pdf', '11-08 09:25', 'empty'],
-  [null, 'pdf', 'SYN_ALTAIR_CP_signed.pdf', '11-08 09:31', 'duplicate'],
+  [null, 'pdf', 'SYN-CP-301.pdf', '11-08 09:31', 'duplicate'],
 ]
 // 올리면 붙는 파서 결과(종류별 차례). recap을 먼저 붙여 넣으면 SYN BELLATRIX가 「recap만 있음」이 되고, C/P를 올리면 풀린다.
 const POOL = { cp: ['SYN-CP-302', 'SYN-CP-312', 'SYN-CP-314'], recap: ['SYN-RECAP-318'], sales: ['SYN-SC-310', 'SYN-SC-312'] }
@@ -57,7 +58,7 @@ export const useContract = () => { useSyncExternalStore(subscribe, () => rev); r
 const usedIds = () => new Set(state.regs.map((r) => r.docId).filter(Boolean))
 const extDoc = (name) => {
   const ext = name.toLowerCase().split('.').pop()
-  return ext === 'pdf' ? (/scan|스캔/i.test(name) ? 'scan' : 'pdf') : ext === 'docx' ? 'docx' : ext === 'eml' ? 'eml' : null
+  return ext === 'pdf' ? (/scan|스캔/i.test(name) ? 'scan' : 'pdf') : ['docx', 'eml', 'txt'].includes(ext) ? ext : null
 }
 
 /** 등록 한 건. 중복·빈 문서는 바로 오류, 나머지는 「추출 중」 뒤에 종류 판정 → 파서 결과 붙이기. */
@@ -70,9 +71,10 @@ function add({ form, name, empty, dupKey, probe }, by) {
   if (error) return
   setTimeout(() => {
     const kind = detectKind(probe)
-    // 파일 이름·본문에 선박명(마지막 단어, 예: BELLATRIX)이 있으면 그 선박 결과를 먼저 붙인다
+    // 파일 이름에 문서 번호(SYN-CP-312 등)나 선박명(마지막 단어, 예: BELLATRIX)이 있으면 그 결과를 먼저 붙인다
     const free = kind ? POOL[kind].filter((id) => !usedIds().has(id)) : []
-    const docId = free.find((id) => probe.toUpperCase().includes(vesselOf(DOCS[id])?.split(' ').pop())) ?? free[0]
+    const P = probe.toUpperCase()
+    const docId = free.find((id) => P.includes(id)) ?? free.find((id) => P.includes(vesselOf(DOCS[id])?.split(' ').pop())) ?? free[0]
     const doc = docId ? DOCS[docId] : null
     const done = !kind ? { status: 'error', error: 'kind' } : !doc ? { status: 'error', error: 'pool', kind }
       : { status: 'done', docId, kind: doc.kind, error: vesselOf(doc) ? null : 'vessel' }
@@ -91,10 +93,17 @@ export function registerText(text, by) {
   add({ form: 'paste', name: text.trim().split('\n')[0].slice(0, 80), empty: !text.trim(), dupKey: `paste:${text.trim()}`, probe: text }, by)
 }
 export function pickDeal(key) { set({ pick: key }) }
-/** 검토 기록. value가 없으면 「원문과 일치」, 있으면 직접 고친 값(이것도 검토 완료). */
-export function review(dealKey, field, by, value) {
-  set({ reviews: { ...state.reviews, [`${dealKey}:${field}`]: { by, at: clock().slice(0, 16), ...(value !== undefined ? { value } : {}) } } })
+/** 검토 기록. value가 없으면 「원문과 일치」, 있으면 고친 값(이것도 검토 완료). from = 문서 간 불일치에서 고른 문서 종류(C/P · 매매 확인서 …). */
+export function review(dealKey, field, by, value, from) {
+  set({ reviews: { ...state.reviews, [`${dealKey}:${field}`]: { by, at: clock().slice(0, 16), ...(value !== undefined ? { value } : {}), ...(from ? { from } : {}) } } })
 }
+/** 같은 쪽 · 같은 이유의 검토 필수를 한 번에 「원문과 일치」(스캔본 특약 기본값이면 「변경 조항 없음」)로. */
+export function reviewMany(dealKey, fields, by) {
+  const at = clock().slice(0, 16)
+  set({ reviews: { ...state.reviews, ...Object.fromEntries(fields.map((f) => [`${dealKey}:${f}`, { by, at }])) } })
+}
+/** 등록 한 건 지우기(오류 문서 정리 · 다시 올리기 전). */
+export function removeReg(no) { set({ regs: state.regs.filter((r) => r.no !== no) }) }
 
 /** 거래(선박)별 화면 모델: 등록이 끝난 문서만으로 행을 만든다. 선박명을 못 읽은 문서는 빠진다. */
 export function dealViews(s) {
@@ -111,5 +120,16 @@ export function dealViews(s) {
 /** 등록 문서 한 건의 남은 검토 필수 수(이 문서가 출처인 행). */
 export const leftFor = (view, docId) => view.left.filter((r) => r.sources.some((x) => x.doc_id === docId)).length
 export const docOf = (docId) => DOCS[docId] ?? null
-// shortcut: 목업에는 쪽 이미지가 없어 늘 null(화면은 자리 표시). 파서가 쪽 이미지(나중에 bbox)를 내보내면 그 주소를 돌려준다.
-export const pageImage = () => null
+// 스캔본 쪽 이미지: 합성 계약서 원본 PDF 쪽을 그림으로 바꿔 넣은 것(pages/<doc_id>-<쪽>.jpg, 110dpi 흑백). 없으면 null → 화면은 자리 표시.
+// 근거 위치(evidence.boxes)는 지금 파서로 스캔본 두 건을 다시 돌린 결과에서 옮겨 넣었다(eval4_llm 출력에는 없음).
+// shortcut: 목업에 넣어 둔 스캔본(SYN-CP-304 · 315)만. 파서를 붙이면 서버가 쪽 이미지를 내보내는 주소로 바꾼다.
+const PAGES = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/pages/*.jpg', { eager: true, query: '?url', import: 'default' }))
+  .map(([path, url]) => [path.split('/').pop().replace('.jpg', ''), url]))
+export const pageImage = (docId, page) => PAGES[`${docId}-${page}`] ?? null
+export const pageCount = (docId) => Object.keys(PAGES).filter((k) => k.startsWith(`${docId}-`)).length
+// 원본 전체 보기: 글자층 PDF · recap 텍스트 원본(files/). 스캔본은 위 쪽 이미지로 본다.
+const name = (path) => path.split('/').pop().replace(/\.\w+$/, '')
+const PDFS = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/files/*.pdf', { eager: true, query: '?url', import: 'default' })).map(([p, u]) => [name(p), u]))
+const TEXTS = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/files/*.txt', { eager: true, query: '?raw', import: 'default' })).map(([p, t]) => [name(p), t]))
+/** 원본 파일: { pages: 스캔본 쪽 수 } | { pdf: 주소 } | { text: 본문 } | null */
+export const docFile = (docId) => (pageCount(docId) ? { pages: pageCount(docId) } : PDFS[docId] ? { pdf: PDFS[docId] } : TEXTS[docId] != null ? { text: TEXTS[docId] } : null)

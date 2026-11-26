@@ -1,15 +1,30 @@
-// 추출값 검토: 왼쪽 선박(거래) 목록, 오른쪽 추출값 표. 행을 누르면 바로 아래에 원문 문장이 열리고 추출된 부분이 강조된다.
-// 검토 필수는 「원문과 일치」(스캔본 양식 기본값은 「변경 조항 없음 확인」)나 값 수정으로 끝내고, 다음 검토 항목으로 넘어간다.
-// 스캔본 원문은 왼쪽 원본 쪽 이미지, 오른쪽 문자 인식 결과. 글자층이 있는 PDF는 원문 문장만.
-import { Fragment, useState } from 'react'
-import { Button, Callout, Checkbox, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
+// 추출값 검토: 왼쪽 선박(거래) 목록, 오른쪽 추출값 표. 행을 누르면 바로 아래에 근거가 열린다.
+// 스캔본은 근거 줄을 원본 쪽에서 잘라 확대하고(파서 evidence.boxes) 위치에 박스를 친다. 글자층 PDF는 원문 문장에서 값을 강조한다.
+// 문서 전체는 「원본 보기」 드로어로 본다. 검토 필수는 「원문과 일치」 · 「변경 조항 없음 확인」(같은 쪽 · 같은 이유는 한 번에),
+// 문서 간 불일치는 어느 문서 값을 쓸지 고르고, 계산에 쓰는 4개는 값을 고칠 수 있다. 끝나면 다음 검토 항목으로 넘어가 초점도 옮긴다.
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { Button, Callout, Checkbox, Drawer, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
-import { dealViews, pageImage, pickDeal, review, useContract } from '../state/useContract.js'
-import { GROUPS, KIND, REASON, SECTION, WEATHER, findInQuote, fmtValue, norm } from '../lib/contract.js'
+import { dealViews, docFile, pageCount, pageImage, pickDeal, review, reviewMany, useContract } from '../state/useContract.js'
+import { FIELDS, GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, findInQuote, fmtValue, norm } from '../lib/contract.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import './contract.css'
 
-const srcText = (s) => (s.clause ? s.clause : [`${KIND[s.kind]} ${s.doc_id}`, s.page && `${s.page}쪽`, SECTION[s.section]].filter(Boolean).join(' · '))
+// 값 표시: 모노 글꼴은 숫자 · 시각 · ID · 짧은 코드(KRUSN · USD)에만. 이름 · 한글 문장은 본문 글꼴(DESIGN.md: 모노 글꼴에 한글을 넣지 않는다)
+function Val({ text }) {
+  const [, base, unit = ''] = text.match(/^(.*?)( \/일)?$/)
+  const data = !/[가-힣]/.test(base) && (/\d/.test(base) || /^[A-Z]{2,6}$/.test(base))
+  return data ? <><span className="num">{base}</span>{unit}</> : text
+}
+// shortcut: 합성 계약서는 모두 A4 세로라 쪽 비율을 고정한다. 다른 크기 문서가 오면 이미지 크기에서 읽는다.
+const PAGE_RATIO = 1.414
+const DATE_HINT = '시연용으로 날짜를 옮겨, 화면 값과 원본(2028년)의 날짜가 다릅니다.'
+const CONFIRM = { scan: '변경 조항 없음 확인' }
+
+function SrcLabel({ s }) {
+  if (s.clause) return <>{s.clause}</>
+  return <>{KIND[s.kind]} <span className="num">{s.doc_id}</span>{s.page ? ` · ${s.page}쪽` : ''}{SECTION[s.section] ? ` · ${SECTION[s.section]}` : ''}</>
+}
 
 function Quote({ text, value, scan }) {
   if (!text) return <p className="ct-quote faint">{scan ? '문자 인식 결과에 이 항목이 없습니다.' : '원문 문장이 없습니다.'}</p>
@@ -18,22 +33,72 @@ function Quote({ text, value, scan }) {
   return <p className="ct-quote">{hit ? <>{hit[0]}<mark>{hit[1]}</mark>{hit[2]}</> : <mark>{text}</mark>}</p>
 }
 
-// 스캔본 원본 쪽. 값 위치(bbox)가 아직 없어 쪽 전체를 보인다. 목업에는 이미지가 없어 자리 표시만.
-function ScanPage({ s }) {
-  const label = s.page ? `원본 ${s.page}쪽 스캔 이미지` : s.section === 'rider' ? '원본 특약 쪽 스캔 이미지' : '원본 스캔 이미지 (쪽 번호 모름)'
+// 근거 줄을 원본 쪽에서 잘라 확대한다. 위치는 모두 쪽 대비 비율이라 %로 놓는다. 위아래로 한 줄쯤 여유, 가로는 쪽 너비의 절반 이상(맥락 · 선명도).
+function Crop({ s, onOpen, small = false }) {
   const url = pageImage(s.doc_id, s.page)
-  if (url) return <img className="ct-scan-page" src={url} alt={label} />
-  return <div className="ct-scan-page ph" role="img" aria-label={`${label} (자리 표시)`}><Icon icon="media" size={20} /><span>{label}</span></div>
+  const bx = s.ev?.boxes
+  if (!url || !bx?.length) return null
+  const lo = Math.min(...bx.map((b) => b[0])); const hi = Math.max(...bx.map((b) => b[2]))
+  const W = Math.min(1, Math.max(hi - lo + 0.06, 0.5))
+  const x0 = Math.min(Math.max(0, (lo + hi) / 2 - W / 2), 1 - W)
+  const y0 = Math.max(0, Math.min(...bx.map((b) => b[1])) - 0.02)
+  const H = Math.min(1, Math.max(...bx.map((b) => b[3])) + 0.02) - y0
+  const pct = (v) => `${v * 100}%`
+  return (
+    <button type="button" className={`ct-crop ${small ? 'small' : ''}`} style={{ aspectRatio: `${W} / ${H * PAGE_RATIO}` }} onClick={onOpen}
+      aria-label={`원본 ${s.page}쪽에서 근거 위치 크게 보기`} title="원본 쪽에서 크게 보기">
+      <img src={url} alt="" style={{ width: pct(1 / W), left: pct(-x0 / W), top: pct(-y0 / H) }} />
+      {bx.map((b, i) => <span key={i} className="ct-box" style={{ left: pct((b[0] - x0) / W), top: pct((b[1] - y0) / H), width: pct((b[2] - b[0]) / W), height: pct((b[3] - b[1]) / H) }} />)}
+    </button>
+  )
 }
 
-const CONFIRM = { scan: '변경 조항 없음 확인' }
+// 근거 위치를 모르는 스캔본(문자 인식이 값을 못 읽음 · 특약에 조항이 없는지 확인): 쪽 전체를 작게, 누르면 원본 보기
+function ScanPage({ s, onOpen }) {
+  const page = s.page ?? 1
+  const url = pageImage(s.doc_id, page)
+  const label = s.page ? `원본 ${s.page}쪽` : s.section === 'rider' ? '원본 특약 쪽' : '원본 (근거 쪽 모름)'
+  if (!url) return <div className="ct-scan-page ph" role="img" aria-label={`${label} 스캔 이미지 (자리 표시)`}><Icon icon="media" size={20} /><span>{label} 스캔 이미지</span></div>
+  return (
+    <figure className="ct-scan-fig">
+      <button type="button" className="ct-scan-btn" onClick={() => onOpen(s.doc_id, page)} aria-label={`${label} 원본 보기`}><img className="ct-scan-page" src={url} alt="" /></button>
+      <figcaption className="faint tiny">{s.page ? `${s.page}쪽` : '근거 위치를 모릅니다'} · 누르면 원본 보기</figcaption>
+    </figure>
+  )
+}
+
+function Source({ s, row, cur, pick, onOpen }) {
+  const file = !s.clause && docFile(s.doc_id)
+  const open = () => onOpen(s.doc_id, s.page)
+  const value = pick ? fmtValue(row, s.value, cur) : null
+  const crop = s.scan && s.ev?.boxes?.length && pageImage(s.doc_id, s.page)
+  return (
+    <div className="ct-src">
+      <div className="ct-src-head">
+        <span><SrcLabel s={s} /></span>
+        {s.clause && <span className="chip">양식 조항 요약</span>}
+        {pick && <span>이 문서 값 <b><Val text={value} /></b></span>}
+        {s.scan && <span className="chip amber">{s.ev?.ocr ? '스캔 문자 인식' : '스캔본'}</span>}
+        {s.ev?.ocr_conf != null && <span>인식 신뢰도 <span className="num">{Math.round(s.ev.ocr_conf * 100)}%</span></span>}
+        {file && <Button size="small" variant="minimal" icon="document-open" text="원본 보기" onClick={open} />}
+      </div>
+      {crop
+        ? <div className="ct-crop-wrap"><Crop s={s} onOpen={open} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
+        : s.scan
+          ? <div className="ct-scan"><ScanPage s={s} onOpen={onOpen} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
+          : <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />}
+    </div>
+  )
+}
 
 function StatusCell({ row, rv }) {
   if (rv) {
     return (
       <span className="ct-rv">
-        {'value' in rv ? <span className="chip blue">직접 수정</span> : <St tone="ok">{row.reason === 'scan' ? '변경 조항 없음' : '원문과 일치'}</St>}
-        <span className="faint tiny">{rv.by} · {rv.at.slice(11)}</span>
+        {rv.from ? <span className="chip blue">{rv.from} 값 적용</span>
+          : 'value' in rv ? <span className="chip blue">직접 수정</span>
+            : <St tone="ok">{row.reason === 'scan' ? '변경 조항 없음' : '원문과 일치'}</St>}
+        <span className="faint tiny">{rv.by} · <span className="num">{rv.at.slice(11)}</span></span>
       </span>
     )
   }
@@ -60,35 +125,80 @@ function Editor({ row, current, onSave }) {
   )
 }
 
-function Detail({ row, rv, cur, onConfirm, onSave }) {
+function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPick, onSave, onOpen }) {
+  const ref = useRef(null)
+  // 앞 항목을 확인하고 넘어왔으면 이 항목의 첫 동작에 초점(키보드로 이어서 검토)
+  useEffect(() => { if (autoFocus) ref.current?.querySelector('.ct-actions button:not([disabled])')?.focus() }, [autoFocus])
+  const pick = row.reason === 'diff' || row.reason === 'rate'
+  const todo = row.status === 'review' && !rv
+  const verb = CONFIRM[row.reason] ?? '원문과 일치'
   return (
-    <div className="ct-detail-body">
+    <div className="ct-detail-body" ref={ref}>
       {row.note && <p className="ct-note">{row.note}</p>}
-      {row.sources.map((s) => (
-        <div key={s.doc_id ?? s.clause} className="ct-src">
-          <div className="ct-src-head">
-            <span className="num">{srcText(s)}</span>
-            {s.clause && <span className="chip">양식 조항 요약</span>}
-            {(row.reason === 'diff' || row.reason === 'rate') && <span>이 문서 값 <b className="num">{fmtValue(row, s.value, cur)}</b></span>}
-            {s.scan && <span className="chip amber">{s.ev?.ocr ? '스캔 문자 인식' : '스캔본'}</span>}
-          </div>
-          {s.scan
-            ? (
-              <div className="ct-scan">
-                <ScanPage s={s} />
-                <div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div>
-              </div>
-            )
-            : <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />}
+      {row.sources.map((s) => <Source key={s.doc_id ?? s.clause} s={s} row={row} cur={cur} pick={pick} onOpen={onOpen} />)}
+      {todo && peers.length > 0 && (
+        <div className="ct-peers">
+          <div className="ct-src-head">{row.reason === 'scan' ? `같은 이유(스캔본 특약 미확인)의 다른 항목 ${peers.length}건` : `같은 쪽(${row.src.page}쪽)의 다른 검토 필수 ${peers.length}건`}</div>
+          <ul>
+            {peers.map((r) => {
+              const v = fmtValue(r, r.value, cur)
+              return (
+                <li key={r.key}>
+                  <span className="ct-peer-label">{r.label}</span>
+                  <span><Val text={v} /></span>
+                  {r.src?.ev?.boxes && <Crop s={r.src} small onOpen={() => onOpen(r.src.doc_id, r.src.page)} />}
+                </li>
+              )
+            })}
+          </ul>
         </div>
-      ))}
+      )}
       <div className="ct-actions">
-        {row.status === 'review' && !rv && <Button intent="primary" icon="tick" text={CONFIRM[row.reason] ?? '원문과 일치'} onClick={onConfirm} />}
-        {rv && 'value' in rv && <span className="faint small">원래 값 {fmtValue(row, row.value, cur)}</span>}
+        {todo && !pick && <Button intent="primary" icon="tick" text={verb} onClick={onConfirm} />}
+        {todo && !pick && peers.length > 0 && <Button icon="tick-circle" text={`${verb}: 위 ${peers.length}건까지 모두 (${peers.length + 1}건)`} onClick={onConfirmAll} />}
+        {todo && pick && row.sources.filter((s) => s.value != null && !s.clause).map((s) => (
+          <Button key={s.doc_id} intent={norm(s.value) === norm(row.value) ? 'primary' : 'none'} icon="tick" text={`${KIND[s.kind]} 값 적용`} onClick={() => onPick(s)} />
+        ))}
+        {rv && 'value' in rv && <span className="faint small">파서 값 <Val text={fmtValue(row, row.value, cur)} /></span>}
         {row.edit && <Editor row={row} current={rv?.value ?? norm(row.value)} onSave={onSave} />}
-        {!row.edit && row.status !== 'review' && row.status !== 'empty' && <span className="faint small">원문 확인만 하는 항목입니다. 값은 계산 조건 4개만 고칠 수 있습니다.</span>}
+        {!row.edit && !todo && row.status !== 'empty' && <span className="faint small">원문 확인만 하는 항목입니다. 값은 계산에 쓰는 4개만 고칠 수 있습니다.</span>}
       </div>
     </div>
+  )
+}
+
+// 원본 전체 보기: 스캔본은 쪽 이미지에 이 문서의 근거 위치를 모두 표시(지금 항목은 진하게), 글자층 PDF는 브라우저 PDF 보기, recap은 본문.
+function DocViewer({ doc, page, field, onClose }) {
+  const file = docFile(doc.doc_id)
+  const [p, setP] = useState(page ?? 1)
+  const label = (k) => FIELDS.find((f) => f.key === k)?.label ?? k
+  const marks = file?.pages ? Object.entries(bodyOf(doc)).filter(([, c]) => c?.evidence?.page === p && c.evidence.boxes?.length) : []
+  return (
+    <Drawer isOpen position="right" size="760px" onClose={onClose} icon="document" title={`${KIND[doc.kind]} ${doc.doc_id} 원본`} className="ct-viewer">
+      <div className="ct-viewer-body">
+        {file?.pages && (
+          <>
+            <div className="ct-viewer-bar">
+              <Button size="small" variant="minimal" icon="chevron-left" aria-label="앞 쪽" disabled={p <= 1} onClick={() => setP(p - 1)} />
+              <span className="num small">{p} / {file.pages}</span><span className="small">쪽</span>
+              <Button size="small" variant="minimal" icon="chevron-right" aria-label="다음 쪽" disabled={p >= file.pages} onClick={() => setP(p + 1)} />
+              <span className="faint small">이 쪽의 근거 위치 {marks.length}곳{page ? ` · 이 항목 근거는 ${page}쪽` : ''}</span>
+            </div>
+            <div className="ct-viewer-page">
+              <img src={pageImage(doc.doc_id, p)} alt={`${doc.doc_id} 원본 ${p}쪽 스캔 이미지`} />
+              {marks.map(([k, c]) => c.evidence.boxes.map((b, i) => (
+                <span key={`${k}-${i}`} className={`ct-box ${k === field || (field === 'weather' && k.startsWith('weather')) ? 'on' : 'other'}`} title={label(k)}
+                  style={{ left: `${b[0] * 100}%`, top: `${b[1] * 100}%`, width: `${(b[2] - b[0]) * 100}%`, height: `${(b[3] - b[1]) * 100}%` }} />
+              )))}
+            </div>
+          </>
+        )}
+        {file?.pdf && <iframe className="ct-pdf" title={`${doc.doc_id} 원본 PDF`} src={`${file.pdf}#page=${page ?? 1}`} />}
+        {file?.text != null && <pre className="ct-txt">{file.text}</pre>}
+        {!file && <NonIdealState icon="document" title="원본 파일이 없습니다" description="시연 데이터에 이 문서의 원본은 넣지 않았습니다." />}
+        <p className="faint tiny ct-viewer-note">{DATE_HINT}</p>
+      </div>
+    </Drawer>
   )
 }
 
@@ -99,6 +209,10 @@ export default function ContractTerms() {
   const view = views.find((v) => v.key === s.pick) ?? views[0]
   const [open, setOpen] = useState(null)
   const [showEmpty, setShowEmpty] = useState(false)
+  const [viewer, setViewer] = useState(null)
+  const focusNext = useRef(false)
+  // 자식(Detail)의 초점 옮기기가 끝난 뒤 내린다
+  useEffect(() => { focusNext.current = false })
 
   if (!view) {
     return (
@@ -112,20 +226,29 @@ export default function ContractTerms() {
   const rvOf = (key) => s.reviews[`${view.key}:${key}`]
   const choose = (key) => { pickDeal(key); setOpen(null) }
   // 다음 검토 항목: 이 선박에서 지금 행 뒤의 남은 것 → 없으면 남은 것이 있는 다음 선박의 첫 항목
-  const next = (doneKey) => {
-    const left = view.left.filter((r) => r.key !== doneKey)
-    const i = view.rows.findIndex((r) => r.key === doneKey)
+  const next = (doneKeys, fromKey) => {
+    focusNext.current = true
+    const left = view.left.filter((r) => !doneKeys.includes(r.key))
+    const i = view.rows.findIndex((r) => r.key === fromKey)
     const after = left.find((r) => view.rows.indexOf(r) > i) ?? left[0]
     if (after) return setOpen(after.key)
     const vi = views.indexOf(view)
     const other = [...views.slice(vi + 1), ...views.slice(0, vi)].find((v) => v.left.length)
     if (other) { pickDeal(other.key); setOpen(other.left[0].key) } else setOpen(null)
   }
-  const confirm = (row) => { review(view.key, row.key, role.name); next(row.key) }
-  const save = (row, value) => { review(view.key, row.key, role.name, value); if (row.status === 'review' && !rvOf(row.key)) next(row.key) }
-  // 값 없는 항목은 기본으로 접어 둔다. 계산 조건 4개는 비어 있어도 고칠 수 있게 늘 보인다.
+  // 한 번에 확인할 수 있는 같은 묶음: 같은 스캔 쪽의 문자 인식 값, 또는 스캔본 특약 기본값 전부
+  const peersOf = (row) => (row.reason === 'ocr'
+    ? view.left.filter((r) => r.key !== row.key && r.reason === 'ocr' && r.src?.doc_id === row.src?.doc_id && r.src?.page === row.src?.page)
+    : row.reason === 'scan' ? view.left.filter((r) => r.key !== row.key && r.reason === 'scan') : [])
+  const confirm = (row) => { review(view.key, row.key, role.name); next([row.key], row.key) }
+  const confirmAll = (row) => { const keys = [row.key, ...peersOf(row).map((r) => r.key)]; reviewMany(view.key, keys, role.name); next(keys, row.key) }
+  const pickValue = (row, src) => { review(view.key, row.key, role.name, norm(src.value), KIND[src.kind]); next([row.key], row.key) }
+  const save = (row, value) => { review(view.key, row.key, role.name, value); if (row.status === 'review' && !rvOf(row.key)) next([row.key], row.key) }
+  const openDoc = (docId, page, field) => setViewer({ docId, page, field })
+  // 값 없는 항목은 기본으로 접어 둔다. 계산에 쓰는 4개는 비어 있어도 고칠 수 있게 늘 보인다.
   const emptyCount = view.rows.filter((r) => r.status === 'empty' && !r.edit).length
   const visible = view.rows.filter((r) => showEmpty || r.status !== 'empty' || r.edit)
+  const viewerDoc = viewer && view.docs.find((d) => d.doc_id === viewer.docId)
 
   return (
     <Screen tab="terms" title="추출값 검토" desc="검토 필수는 스캔본 값 · 스캔본의 양식 기본값, LLM 판정, 문서 간 불일치입니다. 나머지는 원문만 볼 수 있습니다.">
@@ -137,22 +260,32 @@ export default function ContractTerms() {
                 <button type="button" className={`ct-vessel ${v.key === view.key ? 'on' : ''}`} aria-current={v.key === view.key ? 'true' : undefined} onClick={() => choose(v.key)}>
                   <span className="ct-vessel-main">
                     <span className="ct-vessel-name">{v.vessel}</span>
-                    <span className="faint tiny">{v.docs.map((d) => KIND[d.kind]).join(' · ')}</span>
+                    <span className="faint tiny">{v.docs.map((d) => KIND[d.kind]).join(' · ')}{v.recapOnly && v.left.length > 0 && <span className="c-amber"> · C/P 없음</span>}</span>
                   </span>
                   {v.left.length > 0
-                    ? <span className="rail-badge hot num" aria-label={`검토 필수 ${v.left.length}건`}>{v.left.length}</span>
-                    : <St tone="ok" className="tiny">끝</St>}
+                    ? <span className="ct-left num" aria-label={`검토 필수 ${v.left.length}건`}>{v.left.length}</span>
+                    : v.recapOnly ? <St tone="warn" className="tiny">C/P 없음</St> : <St tone="ok" className="tiny">끝</St>}
                 </button>
               </li>
             ))}
           </ul>
         </Panel>
 
-        <Panel code="TERMS" title={view.vessel} desc={view.docs.map((d) => d.doc_id).join(', ')}
+        <Panel code="TERMS" title={view.vessel}
           actions={<>
-            <span className={view.left.length ? 'c-amber small' : 'c-green small'}>{view.left.length ? `검토 필수 ${view.left.length}건 남음` : '검토 끝'}</span>
+            <span role="status" aria-live="polite" className={view.left.length || view.recapOnly ? 'c-amber small' : 'c-green small'}>
+              {view.left.length ? `검토 필수 ${view.left.length}건 남음` : view.recapOnly ? '서명된 C/P 없음' : '검토 끝'}
+            </span>
             <Checkbox className="ct-check" checked={showEmpty} onChange={(e) => setShowEmpty(e.currentTarget.checked)} label={`값 없는 항목 보기 (${emptyCount})`} />
           </>}>
+          <div className="ct-docbar">
+            <span className="faint small">원본</span>
+            {view.docs.map((d) => (
+              <Button key={d.doc_id} size="small" variant="outlined" icon="document-open" onClick={() => openDoc(d.doc_id, null, null)}
+                text={<>{KIND[d.kind]} <span className="num">{d.doc_id}</span></>} disabled={!docFile(d.doc_id)} />
+            ))}
+            <span className="faint tiny ct-docbar-note">{DATE_HINT}</span>
+          </div>
           {view.recapOnly && (
             <Callout intent="warning" icon="warning-sign" className="ct-callout" title="서명된 C/P 없이 recap만 있습니다">
               값은 recap 기준입니다. 서명된 C/P를 넣으면 문서끼리 다시 맞춰 봅니다.
@@ -170,18 +303,21 @@ export default function ContractTerms() {
                     const rv = rvOf(r.key)
                     const on = open === r.key
                     const toggle = () => setOpen(on ? null : r.key)
+                    const shown = fmtValue(r, rv && 'value' in rv ? rv.value : r.value, cur)
                     return (
                       <Fragment key={r.key}>
                         <tr className={`click ${on ? 'on' : ''} ${r.status === 'empty' ? 'ct-empty' : ''}`} tabIndex={0} aria-expanded={on}
-                          onClick={toggle} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } }}>
+                          onClick={toggle} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle() } }}>
                           <td>{r.label}{r.edit && <span className="chip ct-calc">계산</span>}</td>
-                          <td className={rv && 'value' in rv ? 'c-blue num' : r.status === 'default' ? 'muted' : 'num'}>{fmtValue(r, rv && 'value' in rv ? rv.value : r.value, cur)}</td>
-                          <td className="faint small">{r.src ? srcText(r.src) : '—'}</td>
+                          <td className={rv && 'value' in rv ? 'c-blue' : r.status === 'default' ? 'muted' : ''}><Val text={shown} /></td>
+                          <td className="faint small">{r.src ? <SrcLabel s={r.src} /> : '—'}</td>
                           <td><StatusCell row={r} rv={rv} /></td>
                         </tr>
                         {on && (
                           <tr className="ct-detail"><td colSpan={4}>
-                            <Detail key={r.key} row={r} rv={rv} cur={cur} onConfirm={() => confirm(r)} onSave={(v) => save(r, v)} />
+                            <Detail key={r.key} row={r} rv={rv} cur={cur} peers={peersOf(r)} autoFocus={focusNext.current}
+                              onConfirm={() => confirm(r)} onConfirmAll={() => confirmAll(r)} onPick={(src) => pickValue(r, src)} onSave={(v) => save(r, v)}
+                              onOpen={(docId, page) => openDoc(docId, page, r.key)} />
                           </td></tr>
                         )}
                       </Fragment>
@@ -193,6 +329,7 @@ export default function ContractTerms() {
           </table>
         </Panel>
       </div>
+      {viewerDoc && <DocViewer key={`${viewer.docId}-${viewer.page}-${viewer.field}`} doc={viewerDoc} page={viewer.page} field={viewer.field} onClose={() => setViewer(null)} />}
     </Screen>
   )
 }

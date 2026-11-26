@@ -93,6 +93,10 @@ test('원문 강조: 숫자·날짜 표기를 바꿔 찾고, 숫자 일부에는
   assert.equal(findInQuote('Total laytime: 184 hours', 84), null)
   assert.equal(findInQuote('MT SYN ALTAIR, and', 'SYN ALTAIR')[1], 'SYN ALTAIR')
   assert.equal(findInQuote('laytime begins on tender of NOR', 0), null)
+  assert.equal(findInQuote('Commencing: 12.11.2025', '2025-11-12T00:00:00')[1], '12.11.2025')
+  assert.equal(findInQuote('LAYCAN : 13-15 NOV 2025', '2025-11-15T16:00:00')[1], '13-15 NOV 2025')
+  assert.equal(findInQuote('LAYCAN : 06-08 NOV 2025', '2025-11-06T00:00:00')[1], '06-08 NOV 2025')
+  assert.equal(findInQuote('Laydays: 14 NOV 2025 to 16 NOV 2025', '2025-11-16T16:00:00')[1], '16 NOV')
 })
 
 test('값 표시와 종류 판정', () => {

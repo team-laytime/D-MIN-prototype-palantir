@@ -11,6 +11,8 @@
 .ct-paste-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
 
 .ct-docs td { vertical-align: top; padding-top: 7px; padding-bottom: 7px; }
+.ct-err { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.ct-err-acts { display: flex; gap: 2px; margin-left: -6px; }
 .ct-name { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* 추출값 검토: 왼쪽 선박 목록 + 오른쪽 표 */
@@ -21,16 +23,21 @@
 .ct-vessel.on { background: var(--accent-wash); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
 .ct-vessel-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; margin-right: auto; }
 .ct-vessel-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-left { min-width: 22px; color: var(--amber); font-weight: 600; text-align: right; }
 .ct-check { margin: 0; }
+/* 칩은 팀 공통이 모노 글꼴이지만, 이 화면 칩은 한글이라 본문 글꼴로(DESIGN.md: 모노에 한글 금지) */
+.ct-page .chip, .ct-grid .chip { font-family: var(--sans); letter-spacing: 0; }
+.ct-docbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.ct-docbar-note { margin-left: auto; }
 .ct-callout { margin: 10px 12px 0; }
 
-.ct-terms td:nth-child(1) { width: 26%; }
-.ct-terms td:nth-child(3) { width: 24%; }
-.ct-terms td:nth-child(4) { width: 22%; }
+.ct-terms td:nth-child(1) { width: 24%; }
+.ct-terms td:nth-child(3) { width: 22%; }
+.ct-terms td:nth-child(4) { width: 24%; }
 .ct-group td { height: 26px; background: var(--bg-3); color: var(--fg-2); font-size: calc(11px * var(--fs)); font-weight: 600; letter-spacing: 0.02em; }
 .ct-empty td { color: var(--fg-3); }
 .ct-calc { margin-left: 6px; height: 16px; }
-.ct-rv { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ct-rv { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 
 /* 행 아래로 열리는 원문 */
 .ct-detail > td { padding: 10px 14px 12px; background: var(--bg-1); }
@@ -41,6 +48,27 @@
 .ct-quote { margin: 4px 0 0; padding: 6px 10px; border-left: 2px solid var(--line-3); color: var(--fg); line-height: 1.6; }
 .ct-scan { display: grid; grid-template-columns: 180px 1fr; gap: 12px; margin-top: 4px; align-items: start; }
 .ct-scan-page { width: 180px; aspect-ratio: 1 / 1.414; object-fit: contain; border: 1px solid var(--line-3); background: var(--bg-3); }
+.ct-scan-fig { margin: 0; display: flex; flex-direction: column; gap: 4px; width: 180px; }
+.ct-scan-btn { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
+/* 근거 확대: 쪽 이미지를 잘라 보이고 근거 줄에 박스. 위치는 모두 % (Crop 참고) */
+.ct-crop-wrap { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.ct-crop { position: relative; display: block; width: 100%; max-width: 680px; padding: 0; overflow: hidden; border: 1px solid var(--line-3); background: #fff; cursor: zoom-in; }
+.ct-crop.small { max-width: 420px; }
+.ct-crop img { position: absolute; max-width: none; }
+.ct-box { position: absolute; outline: 2px solid var(--accent); background: var(--accent-wash); mix-blend-mode: multiply; pointer-events: none; }
+.ct-box.other { outline: 1px dashed var(--blue); background: none; }
+.ct-peers ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.ct-peers li { display: grid; grid-template-columns: 160px 200px minmax(0, 420px); gap: 10px; align-items: center; }
+.ct-peer-label { color: var(--fg-2); }
+/* 원본 전체 보기 드로어 */
+.ct-viewer-body { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; min-height: 0; flex: 1; overflow: auto; }
+.ct-viewer-bar { display: flex; align-items: center; gap: 6px; }
+.ct-viewer-page { position: relative; border: 1px solid var(--line-3); }
+.ct-viewer-page img { display: block; width: 100%; }
+.ct-viewer-page .ct-box { pointer-events: auto; }
+.ct-pdf { flex: 1; min-height: 640px; width: 100%; border: 1px solid var(--line-3); background: #fff; }
+.ct-txt { margin: 0; padding: 10px 12px; white-space: pre-wrap; border: 1px solid var(--line-3); background: var(--bg-1); color: var(--fg); font-family: var(--mono); line-height: 1.6; }
+.ct-viewer-note { margin: 0; }
 .ct-scan-page.ph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-style: dashed; color: var(--fg-3); font-size: calc(11.5px * var(--fs)); text-align: center; }
 .ct-quote mark { padding: 0 2px; background: var(--accent-wash); color: var(--fg); box-shadow: inset 0 -1px 0 var(--accent); }
 .ct-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
