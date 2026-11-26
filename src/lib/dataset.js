@@ -99,7 +99,8 @@ export function buildScen(ds) {
       pos, moor: geo?.moor ?? [pos[0], pos[1] + 0.0019], approxPos: pier === 'GAS',
     }
   })
-  const refs = ds.vesselRef ?? {}
+  // 제원표에 빈 값이 문자열 'None'으로 들어온 것은 없는 값으로 본다
+  const refs = Object.fromEntries(Object.entries(ds.vesselRef ?? {}).map(([cs, r]) => [cs, Object.fromEntries(Object.entries(r).filter(([, x]) => x !== 'None'))]))
   const ref = (v) => refs[v.call_sign] ?? {}
   const vessels = req.vessels.filter((v) => planIds.has(vesselIdOf(v))).map((v) => ({
     // 11-25 화면에는 선박명(한글)을 쓴다. 묶음에는 선박명 칸이 없어 호출부호로 선박명표(vesselRef)에서 찾고, 없으면 호출부호.

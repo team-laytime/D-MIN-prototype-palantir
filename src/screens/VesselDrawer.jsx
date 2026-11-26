@@ -137,9 +137,9 @@ export default function VesselDrawer() {
             </div>
 
             <div className="vc-facts">
-              <div><span>화물</span><b>{v.product} {v.dir}</b><small className="num">{v.ton.toLocaleString()} t</small></div>
+              <div><span>화물</span><b>{v.product}</b><small>{v.dir}</small><small className="num">{v.ton.toLocaleString()} t</small></div>
               <div><span>배정 선석</span><b>{berth?.name ?? p.bid}</b></div>
-              {isScheduler && <div className={d.cents > 0 ? 'dem' : 'ok'}><span>예상 체선</span><b className="num">{d.cents > 0 ? money(d.cents) : '없음'}</b><small>{d.cents > 0 ? fmtDur(d.excessMin) : '허용 시간 안'}{' '}<button type="button" className="vc-link" onClick={() => setView('evidence')}>계획 일정</button></small></div>}
+              {isScheduler && <div className={d.cents > 0 ? 'dem' : 'ok'}><span>예상 체선</span><b className="num">{d.cents > 0 ? money(d.cents) : '없음'}</b><small>{d.cents > 0 ? fmtDur(d.excessMin) : '허용 시간 안'}</small></div>}
             </div>
 
             <details className="vc-more">
