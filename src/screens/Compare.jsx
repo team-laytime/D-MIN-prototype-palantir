@@ -264,7 +264,6 @@ export default function Compare() {
               <colgroup><col className="cmp-c-label" />{cols.map((s) => <col key={s.id} />)}</colgroup>
               <thead><tr><th />{cols.map((sim) => <th key={sim.id} className={sim.id === focusSim.id ? 'on' : ''} onClick={() => pick(sim.id)}>
                 <button type="button" className="cmp-col"><span className="plan-radio" aria-hidden="true" />{sim.label}<span className="cmp-col-sub">{sim.preset?.label}</span>{sim.total === minTotal && <span className="chip green">최저</span>}</button>
-                {sim.preset?.why && <span className="cmp-why">{sim.preset.why}</span>}
               </th>)}</tr></thead>
               <tbody>
                 <tr><th>총 예상 체선료</th>{cols.map((sim) => td(sim, <>

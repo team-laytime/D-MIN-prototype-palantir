@@ -237,7 +237,6 @@
 .risk-sidebar { max-height: calc(100vh - 120px); overflow-y: auto; overscroll-behavior: contain; }
 .risk-sidebar > * { flex-shrink: 0; }
 /* 11-25 상황형 후보 B: 왜 이 안이 붙었는지 */
-.cmp-why { display: block; margin-top: 3px; color: var(--amber); font: 500 calc(11px * var(--fs))/1.4 var(--sans); }
 .cmp-report thead th { white-space: normal; vertical-align: top; }
 /* 11-26 창이 좁으면(1180px 이하) 오른쪽 사이드(조건 변경 요청 · 확정)를 본문 아래로 — 후보 비교 표가 눌리지 않게 */
 @media (max-width: 1180px) {
