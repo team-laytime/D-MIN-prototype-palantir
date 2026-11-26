@@ -46,7 +46,7 @@ export default function Report() {
 
   return (
     <Screen tab="report" title="접안계획 보고서" step={3} bodyClass="rpt-page" actions={<Button icon="envelope" text="메일 작성" endIcon="arrow-right" onClick={() => go('mail')} />}>
-      <p className="muted small">「후보 비교·확정」에서 고른 안으로 보고서를 만듭니다. 금액은 엔진 결과를 그대로 넣고 자동 대조합니다 (문서와 메일 금액 {check.count}개, {check.bad.length ? '대조 실패' : '대조 통과'}).</p>
+      <p className="muted small">「후보 비교·확정」에서 고른 안으로 보고서를 만듭니다. 금액은 계산 결과를 그대로 넣고 자동 대조합니다 (문서와 메일 금액 {check.count}개, {check.bad.length ? '대조 실패' : '대조 통과'}).</p>
       {check.bad.length > 0 && <Callout intent="danger" icon="error">숫자 대조 실패: {check.bad.join(', ')}. 사용 금지.</Callout>}
       {copyError && <Callout intent="danger" icon="error" role="alert">{copyError}</Callout>}
       <span className="rpt-sr" role="status">{copied ? '보고서 복사됨' : ''}</span>
@@ -113,7 +113,7 @@ export function ReportDoc({ m, onVessel }) {
       <section>
         <h2><span className="num">2</span>후보 비교</h2>
         <table className="dt rpt-table">
-          <thead><tr><th>안</th><th>무엇을 바꾼 안</th><th className="r">총 예상 체선료</th><th className="r">최저안 대비</th><th className="r">체선</th><th className="r">야간 접안</th><th className="r">남은 리스크</th><th>엔진</th></tr></thead>
+          <thead><tr><th>안</th><th>무엇을 바꾼 안</th><th className="r">총 예상 체선료</th><th className="r">최저안 대비</th><th className="r">체선</th><th className="r">야간 접안</th><th className="r">남은 리스크</th></tr></thead>
           <tbody>{m.items.map((it) => (
             <tr key={it.id} className={it.id === sel.id ? 'on' : ''}>
               <td className="strong">{it.label}{it.id === sel.id && <span className="chip accent rpt-sel">선택</span>}</td>
@@ -123,7 +123,6 @@ export function ReportDoc({ m, onVessel }) {
               <td className="r num">{it.dem}척</td>
               <td className="r num">{it.night}척</td>
               <td className="r num">{it.active.length}건</td>
-              <td className="small">{it.engine}<br /><span className="num muted">{it.solveSec ?? '-'}초</span></td>
             </tr>
           ))}</tbody>
         </table>
@@ -177,10 +176,10 @@ export function ReportDoc({ m, onVessel }) {
 
       <section className="rpt-basis small muted">
         <h2>계산 기준</h2>
-        <p>엔진: 팀 엔진 berth_sim (CP-SAT). 후보마다 파라미터 묶음이 다릅니다.</p>
+        <p>후보 구성</p>
         <ul className="rpt-guide">{m.basis.presets.map((t) => <li key={t}>{t}</li>)}</ul>
         <p>데이터: {m.basis.dataset}{m.basis.bundle ? ` (${m.basis.bundle})` : ''}, {m.basis.vessels}척, 선석 {m.basis.berths}곳. 계획 시각 {m.basis.start}, 계획 구간 끝 {m.basis.end}.</p>
-        <p>후보는 체선료가 낮은 순서로 A, B, C이며 A가 기본 선택입니다.</p>
+        <p>후보는 A 기본 · B 상황형(탱크 · 풍속 중 리스크가 큰 쪽 대비) · C 배별 지연 대비이며 A가 기본 선택입니다.</p>
       </section>
     </article>
   )

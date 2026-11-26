@@ -265,7 +265,7 @@ export async function recalc(scen, signal, presets = scen.presets) {
   return Promise.all(presets.map(async (preset) => {
     let out = await solve(preset, false)
     if (!out.response.plan) out = await solve(preset, true)
-    if (!out.response.plan) throw new Error(`${preset.label}: 엔진이 이 조건으로 계획을 찾지 못했습니다 (${out.response.status})`)
+    if (!out.response.plan) throw new Error(`${preset.label}: 이 조건으로 계획을 찾지 못했습니다 (${out.response.status})`)
     return out
   }))
 }

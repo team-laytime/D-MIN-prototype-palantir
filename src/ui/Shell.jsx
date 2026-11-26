@@ -45,7 +45,7 @@ export function Brand({ size = 15 }) {
 function Clock() {
   const { scen } = useApp()
   return (
-    <Tooltip content="현재 시각. 엔진은 이 시각 뒤의 일을 보지 않습니다" placement="bottom">
+    <Tooltip content="현재 시각. 이 시각 뒤의 일은 계획에 쓰지 않습니다" placement="bottom">
       <span className="clock mono">
         <span className="faint">현재</span> <b>{scen ? fmtFull(0) : '-'}</b> <span className="faint">KST</span>
       </span>

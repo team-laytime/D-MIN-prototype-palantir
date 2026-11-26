@@ -56,7 +56,7 @@ export default function Home() {
   if (!scen || !all.length) {
     return (
       <div className="home-console">
-        <div className="home-loading small muted">{result.loading ? '데이터셋을 불러오는 중입니다' : result.error ?? '엔진 후보가 아직 없습니다'}</div>
+        <div className="home-loading small muted">{result.loading ? '데이터셋을 불러오는 중입니다' : result.error ?? '후보가 아직 없습니다'}</div>
       </div>
     )
   }

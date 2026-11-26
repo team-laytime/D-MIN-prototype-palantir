@@ -129,14 +129,14 @@ export default function ScenarioInput() {
       bodyClass="plan-input plan-stack"
       actions={<>
         <Button intent={result.stale ? 'warning' : 'none'} icon={result.running ? <Spinner size={14} /> : 'refresh'} disabled={!canRecalc} onClick={() => recalc()}>
-          {result.running ? '엔진 계산 중, 약 1분' : '다시 계산'}
+          {result.running ? '계산 중, 약 1분' : '다시 계산'}
         </Button>
         <Button intent="primary" endIcon="arrow-right" disabled={!result.candidates.length} onClick={() => go('compare')}>후보 비교</Button>
       </>}
     >
 
       {calcState !== 'ok' && <div className={`pi-calc ${calcState}`} data-tour="recalc">
-        {calcState === 'run' ? <><Spinner size={14} /><b>엔진 계산 중, 약 1분</b><span className="muted">후보 {scen.presets.length}개를 팀 엔진(CP-SAT)으로 동시에 계산합니다.</span></>
+        {calcState === 'run' ? <><Spinner size={14} /><b>계산 중, 약 1분</b><span className="muted">후보 {scen.presets.length}개를 동시에 계산합니다.</span></>
           : calcState === 'bad' ? <><Icon icon="error" size={14} /><b>다시 계산하지 못했습니다</b><span>{result.calcError}</span></>
             : calcState === 'warn' ? <><Icon icon="warning-sign" size={14} /><b>계획 조건이 바뀌었습니다</b><span>지금 후보는 바뀌기 전 조건으로 계산한 것입니다. 「다시 계산」을 눌러야 반영됩니다.</span></>
               : null}

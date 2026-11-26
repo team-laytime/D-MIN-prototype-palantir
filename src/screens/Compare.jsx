@@ -91,7 +91,7 @@ export default function Compare() {
     return <Screen tab="compare" title="후보 비교·확정"><div className="cmp-none"><Spinner size={20} /> {result.error ?? '데이터셋을 불러오는 중입니다'}</div></Screen>
   }
   if (!all.length) {
-    return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '엔진 결과가 비어 있습니다.'}</Callout></Screen>
+    return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '계산 결과가 비어 있습니다.'}</Callout></Screen>
   }
 
   const best = all[0]
@@ -253,14 +253,14 @@ export default function Compare() {
 
       {result.stale && (
         <Callout className="cmp-stale" intent="warning" icon="refresh" title="계획 조건이 바뀌었습니다. 다시 계산해야 후보가 맞습니다">
-          <p className="small">지금 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 엔진에 보냅니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
+          <p className="small">지금 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 그대로 둡니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
           <div className="risk-buttons">
             <Button intent="warning" icon="refresh" loading={result.running} disabled={!isScheduler} onClick={recalc}>다시 계산</Button>
-            {result.running && runSince && <span className="small muted">엔진이 후보 {scen.presets.length}개를 동시에 계산하고 있습니다 · <Elapsed since={runSince} />초 (몇 분 걸릴 수 있음)</span>}
+            {result.running && runSince && <span className="small muted">후보 {scen.presets.length}개를 동시에 계산하고 있습니다 · <Elapsed since={runSince} />초 (몇 분 걸릴 수 있음)</span>}
           </div>
         </Callout>
       )}
-      {!result.stale && result.running && <Callout intent="primary" icon={<Spinner size={16} />}>엔진이 후보를 다시 계산하고 있습니다 · {runSince && <Elapsed since={runSince} />}초</Callout>}
+      {!result.stale && result.running && <Callout intent="primary" icon={<Spinner size={16} />}>후보를 다시 계산하고 있습니다 · {runSince && <Elapsed since={runSince} />}초</Callout>}
       {result.calcError && <Callout intent="danger" icon="error" title="다시 계산하지 못했습니다">{result.calcError}</Callout>}
 
       <div className="risk-layout">
@@ -402,7 +402,7 @@ function MailDecide({ scen, all, mails, decision, onDecide, onUndo, canEdit, run
 /** 확인할 리스크의 메일 한 줄 밑: 「반영하면?」 미리 계산(그 조건을 넣은 A · B · C) */
 function WhatIfLine({ e, all, blocked }) {
   if (!e) return <span className="cmp-wi muted">{blocked ? '단독 반영 시: 다시 계산 뒤에 미리 계산' : '단독 반영 시: 계산 대기'}</span>
-  if (e.state === 'queued') return <span className="cmp-wi muted">단독 반영 시: 엔진이 바빠 잠시 뒤 다시 계산</span>
+  if (e.state === 'queued') return <span className="cmp-wi muted">단독 반영 시: 계산이 밀려 잠시 뒤 다시 계산</span>
   if (e.state === 'running') return <span className="cmp-wi"><Spinner size={11} /> 단독 반영 시 A · B · C 계산 중 <Elapsed since={e.t0} />초</span>
   if (e.state === 'error') return <span className="cmp-wi c-red">단독 반영 시 계산 못 함: {e.error}</span>
   return (
