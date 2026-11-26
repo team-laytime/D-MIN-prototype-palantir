@@ -162,7 +162,7 @@ export default function VesselDrawer() {
                 <div><dt>영문 선명</dt><dd>{v.nameEn ?? '-'}</dd></div>
                 <div><dt>호출부호, 항차</dt><dd className="mono">{v.callSign}, {Number(v.voyage)}항차</dd></div>
                 <div><dt>선종</dt><dd>{v.cls ?? v.vtype ?? '-'}</dd></div>
-                <div><dt>국적</dt><dd>{v.flag ?? '-'}</dd></div>
+                <div><dt>선적</dt><dd>{v.flag ?? '-'}</dd></div>
                 <div><dt>DWT</dt><dd className="num">{v.dwt?.toLocaleString() ?? '-'} t</dd></div>
                 <div><dt>GT</dt><dd className="num">{v.grt?.toLocaleString() ?? '-'}</dd></div>
                 <div><dt>LOA, 폭</dt><dd className="num">{v.loa ?? '-'} m{v.web?.beam ? `, ${v.web.beam} m` : ''}</dd></div>
@@ -173,7 +173,7 @@ export default function VesselDrawer() {
             </details>
 
             <details className="vc-more">
-              <summary>갈 수 있는 선석 <span className="num">{v.compat.length}</span></summary>
+              <summary>접안 가능한 선석 <span className="num">{v.compat.length}</span></summary>
               <div className="vc-berths">{v.compat.map((id) => (
                 <span key={id} className={`vc-berth ${id === p.bid ? 'on' : ''}`} title={v.rates[id] ? `하역 속도 ${Math.round(v.rates[id]).toLocaleString()} t/h` : ''}>
                   {berthOf(id)?.label ?? id}{id === p.bid && <em>배정</em>}
