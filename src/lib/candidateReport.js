@@ -111,7 +111,7 @@ const vsBaseLine = () => ''
 
 export function candidateReportMarkdown(m) {
   const L = []
-  L.push(`# 울산 SK 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용`, '')
+  L.push(`# 울산 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용`, '')
   L.push('## 1. 결론', `${m.confirmed ? '확정한' : '선택한'} 안은 ${m.sel.label}(${m.sel.preset?.label ?? '-'})입니다. 총 예상 체선료는 ${money(m.sel.total)}이며, ${vsBest(m)} ${vsBaseLine(m)}`, '')
   L.push('### 판단근거', m.judgment || '(아직 작성하지 않음)', '')
   L.push('## 2. 후보 비교', '| 안 | 무엇을 바꾼 안 | 총 예상 체선료 | 최저안 대비 | 체선 | 야간 접안 | 남은 리스크 |', '| --- | --- | ---: | ---: | ---: | ---: | ---: |')
@@ -138,7 +138,7 @@ export function candidateReportMarkdown(m) {
 
 /** 메일 초안(제목, 본문). 보고서와 같은 모델에서 만든다. */
 export function candidateMailDraft(m) {
-  const subject = `[울산 SK 부두] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
+  const subject = `[울산 부두] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
   const body = [
     '안녕하세요.',
     `${m.period} 접안 계획으로 ${m.sel.label}(${m.sel.preset?.label ?? '-'})을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,

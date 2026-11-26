@@ -15,7 +15,7 @@ const GROUPS = [
   { key: 'done', label: '완료' },
 ]
 const H72 = 72 * 60
-const tabLabel = (pier) => (pier === 'BUOY' ? '부이' : pier === 'GAS' ? '가스' : `SK${pier}`)
+const tabLabel = (pier) => (pier === 'BUOY' ? '부이' : pier === 'GAS' ? '가스' : `${pier}부두`)
 
 function Group({ label, count, children, open: open0 = true }) {
   const [open, setOpen] = useState(open0)

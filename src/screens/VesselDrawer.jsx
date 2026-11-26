@@ -270,7 +270,7 @@ export default function VesselDrawer() {
   )
 }
 
-const PEOPLE = ['스케줄러 A', '이용자 B', '대리점 담당', 'SK 3부두 하역 1팀']
+const PEOPLE = ['스케줄러 A', '이용자 B', '대리점 담당', '3부두 하역 1팀']
 const mentionsOf = (text) => PEOPLE.filter((p) => text.includes(`@${p}`))
 const withMentions = (text) => text.split(new RegExp(`(@(?:${PEOPLE.join('|')}))`)).map((part, i) => (part.startsWith('@') && PEOPLE.includes(part.slice(1)) ? <b key={i} className="vd-mention">{part}</b> : part))
 

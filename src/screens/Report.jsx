@@ -96,7 +96,7 @@ export function ReportDoc({ m, onVessel }) {
   return (
     <article className="rpt-doc">
       <header className="rpt-doc-head">
-        <h1>울산 SK 부두 접안 계획 후보안 비교 보고 ({m.period})</h1>
+        <h1>울산 부두 접안 계획 후보안 비교 보고 ({m.period})</h1>
         <p className="small muted">{m.status}, 담당자 검토용</p>
       </header>
 

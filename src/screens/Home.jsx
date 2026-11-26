@@ -265,7 +265,7 @@ function HomeMap() {
     const fullText = (pr) => {
       const sts = pr.berths.map((b) => berthStatus(b))
       const busy = sts.filter((x) => x.key === 'busy').length
-      const nm = pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `SK${pr.id}부두`
+      const nm = pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `${pr.id}부두`
       return `${nm}  ${sts.some((x) => x.key === 'blocked') ? '사용 불가' : busy ? `${busy}/${pr.berths.length} 작업` : '비어 있음'}`
     }
     const offsetOf = new Map()
@@ -340,7 +340,7 @@ function HomeMap() {
       })
       update(`pier-${pier.id}`, at, L.divIcon({
         className: 'home-map-label-wrap',
-        html: `<span class="hud-tag st-${key}" style="${posStyle(pier.id)}"><i></i><b>${escapeHtml(pier.id === 'BUOY' ? '부이' : pier.id === 'GAS' ? '가스부두' : `SK${pier.id}부두`)}</b><em>${blocked ? '사용 불가' : busy ? `${busy}/${pier.berths.length} 작업` : '비어 있음'}</em></span>`,
+        html: `<span class="hud-tag st-${key}" style="${posStyle(pier.id)}"><i></i><b>${escapeHtml(pier.id === 'BUOY' ? '부이' : pier.id === 'GAS' ? '가스부두' : `${pier.id}부두`)}</b><em>${blocked ? '사용 불가' : busy ? `${busy}/${pier.berths.length} 작업` : '비어 있음'}</em></span>`,
         iconSize: [0, 0],
       }), pier.name, tooltip, () => pickPier(pier.id), 500, `pier:${pier.id}`)
     }
@@ -530,7 +530,7 @@ function HomeMap() {
                 return (
                   <button key={pr.id} type="button" role="tab" aria-selected={on} className={on ? 'on' : ''} onClick={() => setGPier(pr.id)}
                     onMouseEnter={() => setHover(`pier:${pr.id}`)} onMouseLeave={() => setHover((h) => (h === `pier:${pr.id}` ? null : h))}>
-                    {pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `SK${pr.id}부두`}
+                    {pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `${pr.id}부두`}
                     <span className={busyN ? 'busy' : ''}>{busyN}/{pr.berths.length}</span>
                   </button>
                 )

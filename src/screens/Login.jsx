@@ -98,7 +98,7 @@ function Signup({ sent, onSent, onBack }) {
         <FormGroup label={role === 'user' ? '담당 부두 · 팀' : '소속 팀'} labelInfo={req}>
           <div className="login-select">
             <select key={role} required>
-              {(role === 'user' ? ['SK 3부두 하역 1팀', 'SK 5부두 하역 1팀', 'SK 6부두 하역 2팀', '선박 대리점'] : ['물류운영팀 선박 스케줄']).map((t) => <option key={t}>{t}</option>)}
+              {(role === 'user' ? ['3부두 하역 1팀', '5부두 하역 1팀', '6부두 하역 2팀', '선박 대리점'] : ['물류운영팀 선박 스케줄']).map((t) => <option key={t}>{t}</option>)}
             </select>
             <Icon icon="chevron-down" size={16} />
           </div>

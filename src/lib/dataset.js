@@ -90,11 +90,11 @@ export function pierOf(id) {
   if (id.startsWith('GAS')) return 'GAS'
   return id.split('-')[0]
 }
-export const pierName = (p) => (p === 'BUOY' ? '부이' : p === 'GAS' ? '가스부두' : `SK ${p}부두`)
+export const pierName = (p) => (p === 'BUOY' ? '부이' : p === 'GAS' ? '가스부두' : `${p}부두`)
 export function berthName(id) {
   if (id.startsWith('BUOY')) return `${id.slice(4)}번 부이`
   if (id.startsWith('GAS')) return `가스부두 ${id.slice(3)}`
-  return id.includes('-') ? `SK ${pierOf(id)}부두 ${id}` : `SK ${id}부두`
+  return id.includes('-') ? `${pierOf(id)}부두 ${id}` : `${id}부두`
 }
 export const berthCode = (id) => (id.startsWith('BUOY') ? `B${id.slice(4)}` : id.startsWith('GAS') ? `G${id.slice(3)}` : id)
 // 11-25 화면에 보이는 선석 이름(풀어 쓴 것): 2-1 → SK2부두 1번, 3 → SK3부두, BUOY2 → 부이 2번, GAS1 → 가스부두 1번
@@ -102,7 +102,7 @@ export const berthLabel = (id) => {
   if (id.startsWith('BUOY')) return `부이 ${id.slice(4)}번`
   if (id.startsWith('GAS')) return `가스부두 ${id.slice(3)}번`
   const [pier, n] = id.split('-')
-  return n ? `SK${pier}부두 ${Number(n)}번` : `SK${pier}부두`
+  return n ? `${pier}부두 ${Number(n)}번` : `${pier}부두`
 }
 
 // ── 화물·방향 ─────────────────────────────────────────────────────────
