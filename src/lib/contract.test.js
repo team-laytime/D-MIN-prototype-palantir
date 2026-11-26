@@ -45,7 +45,9 @@ test('스캔본: 특약 값은 confidence 0.8이어도, 양식 기본값도 검�
   const nor = row(rows, 'nor_notice_h')
   assert.equal(nor.reason, 'scan')
   assert.equal(nor.value, 6)
-  assert.equal(nor.sources[1].page, 3) // 원본 특약 쪽
+  assert.equal(nor.sources[0].page, 3) // 확인할 곳(스캔 특약 시작 쪽)을 먼저
+  assert.equal(nor.src.clause, 'ASBATANKVOY 2025 Part II 6') // 출처 칸은 값의 출처(양식 조항)
+  assert.deepEqual([nor.srcTag, nor.check.doc_id, nor.check.section], ['양식 기본값', 'SYN-CP-304', 'rider'])
   assert.equal(row(rows, 'weather').reason, 'scan')
   // 글자층 있는 C/P가 같이 있으면 기본값은 그냥 양식 기본값, 값도 글자층 쪽에서
   const both = dealRows([load('SYN-CP-304'), load('SYN-CP-302'), load('SYN-SC-302')], dealOf('SYN-CP-304'))
@@ -59,6 +61,7 @@ test('일 체선료: 매매 확인서가 CP 요율 준용이면 C/P 값이 기�
   assert.equal(vega.reason, 'rate')
   assert.equal(vega.value, 46300)
   assert.deepEqual(vega.sources.map((x) => x.doc_id), ['SYN-CP-304', 'SYN-SC-302'])
+  assert.deepEqual([vega.src.doc_id, vega.srcTag, vega.check.doc_id, vega.check.scan], ['SYN-SC-302', '임시', 'SYN-CP-304', true])
   // 두 문서 값이 다르면 문서 간 불일치, 적용값은 C/P
   const sc = load('SYN-SC-302')
   sc.sales.demurrage_rate_per_day.value = 47000

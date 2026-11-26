@@ -26,6 +26,16 @@ function SrcLabel({ s }) {
   return <>{KIND[s.kind]} <span className="num">{s.doc_id}</span>{s.page ? ` · ${s.page}쪽` : ''}{SECTION[s.section] ? ` · ${SECTION[s.section]}` : ''}</>
 }
 
+// 특약 범위: 특약 근거가 나온 첫 쪽부터 문서 끝까지(특약은 C/P 뒤에 붙는다).
+// shortcut: 파서가 특약 구간의 쪽 범위를 내주지 않아 추정한다. 파서 출력에 범위가 생기면 그걸 쓴다.
+const riderRange = (c) => { const n = pageCount(c.doc_id); return n > c.page ? `${c.page}~${n}쪽` : `${c.page}쪽부터` }
+const checkHint = (c) => (c?.section === 'rider' && c.page ? `특약 ${riderRange(c)}에 이 조항을 바꾸는 문장이 없는지 확인합니다.` : null)
+
+// 출처와 확인할 곳이 다른 행(임시 값 · 양식 기본값): 실제로 볼 문서
+function CheckLabel({ c }) {
+  return <>{KIND[c.kind]} <span className="num">{c.doc_id}</span>{c.scan ? ' 스캔' : ''}{c.section === 'rider' && c.page ? ` · 특약 ${riderRange(c)}` : ''}</>
+}
+
 function Quote({ text, value, scan }) {
   if (!text) return <p className="ct-quote faint">{scan ? '문자 인식 결과에 이 항목이 없습니다.' : '원문 문장이 없습니다.'}</p>
   const hit = findInQuote(text, value)
@@ -54,22 +64,26 @@ function Crop({ s, onOpen, small = false }) {
 }
 
 // 근거 위치를 모르는 스캔본(문자 인식이 값을 못 읽음 · 특약에 조항이 없는지 확인): 쪽 전체를 작게, 누르면 원본 보기
-function ScanPage({ s, onOpen }) {
+function ScanPage({ s, hint, onOpen }) {
   const page = s.page ?? 1
   const url = pageImage(s.doc_id, page)
-  const label = s.page ? `원본 ${s.page}쪽` : s.section === 'rider' ? '원본 특약 쪽' : '원본 (근거 쪽 모름)'
+  const rider = s.section === 'rider' && !s.ev && s.page
+  const label = rider ? `원본 특약 ${riderRange(s)}` : s.page ? `원본 ${s.page}쪽` : '원본 (근거 쪽 모름)'
   if (!url) return <div className="ct-scan-page ph" role="img" aria-label={`${label} 스캔 이미지 (자리 표시)`}><Icon icon="media" size={20} /><span>{label} 스캔 이미지</span></div>
   return (
     <figure className="ct-scan-fig">
-      <button type="button" className="ct-scan-btn" onClick={() => onOpen(s.doc_id, page)} aria-label={`${label} 원본 보기`}><img className="ct-scan-page" src={url} alt="" /></button>
-      <figcaption className="faint tiny">{s.page ? `${s.page}쪽` : '근거 위치를 모릅니다'} · 누르면 원본 보기</figcaption>
+      <button type="button" className="ct-scan-btn" onClick={() => onOpen(s.doc_id, page, hint)} aria-label={`${label} 원본 보기`}><img className="ct-scan-page" src={url} alt="" /></button>
+      <figcaption className="faint tiny">{rider ? `특약 ${riderRange(s)}` : s.page ? `${s.page}쪽` : '근거 위치를 모릅니다'} · 누르면 원본 보기</figcaption>
     </figure>
   )
 }
 
 function Source({ s, row, cur, pick, onOpen }) {
   const file = !s.clause && docFile(s.doc_id)
-  const open = () => onOpen(s.doc_id, s.page)
+  // 근거 위치가 없는 확인 대상: 원본을 열 때 무엇을 찾아야 하는지 같이 넘긴다
+  const hint = s.section === 'rider' && !s.ev ? checkHint(s)
+    : row.reason === 'rate' && s.doc_id === row.check?.doc_id ? `문자 인식이 이 값을 읽지 못해 근거 위치가 없습니다. 쪽을 넘기며 「${row.label}」 칸을 찾아 확인합니다.` : null
+  const open = () => onOpen(s.doc_id, s.page, hint)
   const value = pick ? fmtValue(row, s.value, cur) : null
   const crop = s.scan && s.ev?.boxes?.length && pageImage(s.doc_id, s.page)
   return (
@@ -85,7 +99,7 @@ function Source({ s, row, cur, pick, onOpen }) {
       {crop
         ? <div className="ct-crop-wrap"><Crop s={s} onOpen={open} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
         : s.scan
-          ? <div className="ct-scan"><ScanPage s={s} onOpen={onOpen} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
+          ? <div className="ct-scan"><ScanPage s={s} hint={hint} onOpen={onOpen} /><div><span className="faint tiny">문자 인식 결과</span><Quote text={s.quote} value={s.value ?? row.value} scan /></div></div>
           : <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />}
     </div>
   )
@@ -168,7 +182,7 @@ function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPic
 }
 
 // 원본 전체 보기: 스캔본은 쪽 이미지에 이 문서의 근거 위치를 모두 표시(지금 항목은 진하게), 글자층 PDF는 브라우저 PDF 보기, recap은 본문.
-function DocViewer({ doc, page, field, onClose }) {
+function DocViewer({ doc, page, field, hint, onClose }) {
   const file = docFile(doc.doc_id)
   const [p, setP] = useState(page ?? 1)
   const label = (k) => FIELDS.find((f) => f.key === k)?.label ?? k
@@ -182,7 +196,7 @@ function DocViewer({ doc, page, field, onClose }) {
               <Button size="small" variant="minimal" icon="chevron-left" aria-label="앞 쪽" disabled={p <= 1} onClick={() => setP(p - 1)} />
               <span className="num small">{p} / {file.pages}</span><span className="small">쪽</span>
               <Button size="small" variant="minimal" icon="chevron-right" aria-label="다음 쪽" disabled={p >= file.pages} onClick={() => setP(p + 1)} />
-              <span className="faint small">이 쪽의 근거 위치 {marks.length}곳{page ? ` · 이 항목 근거는 ${page}쪽` : ''}</span>
+              <span className="faint small">이 쪽의 근거 위치 {marks.length}곳 · {hint ?? (page ? `이 항목 근거는 ${page}쪽` : '이 항목은 근거 위치를 모릅니다')}</span>
             </div>
             <div className="ct-viewer-page">
               <img src={pageImage(doc.doc_id, p)} alt={`${doc.doc_id} 원본 ${p}쪽 스캔 이미지`} />
@@ -217,7 +231,7 @@ export default function ContractTerms() {
   if (!view) {
     return (
       <Screen tab="terms" title="추출값 검토">
-        <NonIdealState icon="document" title="검토할 문서가 없습니다" description="「계약 문서」에서 문서를 넣으면 추출이 끝난 뒤 여기에 선박별로 모입니다." />
+        <NonIdealState icon="document" title="검토할 문서가 없습니다" description="「문서 등록」에서 문서를 넣으면 추출이 끝난 뒤 여기에 선박별로 모입니다." />
       </Screen>
     )
   }
@@ -244,7 +258,7 @@ export default function ContractTerms() {
   const confirmAll = (row) => { const keys = [row.key, ...peersOf(row).map((r) => r.key)]; reviewMany(view.key, keys, role.name); next(keys, row.key) }
   const pickValue = (row, src) => { review(view.key, row.key, role.name, norm(src.value), KIND[src.kind]); next([row.key], row.key) }
   const save = (row, value) => { review(view.key, row.key, role.name, value); if (row.status === 'review' && !rvOf(row.key)) next([row.key], row.key) }
-  const openDoc = (docId, page, field) => setViewer({ docId, page, field })
+  const openDoc = (docId, page, field, hint = null) => setViewer({ docId, page, field, hint })
   // 값 없는 항목은 기본으로 접어 둔다. 계산에 쓰는 4개는 비어 있어도 고칠 수 있게 늘 보인다.
   const emptyCount = view.rows.filter((r) => r.status === 'empty' && !r.edit).length
   const visible = view.rows.filter((r) => showEmpty || r.status !== 'empty' || r.edit)
@@ -310,14 +324,17 @@ export default function ContractTerms() {
                           onClick={toggle} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle() } }}>
                           <td>{r.label}{r.edit && <span className="chip ct-calc">계산</span>}</td>
                           <td className={rv && 'value' in rv ? 'c-blue' : r.status === 'default' ? 'muted' : ''}><Val text={shown} /></td>
-                          <td className="faint small">{r.src ? <SrcLabel s={r.src} /> : '—'}</td>
+                          <td className="faint small">
+                            {r.src ? <SrcLabel s={r.src} /> : '—'}{r.srcTag && ` (${r.srcTag})`}
+                            {r.check && r.status === 'review' && !rv && <div className="ct-check-at">확인할 곳: <CheckLabel c={r.check} /></div>}
+                          </td>
                           <td><StatusCell row={r} rv={rv} /></td>
                         </tr>
                         {on && (
                           <tr className="ct-detail"><td colSpan={4}>
                             <Detail key={r.key} row={r} rv={rv} cur={cur} peers={peersOf(r)} autoFocus={focusNext.current}
                               onConfirm={() => confirm(r)} onConfirmAll={() => confirmAll(r)} onPick={(src) => pickValue(r, src)} onSave={(v) => save(r, v)}
-                              onOpen={(docId, page) => openDoc(docId, page, r.key)} />
+                              onOpen={(docId, page, hint) => openDoc(docId, page, r.key, hint)} />
                           </td></tr>
                         )}
                       </Fragment>
@@ -329,7 +346,7 @@ export default function ContractTerms() {
           </table>
         </Panel>
       </div>
-      {viewerDoc && <DocViewer key={`${viewer.docId}-${viewer.page}-${viewer.field}`} doc={viewerDoc} page={viewer.page} field={viewer.field} onClose={() => setViewer(null)} />}
+      {viewerDoc && <DocViewer key={`${viewer.docId}-${viewer.page}-${viewer.field}`} doc={viewerDoc} page={viewer.page} field={viewer.field} hint={viewer.hint} onClose={() => setViewer(null)} />}
     </Screen>
   )
 }

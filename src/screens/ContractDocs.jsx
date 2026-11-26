@@ -44,7 +44,7 @@ export default function ContractDocs() {
   const open = (view) => { pickDeal(view.key); go('terms') }
 
   return (
-    <Screen tab="docs" title="계약 문서" desc="넣은 문서에서 파서가 계약 조건을 뽑습니다. 시연판은 미리 만든 파서 결과를 붙입니다.">
+    <Screen tab="docs" title="문서 등록" desc="넣은 문서에서 파서가 계약 조건을 뽑습니다. 시연판은 미리 만든 파서 결과를 붙입니다.">
       <div className="ct-page">
         <Stats items={[
           { label: '등록 문서', value: s.regs.length },

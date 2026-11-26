@@ -85,7 +85,8 @@ const source = (doc, key, fallbackQuote = null) => {
 /**
  * 한 거래(같은 선박의 문서 묶음)의 추출값 행.
  * docs = 등록이 끝난 이 거래의 파서 문서들, deal = deals.json 항목(없으면 null).
- * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|null, src, sources[], note }
+ * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|null, src, sources[], note,
+ *       srcTag: 출처가 확인 대상이 아닐 때 붙이는 말(임시 · 양식 기본값), check: 실제로 확인할 문서 { doc_id, kind, page, section, scan } }
  */
 export function dealRows(docs, deal) {
   // 같은 종류면 글자층이 있는 문서를 먼저(파서 reconcile과 같이 C/P 원본이 스캔 사본보다 앞)
@@ -101,7 +102,7 @@ export function dealRows(docs, deal) {
   const scanOnly = cps.length > 0 && cps.every(isScan)
 
   return FIELDS.map((f) => {
-    const row = { ...f, value: null, status: 'empty', reason: null, src: null, sources: [], note: null }
+    const row = { ...f, value: null, status: 'empty', reason: null, src: null, sources: [], note: null, srcTag: null, check: null }
     const diff = diffs[f.key]
     if (diff) {
       row.sources = diff.docs.map((id, i) => source(byId[id], f.key, i === 0 ? diff.cpText ?? null : null))
@@ -120,7 +121,9 @@ export function dealRows(docs, deal) {
       if (sc && !cp) {
         const scS = source(sc, f.key)
         row.sources = cps[0] ? [source(cps[0], f.key), scS] : [scS]
-        return { ...row, value: scS.value, src: scS, status: 'review', reason: 'rate',
+        // 적용값은 매매 확인서에서 임시로 가져오지만, 확인할 곳은 C/P(요율의 기준)
+        const check = cps[0] ? { doc_id: cps[0].doc_id, kind: 'cp', page: null, section: null, scan: isScan(cps[0]) } : null
+        return { ...row, value: scS.value, src: scS, status: 'review', reason: 'rate', srcTag: '임시', check,
           note: `매매 확인서는 C/P 요율을 따르는데(CP 요율 준용) ${cps[0] ? 'C/P에서 일 체선료를 읽지 못했습니다' : 'C/P가 아직 없습니다'}. 매매 확인서 값을 임시로 씁니다. 원본 C/P에서 요율을 확인하십시오.` }
       }
     }
@@ -136,8 +139,9 @@ export function dealRows(docs, deal) {
       const src = { clause: `${form} ${def.clause}`, quote: def.text }
       if (!scanOnly) return { ...row, value: def.value, src, sources: [src], status: 'default', note: '특약에 바꾸는 조항이 없어 양식 기본값을 씁니다.' }
       // 스캔본은 특약에 조항이 없는 건지 문자 인식이 못 읽은 건지 모른다 → 원본 특약 쪽을 보고 확인
+      // 값의 출처는 양식 조항이지만, 확인할 곳은 스캔 C/P의 특약(바꾸는 조항이 없는지). 특약 시작 쪽부터 연다
       const page = { doc_id: cps[0].doc_id, kind: 'cp', value: null, page: riderPage(cps[0]), section: 'rider', quote: null, scan: true }
-      return { ...row, value: def.value, src, sources: [src, page], status: 'review', reason: 'scan',
+      return { ...row, value: def.value, src, sources: [page, src], status: 'review', reason: 'scan', srcTag: '양식 기본값', check: page,
         note: '스캔본이라 특약에 이 조항을 바꾸는 문장이 없는 건지, 문자 인식이 못 읽은 건지 알 수 없습니다. 원본 특약 쪽에 바꾸는 조항이 없으면 확인하십시오. 그때까지는 양식 기본값을 씁니다.' }
     }
     return { ...row, note: '문서에서 이 항목을 찾지 못했습니다.' }

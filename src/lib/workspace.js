@@ -30,7 +30,7 @@ export const NAV = [
   // 11-20 피드백: 계산 검증·활동 기록 화면은 뺀다(C).
   { key: 'SCHEDULE', label: '일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
   { key: 'CONTRACT', label: '계약 문서 업무', roles: ['contract'], items: [
-    { id: 'docs', label: '계약 문서', icon: 'document', no: 1 },
+    { id: 'docs', label: '문서 등록', icon: 'document', no: 1 },
     { id: 'terms', label: '추출값 검토', icon: 'search-text', no: 2 },
   ] },
 ]

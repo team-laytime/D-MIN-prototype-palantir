@@ -1,13 +1,13 @@
 # 계약 문서 화면 ↔ 파서 연결 안내
 
-브랜치 `feature/parser-view`. 계약 문서 담당(`contract` 계정)의 두 화면 「계약 문서」, 「추출값 검토」는 **화면만 있고 파서에 연결돼 있지 않다.**
+브랜치 `feature/parser-view`. 계약 문서 담당(`contract` 계정)의 두 화면 「문서 등록」, 「추출값 검토」는 **화면만 있고 파서에 연결돼 있지 않다.**
 파일을 올리면 미리 돌려 둔 파서 결과(합성 계약서 eval4 묶음)를 붙이는 흉내만 낸다. 이 문서는 파서(`D-MIN-contract`)를 붙일 사람이 바꿀 자리와 주고받을 데이터를 적는다.
 
 ## 1. 화면 구성
 
 | 화면 | 파일 | 하는 일 |
 |---|---|---|
-| 계약 문서 (`docs`) | `src/screens/ContractDocs.jsx` | 파일 올리기(pdf · 스캔 pdf · docx · eml), 메일 본문 붙여 넣기(recap), 등록 문서 목록과 추출 상태 · 예외 |
+| 문서 등록 (`docs`) | `src/screens/ContractDocs.jsx` | 파일 올리기(pdf · 스캔 pdf · docx · eml · txt), 메일 본문 붙여 넣기(recap), 등록 문서 목록과 추출 상태 · 예외 |
 | 추출값 검토 (`terms`) | `src/screens/ContractTerms.jsx` | 선박(거래)별 추출값 표. 행을 펼치면 근거(스캔본은 원본 쪽에서 근거 줄을 잘라 확대 + 박스, 글자층 PDF는 원문 문장 강조), 「원본 보기」 드로어(문서 전체), 「원문과 일치」 · 같은 쪽 묶음 확인 · 문서 간 불일치 값 고르기 · 값 고치기 |
 | 상태 저장소 | `src/state/useContract.js` | 등록 문서 · 검토 기록. **연결할 때 바꿀 곳은 거의 다 여기** |
 | 변환 (순수 함수) | `src/lib/contract.js` (+ `contract.test.js`) | 파서 JSON → 화면 행. 검토 필수 판정, 양식 기본값, 값 표시 |
@@ -85,6 +85,9 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
   - 「별도」 요율은 쓰지 않는다.
 
   `reconcile.py`와 같은 규칙이다.
+- **출처와 확인할 곳**: 표의 「출처」는 적용값을 가져온 곳이다. 둘이 다른 행은 출처에 「(임시)」 · 「(양식 기본값)」을 붙이고 「확인할 곳」을 따로 보인다(행의 `srcTag` · `check`).
+  - C/P 요율 미확인: 값은 매매 확인서에서 임시로, 확인은 C/P에서(파서가 C/P 값을 못 읽음).
+  - 스캔본 특약 미확인: 값은 양식 조항에서, 확인은 스캔 C/P 특약에서. 특약 쪽 범위는 파서가 내주지 않아 「특약 근거가 나온 첫 쪽 ~ 문서 끝」으로 추정한다(`riderRange`, `shortcut:`).
 - **문서 우선순위**: C/P → recap → 매매 확인서 순이다. 같은 종류 안에서는 글자층 있는 문서가 스캔 사본보다 앞이다(`reconcile`과 같음).
 - **양식 기본값** (`FORM_DEFAULTS`): ASBATANKVOY 2025 Part II 기본값 8개를 `llm.py` 프롬프트에서 옮겨 적은 것이다. 출처 칸에는 조항 원문이 아니라 요약 문장이 나온다. 파서 쪽에 양식별 기본값 표가 생기면 그걸 읽게 바꾼다(`shortcut:` 주석).
 - **기상 조항**: 파서는 산입 기준(FULL · HALF · NONE)이고 계산은 공제 기준(`weather_deduct_pct`)이다. FULL → 0, HALF → 50, NONE → 100(`weatherDeductPct`).
