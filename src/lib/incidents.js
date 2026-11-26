@@ -2,7 +2,7 @@
 // 메일마다 change 하나가 있고, 「반영」하면 계획 조건(scen)에 들어간다(applyChange). 후보는 「다시 계산」해야 바뀐다.
 //   eta   선사 대리점: 도착 지연                → scen.vessels[].eta
 //   block 부두 운영팀: 설비 고장 · 점검           → scen.blocks (EQUIPMENT)
-//   block 기상 특보: 강풍 예보, 접안 금지          → scen.blocks (WEATHER)
+//   (11-26 강풍 예보 메일은 뺐다: 기상은 데이터셋의 시간별 풍속으로 이미 들어가 있고, 데이터와 다른 풍속을 지어내게 된다)
 //   fix   출하팀: 고객사 선적 일정으로 우선 접안   → scen.fixes
 //   param 생산계획팀: 탱크 안전재고 상한 조정      → scen.params.tank.safe_max_pct
 import { dayStart, fmt, toMin } from './time.js'
@@ -11,8 +11,8 @@ const round10 = (m) => Math.ceil(m / 10) * 10
 
 /**
  * @param scen   buildScen 결과 일부 {vessels, berths, window}
- * @param plan   후보 A(엔진 기본 프리셋) 계획 vessels — 붐비는 부두를 고를 때만 쓴다
- * @param base   엔진 baseline(기존 계획) vessels — 우선 접안 요청의 부두 · 시각
+ * @param plan   기존 계획 vessels(데이터의 실제 접안 기록) — 붐비는 부두를 고를 때
+ * @param base   기존 계획 vessels — 우선 접안 요청의 부두 · 시각 (11-26부터 plan과 같은 것)
  */
 export function seedIncidents({ vessels, berths, window }, plan, base) {
   const out = []
@@ -49,20 +49,7 @@ export function seedIncidents({ vessels, berths, window }, plan, base) {
     })
   }
 
-  // 3) 강풍 예보: 셋째 날 03~09시 3~8부두 접안 금지
-  const outer = berths.filter((b) => /^\d+$/.test(String(b.pier)) && +b.pier >= 3 && +b.pier <= 8).map((b) => b.id)
-  const wxStart = d0 + 2 * 1440 + 3 * 60
-  if (outer.length && wxStart + 6 * 60 <= window.end) {
-    const block = { berths: outer, start: wxStart, end: wxStart + 6 * 60, kind: 'WEATHER' }
-    out.push({
-      id: 'wind', kind: '강풍 예보', from: '기상 특보', fromAddr: 'kma-alert@example.com', at: -60,
-      title: `강풍 주의보 예보, ${fmt(block.start)} ~ ${fmt(block.end).slice(-5)} 북동풍 15~18 m/s`,
-      body: `울산 앞바다 강풍 주의보 발표 예정입니다.\n\n기간: ${fmt(block.start)} ~ ${fmt(block.end)}\n풍속: 북동풍 15~18 m/s, 순간 최대 22 m/s\n\n3~8부두는 이 시간 접안을 금지합니다.\n기상 특보 알림`,
-      block, change: { type: 'block', block },
-    })
-  }
-
-  // 4) 우선 접안 요청: 12~48시간 뒤 접안하는 첫 반출선을 기존 계획 부두 · 시각으로 고정
+  // 3) 우선 접안 요청: 12~48시간 뒤 접안하는 첫 반출선을 기존 계획 부두 · 시각으로 고정
   //    (11-26 엔진 계획 없이 만든다. 최적화는 이 배를 옮길 수 있으므로 고정은 늘 의미 있는 조건)
   const pick = base
     .map((b) => ({ b, v: vById[b.vessel_id], etb: round10(toMin(b.etb)) }))
@@ -79,7 +66,7 @@ export function seedIncidents({ vessels, berths, window }, plan, base) {
     })
   }
 
-  // 5) 탱크 상한 조정: 원유 입고가 몰려 안전재고 상한을 75%로
+  // 4) 탱크 상한 조정: 원유 입고가 몰려 안전재고 상한을 75%로
   out.push({
     id: 'tank-max', kind: '탱크 운영', from: '생산계획팀', fromAddr: 'production@example.com', at: -20,
     title: '원유 입고 집중, 탱크 안전재고 상한 75%로 운영 요청',
