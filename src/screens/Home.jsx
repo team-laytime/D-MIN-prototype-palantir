@@ -488,7 +488,7 @@ function HomeMap() {
           <div className="home-map-stage">
             <div ref={mapElement} className="home-map" role="region" aria-label="울산항 선박 위치 지도" />
             <div className="home-map-context">
-              {windAhead && <span className={`home-wx-chip ${windAhead.now ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />강풍 {windAhead.now ? '관측' : '예보'}, 최대 <span className="num">{windAhead.ms}m/s</span> (<span className="num">{fmt(windAhead.t)}</span>)</span>}
+              {windAhead && <span className={`home-wx-chip ${windAhead.now ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />강풍 {windAhead.now ? '관측' : '예보'}, 최대 <span className="num">{windAhead.ms.toFixed(1)}m/s</span> (<span className="num">{fmt(windAhead.t)}</span>)</span>}
               {isNight && <span className="home-night"><Icon icon="moon" size={12} />야간 시간대 (20시~06시)</span>}
             </div>
           </div>

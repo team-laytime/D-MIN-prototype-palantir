@@ -63,7 +63,7 @@ export function deriveAlerts({ ws, roleId, userAddr, scenarioId, scen }) {
   const peak = wind.reduce((m, w) => (w.ms > (m?.ms ?? -1) ? w : m), null)
   if (peak && peak.ms >= WIND_LIMIT) {
     const over = wind.filter((w) => w.ms >= WIND_LIMIT)
-    out.push({ id: `wx:${scenarioId}:${peak.t}`, channel: 'weather', tone: 'warn', title: `강풍 관측, 최대 ${peak.ms} m/s (${fmt(peak.t)})`,
+    out.push({ id: `wx:${scenarioId}:${peak.t}`, channel: 'weather', tone: 'warn', title: `강풍 관측, 최대 ${peak.ms.toFixed(1)} m/s (${fmt(peak.t)})`,
       detail: `풍속 ${WIND_LIMIT} m/s 이상인 시간 ${over.length}개, ${fmt(over[0].t)} ~ ${fmt(over.at(-1).t)}. 3~8부두와 부이는 이 시간 하역이 멈춰 작업 완료가 늦어집니다. 다시 계산해 일정을 확인하십시오.`,
       at: fmt(peak.t), by: '기상 관측(부이)', action: { tab: 'input' } })
   }

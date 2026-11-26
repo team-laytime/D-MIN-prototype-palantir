@@ -7,6 +7,7 @@ const TANK_LIMIT = [20, 80]
 const TANK_BANDS = [[3, 1], [2, 4], [1, 7]]
 export const GRADE = ['없음', '낮음', '중간', '높음']
 const DEF_WIND = { '#1~2·GAS': [18, 20], '#3~7': [14, 21] }
+const WIND_NAME = { '#1~2·GAS': '1~2부두·가스부두', '#3~7': '3~8부두·부이' } // 엔진 풍속 묶음 키 → 화면 이름
 
 export function tankGrade(sim) {
   let best = { g: 0, d: null }
@@ -29,7 +30,7 @@ export function windGrade(scen) {
   const top = Math.max(...ws)
   const [margin, grp] = Object.entries(th).map(([k, v]) => [v[0] - top, k]).sort((a, b) => a[0] - b[0])[0]
   const g = margin < SIGMA_MS ? 3 : margin < 2 * SIGMA_MS ? 2 : margin < 3 * SIGMA_MS ? 1 : 0
-  return { g, text: `예보 최대 ${top} m/s, ${grp} 중단 기준 ${th[grp][0]} m/s까지 ${Math.round(margin * 10) / 10} m/s (σ ${SIGMA_MS})`, th }
+  return { g, text: `예보 최대 ${top.toFixed(1)} m/s, ${WIND_NAME[grp] ?? grp} 하역 중단 기준 ${th[grp][0]} m/s까지 ${margin.toFixed(1)} m/s (σ ${SIGMA_MS})`, th }
 }
 
 export const BASE_PRESET = { id: 'base', label: '기본', desc: '기본 기준 그대로', params: {} }
@@ -47,7 +48,7 @@ export function chooseB(scen, simA) {
   const low = Object.fromEntries(Object.entries(w.th).map(([k, v]) => [k, [Math.max(1, v[0] - 2 * SIGMA_MS), v[1]]]))
   return {
     id: 'wind', label: '보수적 풍속 기준', grades,
-    desc: `하역 중단 풍속을 예보 오차 2σ만큼 낮춤: ${Object.entries(w.th).map(([k, v]) => `${k} ${v[0]}→${low[k][0]}`).join(', ')} m/s`,
+    desc: `하역 중단 풍속을 예보 오차 2σ만큼 낮춤: ${Object.entries(w.th).map(([k, v]) => `${WIND_NAME[k] ?? k} ${v[0]}→${low[k][0]}`).join(', ')} m/s`,
     params: { weather: { thresholds_ms: low } },
     why: `풍속 ${GRADE[w.g]}: ${w.text}${t.g ? ` (탱크 ${GRADE[t.g]})` : ''}`,
   }

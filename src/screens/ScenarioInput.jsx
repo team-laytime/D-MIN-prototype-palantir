@@ -726,7 +726,7 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT, groups = [
   const days = []
   for (let t = win.start + (((15 * 60 - win.start) % 1440) + 1440) % 1440; t <= win.end; t += 1440) days.push(t)
   return (
-    <svg className="pi-wind" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`풍속 그래프, 최대 ${Math.max(...wind.map((w) => w.ms))} m/s`}>
+    <svg className="pi-wind" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`풍속 그래프, 최대 ${Math.max(...wind.map((w) => w.ms)).toFixed(1)} m/s`}>
       {[0, 5, 10, 15, 20].filter((v) => v < top).map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="pi-wind-grid" /><text x={L - 4} y={y(v) + 3} className="pi-wind-tick" textAnchor="end">{v}</text></g>)}
       {days.map((t) => <g key={t}><line x1={x(t)} x2={x(t)} y1={T} y2={H - B} className="pi-wind-grid" /><text x={x(t) + 3} y={H - 5} className="pi-wind-tick">{fmt(t).slice(0, 5)}</text></g>)}
       {lines.map((l) => <line key={l.text} x1={L} x2={W - R} y1={y(l.v)} y2={y(l.v)} className={`pi-wind-th ${l.cls}`} />)}
