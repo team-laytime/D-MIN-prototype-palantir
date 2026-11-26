@@ -89,7 +89,7 @@ export function deriveAlerts({ ws, roleId, userAddr, scenarioId, scen }) {
   for (const inc of scen.incidents ?? []) {
     const effect = inc.change ? changeText(scen, inc) : inc.effect ?? (inc.block ? `부두 사용 불가 ${blockText(scen, inc.block)}` : '-')
     out.push({ id: `inc:${scenarioId}:${inc.id}`, incId: inc.id, channel: 'incident', tone: 'warn', title: `[${inc.kind}] ${inc.title}`, detail: `영향: ${effect}`,
-      at: typeof inc.at === 'number' ? fmt(inc.at) : inc.at ?? '-', by: inc.from ?? '현장', action: { tab: 'input' },
+      at: typeof inc.at === 'number' ? fmt(inc.at) : inc.at ?? '-', by: inc.from ?? '현장', action: { tab: 'compare' }, // 결정은 후보 비교의 조건 변경 요청 패널에서
       from: inc.from ?? '현장', fromAddr: inc.fromAddr ?? (inc.from === '생산계획팀' ? 'production@example.com' : 'facility@example.com'),
       body: inc.body ?? `스케줄러님,\n\n${inc.title}.\n\n영향: ${effect}\n\n반영 여부를 회신 부탁드립니다.\n${inc.from ?? '현장'} 드림` })
   }
