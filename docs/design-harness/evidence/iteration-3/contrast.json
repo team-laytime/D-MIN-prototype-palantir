@@ -1,0 +1,1695 @@
+[
+  {
+    "checked": 59,
+    "minRatio": 5.33,
+    "failures": [],
+    "smallText": [],
+    "records": [
+      {
+        "text": "D-MIN",
+        "size": 22,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 3,
+        "pass": true
+      },
+      {
+        "text": "시스템 관리자",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "가입 신청",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "3",
+        "size": 12,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체 계정",
+        "size": 14,
+        "color": "rgb(188, 25, 58)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 5.88,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "처리 이력",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "시스템 관리자",
+        "size": 13,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "admin@sk.com",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "로그아웃",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체 계정",
+        "size": 24,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 13.68,
+        "required": 3,
+        "pass": true
+      },
+      {
+        "text": "7",
+        "size": 18,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "목록 내보내기",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 13.68,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "7",
+        "size": 12,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 13.68,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "활성",
+        "size": 14,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "6",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "비활성",
+        "size": 14,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "1",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "시연 데이터",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "2026.11.25",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "기준",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "초기화",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "사용자",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "역할",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 · 팀",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "최근 로그인",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "상태",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "김현우",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 14.23,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK10104",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 5.54,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "일정 이용자",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 8.53,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK 3부두 하역 1팀",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 8.53,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "11.25 09:20",
+        "size": 12,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 8.53,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "활성",
+        "size": 12,
+        "color": "rgb(27, 107, 63)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 6.09,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "1",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "명",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "· 1–1명",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "1",
+        "size": 12,
+        "color": "rgb(188, 25, 58)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 5.88,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "계정 상세",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "활성",
+        "size": 12,
+        "color": "rgb(27, 107, 63)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 6.52,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "김현우",
+        "size": 22,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK10104",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "회사 메일",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "hyunwoo.kim@sk.com",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "현재 역할",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "일정 이용자",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 · 팀",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK 3부두 하역 1팀",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "승인 일시",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "2026.11.25 08:05",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "최근 로그인",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "2026.11.25 09:20",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "권한 및 접근 범위",
+        "size": 13,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "변경",
+        "size": 13,
+        "color": "rgb(188, 25, 58)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 6.29,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "확정된 접안 일정 조회",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 일정 확인",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "최근 변경",
+        "size": 13,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "이 화면에 저장된 변경 이력이 없습니다.",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "계정 비활성화",
+        "size": 14,
+        "color": "rgb(180, 35, 24)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 6.57,
+        "required": 4.5,
+        "pass": true
+      }
+    ]
+  },
+  {
+    "checked": 70,
+    "minRatio": 5.33,
+    "failures": [],
+    "smallText": [],
+    "records": [
+      {
+        "text": "D-MIN",
+        "size": 22,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 3,
+        "pass": true
+      },
+      {
+        "text": "시스템 관리자",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "가입 신청",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "3",
+        "size": 12,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체 계정",
+        "size": 14,
+        "color": "rgb(188, 25, 58)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 5.88,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "처리 이력",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "시스템 관리자",
+        "size": 13,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "admin@sk.com",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "로그아웃",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체 계정",
+        "size": 24,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 13.68,
+        "required": 3,
+        "pass": true
+      },
+      {
+        "text": "7",
+        "size": 18,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "목록 내보내기",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 13.68,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "7",
+        "size": 12,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 13.68,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "활성",
+        "size": 14,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "6",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "비활성",
+        "size": 14,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "1",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "시연 데이터",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "2026.11.25",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "기준",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          241,
+          243,
+          245
+        ],
+        "ratio": 5.33,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "초기화",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "사용자",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "역할",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 · 팀",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "최근 로그인",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "상태",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "김현우",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 14.23,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK10104",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 5.54,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "일정 이용자",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 8.53,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK 3부두 하역 1팀",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 8.53,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "11.25 09:20",
+        "size": 12,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 8.53,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "활성",
+        "size": 12,
+        "color": "rgb(27, 107, 63)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 6.09,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "전체",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "1",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "명",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "· 1–1명",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "1",
+        "size": 12,
+        "color": "rgb(188, 25, 58)",
+        "background": [
+          255,
+          245,
+          245
+        ],
+        "ratio": 5.88,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "계정 상세",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "활성",
+        "size": 12,
+        "color": "rgb(27, 107, 63)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 6.52,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "김현우",
+        "size": 22,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK10104",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "회사 메일",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "hyunwoo.kim@sk.com",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "현재 역할",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "일정 이용자",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 · 팀",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK 3부두 하역 1팀",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "승인 일시",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "2026.11.25 08:05",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "최근 로그인",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "2026.11.25 09:20",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "권한 및 접근 범위",
+        "size": 13,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "변경",
+        "size": 13,
+        "color": "rgb(188, 25, 58)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 6.29,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "확정된 접안 일정 조회",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 일정 확인",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "최근 변경",
+        "size": 13,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "이 화면에 저장된 변경 이력이 없습니다.",
+        "size": 13,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.93,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "계정 비활성화",
+        "size": 14,
+        "color": "rgb(180, 35, 24)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 6.57,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "계정 권한 변경",
+        "size": 20,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "김현우",
+        "size": 16,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 14.32,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK10104",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "현재 역할",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "일정 이용자",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 14.32,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 · 팀",
+        "size": 12,
+        "color": "rgb(89, 101, 117)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 5.58,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "SK 3부두 하역 1팀",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          247,
+          248,
+          250
+        ],
+        "ratio": 14.32,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "역할",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "담당 부두 · 팀",
+        "size": 14,
+        "color": "rgb(32, 38, 47)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 15.22,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "취소",
+        "size": 14,
+        "color": "rgb(63, 73, 87)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 9.12,
+        "required": 4.5,
+        "pass": true
+      },
+      {
+        "text": "변경하기",
+        "size": 14,
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          188,
+          25,
+          58
+        ],
+        "ratio": 6.29,
+        "required": 4.5,
+        "pass": true
+      }
+    ]
+  }
+]

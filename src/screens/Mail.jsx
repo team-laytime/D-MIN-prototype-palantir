@@ -1,109 +1,219 @@
-// 메일 작성: 보고서와 같은 후보·판단근거로 만든 초안을 고쳐 쓰고 복사하거나 메일 앱으로 넘긴다. 이 화면은 발송하지 않는다.
-import { useEffect, useRef, useState } from 'react'
-import { AnchorButton, Button, Callout, FormGroup, InputGroup, TextArea } from '@blueprintjs/core'
+// 확정 통보 메일
+//  - 11-25 개편: 왼쪽 받는 곳 목록은 부서 종류마다 접고 펴는 드롭다운, 가운데 템플릿 편집, 오른쪽 미리보기.
+//  - 템플릿의 태그는 편집기에서 이름표(칩)로만 보인다({{ }}는 내부 저장 형식).
+//  - 부서마다 템플릿, 미리보기, 첨부가 다르다. 보고서는 체선료 지불 부서에만 붙는다.
+//  - 값은 확정 스냅숏에서 읽는다. 시연판은 실제로 발송하지 않고 메일함의 「보낸메일함」에 저장한다.
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Alert, Button, Callout, HTMLSelect, Icon } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
-import { downloadMarkdown, reportFileName, useReport } from '../state/useReport.js'
-import { logActivity } from '../lib/workspace.js'
-import { money } from '../lib/time.js'
-import { Panel, Screen, St } from '../ui/kit.jsx'
+import { activePlan, logActivity, sendMail, useWorkspace, ws } from '../lib/workspace.js'
+import { DEPTS, TAGS, TEMPLATES, attachmentsFor, groupsFor, makeFill } from '../lib/mailGroups.js'
+import MailBody, { plainBody } from './MailBody.jsx'
+import { Screen } from '../ui/kit.jsx'
+import AttachmentDialog, { AttachmentButtons } from './MailAttachment.jsx'
 import './report.css'
 
+const defaultDraft = (g) => ({ tpl: g.tpl, subject: TEMPLATES[g.tpl].subject, body: TEMPLATES[g.tpl].body })
+const TAG_HINT = Object.fromEntries(TAGS)
+
+// ── 태그 칩 편집기 ───────────────────────────────────────────────
+// 저장 형식은 글자 + {{태그}}. 편집기 안에서는 태그를 고칠 수 없는 칩(span)으로 그린다.
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const chip = (t) => `<span class="tg" contenteditable="false" data-tag="${esc(t)}" title="${esc(TAG_HINT[t] ?? '')}">${esc(t)}</span>`
+const toHtml = (text) => text.split(/(\{\{.+?\}\})/g).map((part) => {
+  const m = part.match(/^\{\{(.+?)\}\}$/)
+  return m ? chip(m[1]) : esc(part).replace(/\n/g, '<br>')
+}).join('')
+function toText(node) {
+  let s = ''
+  node.childNodes.forEach((n) => {
+    if (n.nodeType === 3) s += n.nodeValue.replace(/​/g, '')
+    else if (n.nodeName === 'BR') s += '\n'
+    else if (n.dataset?.tag) s += `{{${n.dataset.tag}}}`
+    else if (n.nodeName === 'DIV' || n.nodeName === 'P') s += (s && !s.endsWith('\n') ? '\n' : '') + toText(n)
+    else s += toText(n)
+  })
+  return s
+}
+
+/** 태그 칩 편집기. resetKey가 바뀔 때만 value로 다시 그린다(입력 중 커서가 튀지 않게). */
+function TagEditor({ value, onChange, resetKey, single = false, disabled, apiRef, label }) {
+  const el = useRef(null)
+  useEffect(() => { if (el.current) el.current.innerHTML = toHtml(value) }, [resetKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const emit = () => { const t = toText(el.current); onChange(single ? t.replace(/\n/g, '') : t) }
+  if (apiRef) apiRef.current = {
+    insert: (tag) => {
+      const node = el.current
+      if (!node) return
+      const sel = window.getSelection()
+      if (!sel.rangeCount || !node.contains(sel.anchorNode)) { node.focus(); const r = document.createRange(); r.selectNodeContents(node); r.collapse(false); sel.removeAllRanges(); sel.addRange(r) }
+      document.execCommand('insertHTML', false, chip(tag) + '​')
+      emit()
+    },
+  }
+  return (
+    <div ref={el} className={`tge ${single ? 'single' : ''}`} contentEditable={!disabled} suppressContentEditableWarning role="textbox" aria-label={label} aria-multiline={!single}
+      onInput={emit}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!single) { document.execCommand('insertLineBreak'); emit() } } }}
+      onPaste={(e) => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); emit() }} />
+  )
+}
+
 export default function Mail() {
-  const { go, isScheduler, reportDraft, setReportDraft } = useApp()
-  const { model, md, mail, check, shownPlan } = useReport()
-  const edits = reportDraft.mail
-  // 고친 칸만 저장하고, 손대지 않은 칸은 보고서가 바뀌면 자동 초안을 따라간다.
-  const to = edits.to ?? ''
-  const cc = edits.cc ?? ''
-  const subject = edits.subject ?? mail.subject
-  const body = edits.body ?? mail.body
-  const edited = edits.subject !== undefined || edits.body !== undefined
-  const stale = edited && (subject !== mail.subject || body !== mail.body)
-  const setField = (k, v) => setReportDraft({ mail: { ...edits, [k]: v } })
-  const regenerate = () => {
-    setReportDraft({ mail: { to: edits.to, cc: edits.cc } })
-    logActivity('메일', '메일 초안 다시 만들기', model.sel.label)
+  const { go, isScheduler } = useApp()
+  useWorkspace()
+  const plan = activePlan()
+  const [groupId, setGroupId] = useState(null)
+  const [open, setOpen] = useState({ DOCK: true }) // 부서 종류별 목록 펼침 (처음엔 부두 하역팀만)
+  const [drafts, setDrafts] = useState({})
+  const [resetNo, setResetNo] = useState(0)
+  const [copied, setCopied] = useState(false)
+  const [viewing, setViewing] = useState(null) // 열어 본 첨부
+  const [asking, setAsking] = useState(null) // 보내기 전 확인 창에 띄운 받는 곳 목록
+  const [justSent, setJustSent] = useState(null) // 방금 보낸 받는 곳 id (단추에 잠깐 「보냄」)
+  const [done, setDone] = useState(null) // 보낸 뒤 완료 창에 띄울 받는 곳 목록
+  const bodyApi = useRef(null)
+  const groups = useMemo(() => (plan ? groupsFor(plan) : []), [plan])
+  const fill = useMemo(() => (plan ? makeFill({ plan }) : () => ''), [plan])
+
+  if (!plan) {
+    return (
+      <Screen tab="mail" title="확정 통보 메일" step={3} bodyClass="rpt-page">
+        <Callout intent="primary" icon="lock" title="확정한 뒤에 씁니다">
+          통보 메일은 확정된 일정만 보냅니다. 「후보 비교·확정」에서 안을 확정하면 이 화면이 열립니다.
+          <div style={{ marginTop: 10 }}><Button intent="primary" icon="comparison" onClick={() => go('compare')}>후보 비교·확정으로</Button></div>
+        </Callout>
+      </Screen>
+    )
   }
 
-  const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState('')
-  const timer = useRef(null)
-  useEffect(() => () => window.clearTimeout(timer.current), [])
-  async function copy() {
-    setCopyError('')
-    try {
-      await navigator.clipboard.writeText(`제목: ${subject}\n\n${body}`)
-      window.clearTimeout(timer.current)
-      setCopied(true)
-      logActivity('메일', '메일 복사', subject)
-      timer.current = window.setTimeout(() => setCopied(false), 1500)
-    } catch {
-      setCopied(false)
-      setCopyError('클립보드에 복사하지 못했습니다. 본문을 선택해 직접 복사해 주십시오.')
-    }
+  const group = groups.find((g) => g.id === groupId) ?? groups[0]
+  const draft = drafts[group.id] ?? defaultDraft(group)
+  const setDraft = (patch) => setDrafts((d) => ({ ...d, [group.id]: { ...(d[group.id] ?? defaultDraft(group)), ...patch } }))
+  const outOf = (g) => { const d = drafts[g.id] ?? defaultDraft(g); return { subject: fill(d.subject, g), body: fill(d.body, g), attachments: attachmentsFor(g, plan) } }
+  const out = outOf(group)
+  const sentOf = (g) => ws.sent.filter((s) => s.kind === 'notice' && s.planNo === plan.no && s.groupId === g.id).at(-1)
+  const sentCount = groups.filter((g) => sentOf(g)).length
+  const editorKey = `${group.id}:${draft.tpl}:${resetNo}`
+
+  const chooseTpl = (id) => { setDraft({ tpl: id, subject: TEMPLATES[id].subject, body: TEMPLATES[id].body }); setResetNo((n) => n + 1) }
+  const resetDraft = () => { setDrafts((d) => { const n = { ...d }; delete n[group.id]; return n }); setResetNo((n) => n + 1) }
+  const send = (g) => { const o = outOf(g); sendMail({ kind: 'notice', planNo: plan.no, groupId: g.id, toName: g.name, to: g.to, subject: o.subject, body: o.body, attachments: o.attachments.map(({ kind, name }) => ({ kind, name })) }) }
+  // 11-25 보내기 전에 꼭 묻는다: 예를 눌러야 보낸다
+  const confirmSend = () => {
+    for (const g of asking) send(g)
+    setJustSent(asking.length === 1 ? asking[0].id : 'all'); setTimeout(() => setJustSent(null), 2000)
+    setDone(asking)
+    setAsking(null)
   }
-  const mailto = `mailto:${encodeURIComponent(to)}?${new URLSearchParams({ ...(cc ? { cc } : {}), subject, body }).toString().replace(/\+/g, '%20')}`
-  const sel = model.sel
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(`제목: ${out.subject}\n\n${plainBody(out.body, plan)}`); setCopied(true); logActivity('메일', '메일 복사', out.subject); setTimeout(() => setCopied(false), 1500) } catch { /* 복사 실패는 화면에서 직접 선택 */ }
+  }
+  const usedTags = new Set([...`${draft.subject}${draft.body}`.matchAll(/\{\{(.+?)\}\}/g)].map((m) => m[1]))
+  const sent = sentOf(group)
 
   return (
-    <Screen tab="mail" title="메일 작성" step={5} bodyClass="rpt-page" actions={
-      <Button icon="arrow-left" text="보고서로" onClick={() => go('report')} />
-    }>
-      <p className="muted small">보고서와 같은 후보·판단근거로 메일 초안을 만듭니다. 고쳐 쓴 뒤 복사하거나 메일 앱으로 넘기며, 이 화면에서 발송하지는 않습니다.</p>
-      {copyError && <Callout intent="danger" icon="error" role="alert">{copyError}</Callout>}
-      <span className="rpt-sr" role="status">{copied ? '메일 복사됨' : ''}</span>
+    <Screen tab="mail" title="확정 통보 메일" step={3} bodyClass="rpt-page ml-page">
+      <div className="ml-grid3">
+        {/* 받는 곳: 왼쪽 목록, 부서 종류마다 접고 펴는 드롭다운 */}
+        <aside className="ml-card ml-side">
+          <header className="ml-card-head">
+            <h3>받는 곳</h3>
+          </header>
+          <div className="ml-side-body">
+            {DEPTS.map((d) => {
+              const list = groups.filter((g) => g.dept === d.id)
+              if (!list.length) return null
+              const isOpen = Boolean(open[d.id])
+              return (
+                <section key={d.id} className={`ml-dd ${isOpen ? 'open' : ''}`}>
+                  <button type="button" className="ml-dd-head" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [d.id]: !isOpen }))}>
+                    <Icon icon={isOpen ? 'chevron-down' : 'chevron-right'} size={14} />
+                    <b>{d.label}</b>
+                  </button>
+                  {isOpen && (
+                    <ul className="ml-dd-list">
+                      {list.map((g) => (
+                        <li key={g.id}>
+                          <button type="button" className={g.id === group.id ? 'on' : ''} onClick={() => setGroupId(g.id)}>
+                            <span className="ml-dd-name">{g.side ?? g.name}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )
+            })}
+          </div>
+          <footer className="ml-side-foot">
+            <Button fill icon="send-to" disabled={!isScheduler || sentCount === groups.length} onClick={() => setAsking(groups.filter((g) => !sentOf(g)))}>{justSent === 'all' ? '모두 보냈습니다' : '안 보낸 곳 모두 보내기'}</Button>
+          </footer>
+        </aside>
 
-      <div className="mail-grid">
-        <Panel code="MAIL-BASE" title="기준 보고서" desc="보고서 화면에서 고른 안" pad>
-          <dl className="rpt-kv mail-kv">
-            <dt>선택 후보</dt><dd className="strong">{sel.label}</dd>
-            <dt>총 체선료</dt><dd className="num">{money(sel.total)}</dd>
-            <dt>기준안 대비</dt><dd className="num c-green">{money(-sel.saving)} ({sel.savingPct}%)</dd>
-            <dt>상태</dt><dd>{shownPlan ? <St tone="ok">{shownPlan.status}</St> : <St tone="warn">확정 전</St>}</dd>
-            <dt>숫자 대조</dt><dd>{check.bad.length ? <St tone="bad">실패</St> : <St tone="ok">통과</St>}</dd>
-          </dl>
-          <p className="rpt-sub tiny">숙련자 판단근거</p>
-          {model.judgment
-            ? <p className="mail-judgment small">{model.judgment}</p>
-            : <Callout compact intent="warning" icon="edit" className="rpt-note">판단근거가 비어 있습니다. 보고서 화면에서 먼저 적어 주십시오.</Callout>}
-          <div className="mail-base-actions">
-            <Button size="small" icon="document" onClick={() => go('report')}>보고서 열기</Button>
+        {/* 템플릿 */}
+        <section className="ml-card">
+          <header className="ml-card-head">
+            <h3>템플릿</h3>
+            <HTMLSelect value={draft.tpl} disabled={!isScheduler} onChange={(e) => chooseTpl(e.target.value)} options={Object.entries(TEMPLATES).map(([value, t]) => ({ value, label: t.label }))} aria-label="템플릿 불러오기" />
+            {drafts[group.id] && <Button variant="minimal" icon="reset" onClick={resetDraft}>기본으로</Button>}
+          </header>
+          <div className="ml-card-body">
+            <div className="ml-field">
+              <span className="ml-label">제목</span>
+              <TagEditor single value={draft.subject} resetKey={editorKey} disabled={!isScheduler} onChange={(v) => setDraft({ subject: v })} label="메일 제목" />
+            </div>
+            <div className="ml-tags">
+              <span className="ml-label">넣을 내용</span>
+              {TAGS.map(([t, hint]) => (
+                <button type="button" key={t} title={hint} className={usedTags.has(t) ? 'used' : ''} disabled={!isScheduler}
+                  onMouseDown={(e) => e.preventDefault()} onClick={() => bodyApi.current?.insert(t)}>{t}</button>
+              ))}
+            </div>
+            <TagEditor value={draft.body} resetKey={editorKey} disabled={!isScheduler} onChange={(v) => setDraft({ body: v })} apiRef={bodyApi} label="메일 본문" />
           </div>
-          <p className="rpt-sub tiny">첨부</p>
-          <div className="mail-attach">
-            <span className="small">{reportFileName(sel.id)}</span>
-            <Button size="small" variant="minimal" icon="download" aria-label="첨부 보고서 내려받기" onClick={() => { downloadMarkdown(md, sel.id); logActivity('보고서', '보고서 내려받기', sel.label, '메일 첨부용 .md') }} />
-          </div>
-          <p className="tiny muted">메일 앱으로 넘길 때 첨부는 따라가지 않습니다. 내려받아 직접 붙여 주십시오.</p>
-        </Panel>
+        </section>
 
-        <Panel code="MAIL-COMPOSE" title="메일 작성" data-tour="mail-compose" className="mail-compose" actions={
-          <div className="rpt-tools">
-            <Button size="small" icon="refresh" disabled={!edited} onClick={regenerate}>초안 다시 만들기</Button>
-            <Button size="small" icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
-            <AnchorButton size="small" intent="primary" icon="send-message" href={mailto} onClick={() => logActivity('메일', '메일 앱에서 열기', subject, to ? `받는 사람: ${to}` : '받는 사람 미입력')}>메일 앱에서 열기</AnchorButton>
+        {/* 미리보기: 실제 메일처럼 흰 종이 */}
+        <section className="ml-card" data-tour="mail-compose">
+          <header className="ml-card-head">
+            <h3>미리보기</h3>
+            <div className="ml-card-actions">
+              <Button icon={copied ? 'tick' : 'duplicate'} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
+              <Button intent="primary" icon={justSent === group.id ? 'tick' : 'send-message'} disabled={!isScheduler} onClick={() => setAsking([group])}>{justSent === group.id ? '보냈습니다' : sent ? '다시 보내기' : '보내기'}</Button>
+            </div>
+          </header>
+          <div className="ml-card-body ml-paper-wrap">
+            <article className="ml-paper">
+              <dl className="ml-head">
+                <dt>받는 사람</dt><dd>{group.name} &lt;{group.to}&gt;</dd>
+                <dt>제목</dt><dd className="strong">{out.subject}</dd>
+                {out.attachments.length > 0 && <>
+                  <dt>첨부</dt>
+                  <dd className="ml-files">
+                    <AttachmentButtons files={out.attachments} onOpen={setViewing} />
+                  </dd>
+                </>}
+              </dl>
+              <MailBody text={out.body} plan={plan} />
+            </article>
           </div>
-        } pad>
-          {stale && (
-            <Callout compact intent="primary" icon="info-sign" className="rpt-note">
-              고쳐 쓴 내용을 유지하고 있습니다. 보고서의 후보나 판단근거를 바꿨다면 「초안 다시 만들기」로 새 초안을 받으십시오.
-            </Callout>
-          )}
-          <div className="mail-fields">
-            <FormGroup label="받는 사람" labelFor="mail-to" inline>
-              <InputGroup id="mail-to" value={to} disabled={!isScheduler} placeholder="메일 주소, 여러 명은 쉼표로" onChange={(e) => setField('to', e.target.value)} />
-            </FormGroup>
-            <FormGroup label="참조" labelFor="mail-cc" inline>
-              <InputGroup id="mail-cc" value={cc} disabled={!isScheduler} placeholder="선택" onChange={(e) => setField('cc', e.target.value)} />
-            </FormGroup>
-            <FormGroup label="제목" labelFor="mail-subject" inline>
-              <InputGroup id="mail-subject" value={subject} disabled={!isScheduler} onChange={(e) => setField('subject', e.target.value)} />
-            </FormGroup>
-          </div>
-          <TextArea className="mail-body" fill value={body} disabled={!isScheduler} aria-label="메일 본문" onChange={(e) => setField('body', e.target.value)} />
-          <p className="tiny muted mail-foot">발송 기능 없음 · 복사하거나 메일 앱에서 열어 직접 발송</p>
-        </Panel>
+        </section>
       </div>
+
+      <AttachmentDialog file={viewing} plan={plan} onClose={() => setViewing(null)} />
+      <Alert isOpen={!!asking} icon="send-message" intent="primary" className="ml-confirm"
+        confirmButtonText="예" cancelButtonText="아니오" onConfirm={confirmSend} onCancel={() => setAsking(null)} canEscapeKeyCancel>
+        {asking && (asking.length === 1
+          ? <p><b>{asking[0].name}</b>님께 진짜 보내시겠습니까?</p>
+          : <><p>아래 {asking.length}곳 담당자님들께 진짜 보내시겠습니까?</p><ul className="ml-confirm-list">{asking.map((g) => <li key={g.id}>{g.name}</li>)}</ul></>)}
+      </Alert>
+      <Alert isOpen={!!done} icon="tick-circle" intent="success" className="ml-confirm ml-done"
+        confirmButtonText="확인" onConfirm={() => setDone(null)} onClose={() => setDone(null)} canEscapeKeyCancel canOutsideClickCancel>
+        {done && (done.length === 1
+          ? <p>전송을 완료했습니다.<br /><b>{done[0].name}</b></p>
+          : <><p>전송을 완료했습니다. ({done.length}곳)</p><ul className="ml-confirm-list">{done.map((g) => <li key={g.id}>{g.name}</li>)}</ul></>)}
+      </Alert>
     </Screen>
   )
 }

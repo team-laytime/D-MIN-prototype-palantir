@@ -1,0 +1,41 @@
+[
+  {
+    "path": "package.json",
+    "sha1": "a8453883e76cd7a1dca8a9d03246c1c58277b59a",
+    "unchanged": true
+  },
+  {
+    "path": "bun.lock",
+    "sha1": "b1665e2ea0b504448da547fcc2a909ff0306e22e",
+    "unchanged": true
+  },
+  {
+    "path": "package-lock.json",
+    "sha1": "4138e923ba532e19e3086c57f6f8f1560509a092",
+    "unchanged": true
+  },
+  {
+    "path": "src/App.jsx",
+    "unchanged": true
+  },
+  {
+    "path": "src/screens/Login.jsx",
+    "unchanged": true
+  },
+  {
+    "path": "src/state/app.jsx",
+    "unchanged": true
+  },
+  {
+    "path": "src/ui/Shell.jsx",
+    "unchanged": true
+  },
+  {
+    "path": "src/theme.css",
+    "unchanged": true
+  },
+  {
+    "path": "src/lib/workspace.js",
+    "unchanged": true
+  }
+]

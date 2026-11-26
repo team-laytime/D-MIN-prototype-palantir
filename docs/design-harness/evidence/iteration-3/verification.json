@@ -1,0 +1,95 @@
+{
+  "checks": [
+    {
+      "name": "초기 검토 미완료 상태에서 승인 차단",
+      "result": "pass"
+    },
+    {
+      "name": "키보드 Tab으로 목록 행 이동",
+      "result": "pass"
+    },
+    {
+      "name": "키보드 Space로 검토 확인, 승인 모달 Escape와 초점 복귀",
+      "result": "pass"
+    },
+    {
+      "name": "승인 처리와 새로고침 후 보존",
+      "result": "pass"
+    },
+    {
+      "name": "검색·역할·부두 필터와 빈 결과",
+      "result": "pass"
+    },
+    {
+      "name": "실제 입력으로 반려 사유 저장",
+      "result": "pass"
+    },
+    {
+      "name": "권한 변경의 팀장 승인 요구",
+      "result": "pass"
+    },
+    {
+      "name": "활성 상태 변경과 감사 이력",
+      "result": "pass"
+    },
+    {
+      "name": "좁은 화면의 메뉴 이름·아이콘과 검토 모달 왕복",
+      "result": "pass"
+    },
+    {
+      "name": "모바일 빈 결과와 조건 초기화",
+      "result": "pass"
+    },
+    {
+      "name": "지원 뷰포트 가로 넘침 없음",
+      "result": "pass"
+    },
+    {
+      "name": "감사 기록 없음과 실제 이벤트 구분",
+      "result": "pass"
+    },
+    {
+      "name": "승인 완료 집계에 비활성 계정 포함",
+      "result": "pass"
+    },
+    {
+      "name": "저장 실패 시 입력과 선택 유지 후 재시도",
+      "result": "pass"
+    },
+    {
+      "name": "손상 데이터 원본 보존과 재확인 복구",
+      "result": "pass"
+    },
+    {
+      "name": "실제 렌더링 텍스트 대비와 최소 글자 크기",
+      "result": "pass"
+    },
+    {
+      "name": "기존 로그인과 두 역할의 메뉴 보존",
+      "result": "pass"
+    },
+    {
+      "name": "신규 런타임·리소스 오류 없음 (기존 favicon404 별도 기록)",
+      "result": "pass"
+    }
+  ],
+  "errors": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "url": "http://127.0.0.1:5175/favicon.ico",
+      "source": "network"
+    }
+  ],
+  "verified": [
+    "keyboard Tab/Shift+Tab/Space/Enter/Escape",
+    "focus return",
+    "account actions",
+    "responsive layout"
+  ],
+  "notVerified": [
+    "server authentication",
+    "real email delivery",
+    "screen reader speech",
+    "real customer acceptance"
+  ]
+}

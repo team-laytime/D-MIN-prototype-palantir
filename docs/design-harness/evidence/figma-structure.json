@@ -1,0 +1,103 @@
+{
+  "section": "1004:1448",
+  "screens": [
+    {
+      "id": "1004:1451",
+      "descendants": 186,
+      "counts": {
+        "INSTANCE": 25,
+        "FRAME": 55,
+        "TEXT": 84,
+        "RECTANGLE": 8,
+        "ELLIPSE": 1,
+        "VECTOR": 13
+      },
+      "fontFamilies": [
+        "Noto Sans KR"
+      ],
+      "images": [
+        {
+          "id": "I1018:2259;1018:1868",
+          "name": "D-MIN original logo",
+          "type": "RECTANGLE",
+          "width": 36,
+          "height": 36
+        }
+      ]
+    },
+    {
+      "id": "1004:1682",
+      "descendants": 214,
+      "counts": {
+        "FRAME": 65,
+        "INSTANCE": 28,
+        "TEXT": 95,
+        "RECTANGLE": 11,
+        "VECTOR": 14,
+        "ELLIPSE": 1
+      },
+      "fontFamilies": [
+        "Noto Sans KR"
+      ],
+      "images": [
+        {
+          "id": "I1018:2450;1018:1868",
+          "name": "D-MIN original logo",
+          "type": "RECTANGLE",
+          "width": 36,
+          "height": 36
+        }
+      ]
+    },
+    {
+      "id": "1004:1952",
+      "descendants": 222,
+      "counts": {
+        "FRAME": 68,
+        "INSTANCE": 28,
+        "TEXT": 100,
+        "RECTANGLE": 11,
+        "VECTOR": 14,
+        "ELLIPSE": 1
+      },
+      "fontFamilies": [
+        "Noto Sans KR"
+      ],
+      "images": [
+        {
+          "id": "I1018:2641;1018:1868",
+          "name": "D-MIN original logo",
+          "type": "RECTANGLE",
+          "width": 36,
+          "height": 36
+        }
+      ]
+    },
+    {
+      "id": "1004:2230",
+      "descendants": 189,
+      "counts": {
+        "INSTANCE": 26,
+        "FRAME": 56,
+        "TEXT": 83,
+        "RECTANGLE": 8,
+        "VECTOR": 15,
+        "ELLIPSE": 1
+      },
+      "fontFamilies": [
+        "Noto Sans KR"
+      ],
+      "images": [
+        {
+          "id": "I1018:2832;1018:2069",
+          "name": "D-MIN original logo",
+          "type": "RECTANGLE",
+          "width": 36,
+          "height": 36
+        }
+      ]
+    }
+  ],
+  "fontNote": "Figma uses Noto Sans KR fallback; application preserves Pretendard",
+  "scope": "Only target section descendants changed; existing screen IDs preserved"
+}

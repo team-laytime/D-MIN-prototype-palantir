@@ -1,11 +1,10 @@
 // 콘솔 틀: 상단 명령 바 · 왼쪽 레일 · 작업 영역 · 하단 상태 바. 화면 내용은 children.
-import { useEffect, useState } from 'react'
 import { Button, HTMLSelect, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { NAV, canUse, groupOf } from '../lib/workspace.js'
-import { money } from '../lib/time.js'
-import { toggleTheme, useTheme } from '../state/theme.js'
+import { fmtFull, money } from '../lib/time.js'
+import { FONT_SCALES, setFontScale, toggleTheme, useFontScale, useTheme } from '../state/theme.js'
 
 export function ThemeToggle() {
   const theme = useTheme()
@@ -17,45 +16,51 @@ export function ThemeToggle() {
   )
 }
 
+// 글씨 크기: 가 가 가 (작은 것부터). 숙련자 연령대를 고려한 기능.
+export function FontScale() {
+  const cur = useFontScale()
+  return (
+    <div className="font-scale" role="group" aria-label="글씨 크기">
+      <span className="faint tiny">글씨</span>
+      {FONT_SCALES.map((f, i) => (
+        <Tooltip key={f.id} content={`글씨 ${f.label}`} placement="bottom">
+          <button type="button" className={cur === f.id ? 'on' : ''} style={{ fontSize: 11 + i * 2.5 }} aria-pressed={cur === f.id} aria-label={`글씨 ${f.label}`} onClick={() => setFontScale(f.id)}>가</button>
+        </Tooltip>
+      ))}
+    </div>
+  )
+}
+
 export function Brand({ size = 15 }) {
-  // 두 부두 사이에 배 한 척이 들어간 모양의 기하 표식(직접 그린 SVG).
+  // 11-25 사용자가 준 로고 이미지(public/brand/dmin-logo.png)로 바꿈
   return (
     <span className="brand" style={{ fontSize: size }}>
-      <svg width={size + 5} height={size + 5} viewBox="0 0 20 20" aria-hidden="true">
-        <rect x="1" y="2" width="3" height="16" fill="currentColor" opacity="0.55" />
-        <rect x="16" y="2" width="3" height="16" fill="currentColor" opacity="0.55" />
-        <path d="M6 8h8l-1.5 6h-5z" fill="var(--accent)" />
-      </svg>
+      <img src="/brand/dmin-logo.png" alt="" width={size + 9} height={size + 9} style={{ borderRadius: 4, background: '#fff' }} />
       <b>D-MIN</b>
     </span>
   )
 }
 
+// 시계 자리에는 데이터셋의 기준 시각 T(화면의 「지금」)를 보인다. 실제 오늘 날짜와 섞이면 재생 중인 데이터가 헷갈린다.
 function Clock() {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  // 로캘 시각 문자열은 브라우저마다 '13시 10분'처럼 달라서 직접 맞춘다.
-  const kst = new Date(now.getTime() + 9 * 3600e3)
-  const iso = kst.toISOString()
-  const day = iso.slice(0, 10)
-  const time = iso.slice(11, 19)
+  const { scen } = useApp()
   return (
-    <span className="clock mono">
-      <span className="faint">{day}</span> <b>{time}</b> <span className="faint">KST</span>
-    </span>
+    <Tooltip content="현재 시각. 엔진은 이 시각 뒤의 일을 보지 않습니다" placement="bottom">
+      <span className="clock mono">
+        <span className="faint">현재</span> <b>{scen ? fmtFull(0) : '-'}</b> <span className="faint">KST</span>
+      </span>
+    </Tooltip>
   )
 }
 
 export function Shell({ children }) {
-  const { role, isScheduler, tab, go, scenarioId, setScenarioId, logout, resetDemo, current, version, result, tour } = useApp()
+  const { role, isScheduler, tab, go, scenarioId, setScenarioId, datasets, scen, logout, resetDemo, current, version, result, tour } = useApp()
   const menus = NAV.filter((g) => canUse(role.id, g))
   const group = groupOf(tab)
   const stale = isScheduler && current && current.version !== version
   const best = result.error ? null : result.candidates[0]
-  const { unread } = useInbox()
+  const { unread, incidents } = useInbox()
+  const { setMailFilter } = useApp()
 
   return (
     <div className="app">
@@ -64,13 +69,12 @@ export function Shell({ children }) {
           <Brand />
           <span className="topbar-sub">체선료 최적화 콘솔</span>
         </button>
-        <span className="topbar-op mono">ULSAN CLX · LIQUID BERTH SK3 / SK5 / SK6</span>
         <div className="topbar-right">
           {isScheduler && (
             <label className="scen-select" id="scen" data-tour="scen">
-              <span className="mono faint tiny">SCENARIO</span>
-              <HTMLSelect minimal value={scenarioId} onChange={(e) => setScenarioId(e.target.value)} aria-label="시나리오"
-                options={[{ value: 'S1', label: 'S1 기상 악화일 집중' }, { value: 'S2', label: 'S2 평시' }, { value: 'S3', label: 'S3 대형선 지연' }]} />
+              <span className="faint tiny">데이터셋</span>
+              <HTMLSelect minimal value={scenarioId ?? ''} onChange={(e) => setScenarioId(e.target.value)} aria-label="데이터셋"
+                options={datasets.length ? datasets.map((d) => ({ value: d.id, label: d.label })) : [{ value: '', label: '불러오는 중' }]} />
             </label>
           )}
           <Clock />
@@ -89,7 +93,7 @@ export function Shell({ children }) {
             </Menu>
           )}>
             <Button variant="minimal" size="small" endIcon="caret-down" className="who">
-              <span className="who-dot" />{role.name}
+              {role.name}
             </Button>
           </Popover>
         </div>
@@ -98,37 +102,27 @@ export function Shell({ children }) {
       <nav className="rail" aria-label="메뉴">
         {menus.map((g) => (
           <div key={g.key} className={`rail-group ${group?.key === g.key ? 'on' : ''}`}>
-            <div className="rail-head mono"><span>{g.code}</span><span className="faint">{g.key}</span></div>
+            {g.items.length > 1 && <div className="rail-head">{g.label}</div>}
             {g.items.map((it) => (
               <button key={it.id} className={`rail-item ${tab === it.id ? 'on' : ''}`} aria-current={tab === it.id ? 'page' : undefined} onClick={() => go(it.id)}>
-                <Icon icon={it.icon} size={14} />
+                {it.no ? <span className="rail-no num">{it.no}</span> : <Icon icon={it.icon} size={14} />}
                 <span>{it.label}</span>
-                {it.id === 'inbox' && unread > 0 && <span className="rail-badge num" aria-label={`새 알림 ${unread}건`}>{unread}</span>}
+                {it.id === 'inbox' && unread > 0 && <span className="rail-badge num" aria-label={`안 읽은 메일 ${unread}통`}>{unread}</span>}
               </button>
-            ))}
+            )).concat(g.key === 'MAIL' && isScheduler && incidents.length > 0 ? [
+              // 11-24 최최종: 돌발 상황은 지금 있을 때만 켜진다. 없으면 이 줄 자체가 없다.
+              <button key="incident" className="rail-item rail-sub hot" onClick={() => { setMailFilter('incident'); go('inbox') }}>
+                <Icon icon="warning-sign" size={12} /><span>조건 변경 요청</span><span className="rail-badge num hot" aria-label={`조건 변경 요청 ${incidents.length}건`}>{incidents.length}</span>
+              </button>,
+            ] : [])}
           </div>
         ))}
-        <div className="rail-status">
-          <div className="rail-head mono"><span>PLAN</span><span className="faint">STATUS</span></div>
-          {current ? (
-            <p className={stale ? 'c-amber' : 'c-green'}>
-              <span className="strong">{current.label} {current.status}</span>
-              {stale && <span className="small block">입력 바뀜 · 재확인 필요</span>}
-            </p>
-          ) : <p className="muted strong">확정 전</p>}
-        </div>
       </nav>
 
       <main className="work">{children}</main>
 
-      <footer className="statusbar mono">
-        <span className="st live">{isScheduler ? scenarioId : 'SCHEDULE'}</span>
-        {isScheduler && <span>INPUT v{version}</span>}
-        {isScheduler && !result.error && <span>{result.explored.toLocaleString()} PLANS EVALUATED · {result.distinct.toLocaleString()} DISTINCT</span>}
-        {isScheduler && best && <span>BEST {best.label.replace('후보 ', 'CAND-')} {money(best.total)}</span>}
-        <span>PLAN {current ? `${current.label.replace('후보 ', 'CAND-')} v${current.planNo}` : 'NOT FIXED'}</span>
-        <span className="statusbar-right">가상 데이터 · 의사결정 보조용 예상값 · 지도 © OpenStreetMap contributors</span>
-      </footer>
+      {/* 11-25 아래 상태 줄의 데이터셋, 엔진, 금액 표시를 빼고 임시 문구만 (나중에 바꿈) */}
+      <footer className="statusbar"><span className="statusbar-credit">Made by Minkyu</span></footer>
     </div>
   )
 }

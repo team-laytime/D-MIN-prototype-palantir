@@ -33,7 +33,7 @@ export function Stats({ items, className = '' }) {
   )
 }
 
-const PLAN_STEPS = ['입력 확인', '후보 비교', '리스크 확인', '계획 확정', '보고서 작성']
+const PLAN_STEPS = ['계획 조건', '후보 비교·확정', '확정 통보 메일']
 /** 계획 흐름 단계. now = 1..5 */
 export function Steps({ now }) {
   return (
@@ -49,13 +49,11 @@ export function Steps({ now }) {
 
 /** 화면 틀: 머리(경로 · 제목 · 설명 · 단계 · 동작) + 스크롤되는 본문. */
 export function Screen({ tab, title, desc, step, actions, bodyClass = '', children }) {
-  const g = groupOf(tab)
   const item = itemOf(tab)
   return (
     <div className="screen">
       <div className="screen-head">
         <div>
-          <div className="screen-path">{g?.key} / {g?.code}-{tab.toUpperCase()}</div>
           <h1 className="screen-title">{title ?? item?.label}</h1>
         </div>
         {desc && <p className="screen-desc">{desc}</p>}

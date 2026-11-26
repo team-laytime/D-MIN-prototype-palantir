@@ -1,11 +1,11 @@
 .inbox-page { display: flex; flex-direction: column; gap: 10px; }
 .inbox-grid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; align-items: start; }
 .inbox-channels { margin: 0; padding: 6px 0; list-style: none; }
-.inbox-channel { width: 100%; display: flex; align-items: center; gap: 9px; height: 32px; padding: 0 12px; border: 0; background: none; color: var(--fg-2); font-size: 13px; text-align: left; cursor: pointer; }
+.inbox-channel { width: 100%; display: flex; align-items: center; gap: 9px; height: 32px; padding: 0 12px; border: 0; background: none; color: var(--fg-2); font-size: calc(13px * var(--fs)); text-align: left; cursor: pointer; }
 .inbox-channel:hover { background: var(--bg-3); color: var(--fg); }
-.inbox-channel.on { background: var(--accent-wash); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
+.inbox-channel.on { background: var(--accent-wash); color: var(--fg); }
 .inbox-channel.on .bp6-icon { color: var(--accent); }
-.inbox-count { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--line-2); font-size: 10.5px; text-align: center; color: var(--fg); }
+.inbox-count { margin-left: auto; min-width: 20px; padding: 0 5px; border: 1px solid var(--line-2); font-size: calc(10.5px * var(--fs)); text-align: center; color: var(--fg); }
 
 .inbox-list { margin: 0; padding: 0; list-style: none; }
 .inbox-item { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 11px 14px; border-bottom: 1px solid var(--line); }
@@ -19,12 +19,59 @@
 .inbox-empty { padding: 48px 0; }
 
 /* 활동 기록 */
-.act-prose { font-family: var(--sans); font-size: 14px; }
+.act-prose { font-family: var(--sans); font-size: calc(14px * var(--fs)); }
 .act-search { width: 220px; }
 .act-kinds { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
-.act-kind { height: 24px; padding: 0 10px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-size: 12px; cursor: pointer; }
+.act-kind { height: 24px; padding: 0 10px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg-2); font-size: calc(12px * var(--fs)); cursor: pointer; }
 .act-kind:hover { border-color: var(--line-3); color: var(--fg); }
 .act-kind.on { border-color: var(--accent); background: var(--accent-wash); color: var(--fg); }
 .act-table .chip { font-family: var(--sans); }
 .act-time { white-space: nowrap; }
 .act-detail { max-width: 520px; line-height: 1.5; }
+
+/* 메일함 (11-24 최최종) */
+.mb-grid { display: grid; grid-template-columns: 210px minmax(0, 380px) minmax(0, 1fr); gap: 10px; align-items: stretch; min-height: 0; }
+.mb-compose-btn { padding: 10px 12px 4px; }
+.inbox-channel.sub { height: 28px; padding-left: 32px; font-size: calc(12.5px * var(--fs)); }
+.inbox-channel.hot { color: var(--amber); }
+.inbox-count.hot { border-color: var(--amber); background: var(--amber); color: #fff; }
+.mb-total { margin-left: auto; font-size: calc(11px * var(--fs)); }
+.mb-strip { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg); font-size: calc(13px * var(--fs)); text-align: left; }
+button.mb-strip { cursor: pointer; }
+.mb-strip.warn { border-color: var(--amber); background: var(--amber-wash); }
+.mb-strip.warn .bp6-icon, .mb-strip.warn b { color: var(--amber); }
+.mb-strip.ok { border-color: var(--green); background: var(--green-wash); }
+.mb-strip.ok .bp6-icon { color: var(--green); }
+.mb-strip > span { color: var(--fg-2); }
+.mb-strip .bp6-button { margin-left: auto; }
+.mb-list { margin: 0; padding: 0; list-style: none; }
+.mb-row { width: 100%; display: grid; gap: 3px; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--fg-2); text-align: left; cursor: pointer; }
+.mb-row:hover { background: var(--bg-3); }
+.mb-row.on { background: var(--accent-wash); }
+.mb-row.unread .mb-from, .mb-row.unread .mb-subject { color: var(--fg); font-weight: 600; }
+.mb-row-top { display: flex; align-items: center; gap: 8px; }
+.mb-dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none; }
+.mb-dot.on { background: var(--accent); }
+.mb-from { font-size: calc(12.5px * var(--fs)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-row-top .num { margin-left: auto; white-space: nowrap; }
+.mb-subject { font-size: calc(13px * var(--fs)); color: var(--fg); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mb-row-tags { display: flex; align-items: center; gap: 6px; }
+.mb-row-tags .chip { font-family: var(--sans); }
+.mb-read { padding: 14px 16px; }
+.mb-read h3 { margin: 0 0 10px; font-size: calc(16px * var(--fs)); line-height: 1.4; }
+.mb-actions { margin-top: 14px; }
+.mb-decide { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 10px 12px; border: 1px solid var(--amber); background: var(--amber-wash); font-size: calc(13px * var(--fs)); }
+.mb-decide.ok { border-color: var(--green); background: var(--green-wash); }
+.mb-decide.idle { border-color: var(--line-2); background: var(--bg-2); }
+.mb-decide-btns, .mb-decide > .bp6-button { margin-left: auto; display: flex; gap: 6px; }
+.mb-gap { margin-top: 10px; }
+.mb-compose { width: 560px; }
+.mb-decide .block { display: block; margin-top: 2px; }
+/* 11-25 메일 보기는 확정 통보 메일 미리보기와 같은 메일 종이 */
+.mb-read { padding: 0; }
+.mb-read .ml-paper-wrap { padding: 14px; }
+.mb-read .ml-paper .ml-file.static { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 1px solid var(--p-line2); border-radius: 3px; background: var(--p-head); color: var(--p-fg); font-size: calc(12px * var(--fs)); }
+.mb-read .mb-decide, .mb-read .mb-actions { margin: 0 14px 14px; }
+.mb-row:focus, .inbox-channel:focus { outline: none; }
+.mb-row:focus-visible, .inbox-channel:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.mb-row.on .mb-from, .mb-row.on .mb-subject { color: var(--fg); font-weight: 700; }

@@ -5,29 +5,28 @@
 import { useSyncExternalStore } from 'react'
 
 export const PASSWORD = '1234'
+// 11-25 시스템 관리자 시연 계정: 로그인하면 관리자 화면(?view=admin)으로 간다. 비밀번호는 다른 시연 계정과 같다.
+export const ADMIN_LOGIN_ID = 'admin'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
-  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회' },
+  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: 'SK 3부두 하역 1팀', mail: 'sk3-ops@example.com' },
 }
 
 // 왼쪽 레일 = 묶음. roles에 없는 계정에게는 어디에도 나오지 않는다. icon은 Blueprint 아이콘 이름.
 export const NAV = [
-  { key: 'DASHBOARD', code: 'COP', gnb: '운영 현황', roles: ['scheduler'], items: [{ id: 'home', label: '운영 현황', icon: 'globe-network' }] },
-  { key: 'INBOX', code: 'INBOX', gnb: '알림함', roles: ['scheduler', 'user'], items: [{ id: 'inbox', label: '알림함', icon: 'notifications' }] },
-  { key: 'BERTH PLANNING', code: 'PLAN', gnb: '접안 계획', roles: ['scheduler'], items: [
-    { id: 'input', label: '시나리오 입력', icon: 'properties' },
-    { id: 'compare', label: '후보 비교', icon: 'comparison' },
-    { id: 'risk', label: '리스크·확정', icon: 'shield' },
+  { key: 'DASHBOARD', label: '운영', roles: ['scheduler'], items: [{ id: 'home', label: '운영 현황', icon: 'globe-network' }] },
+  // 11-24 최최종: 알림함 → 메일함. 받은메일함은 현장·기상·시스템에서 온 메일, 보낸메일함은 보낸 확정 통보 메일.
+  { key: 'MAIL', label: '메일', roles: ['scheduler', 'user'], items: [{ id: 'inbox', label: '메일함', icon: 'inbox' }] },
+  // 11-20 피드백: REPORT 묶음 제목이 별도 탭처럼 보임 → 계획부터 메일까지 한 묶음, 번호로 순서를 보인다.
+  // 리스크 확인·확정은 후보 비교 화면에 합쳤다.
+  { key: 'BERTH PLANNING', label: '접안 계획 업무', roles: ['scheduler'], items: [
+    { id: 'input', label: '계획 조건', icon: 'properties', no: 1 },
+    { id: 'compare', label: '후보 비교·확정', icon: 'comparison', no: 2 },
+    // 11-24 최최종: 보고서 화면은 지우고 확정 통보 메일의 첨부(체선료 지불 부서)로만 남긴다.
+    { id: 'mail', label: '확정 통보 메일', icon: 'envelope', no: 3 },
   ] },
-  { key: 'REPORT', code: 'RPT', gnb: '보고서', roles: ['scheduler'], items: [
-    { id: 'report', label: '접안계획 보고서', icon: 'document' },
-    { id: 'mail', label: '메일 작성', icon: 'envelope' },
-  ] },
-  { key: 'QUALITY', code: 'QA', gnb: '검증', roles: ['scheduler'], items: [
-    { id: 'verify', label: '계산 검증', icon: 'endorsed' },
-    { id: 'activity', label: '활동 기록', icon: 'history' },
-  ] },
-  { key: 'SCHEDULE', code: 'SCHED', gnb: '확정 일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
+  // 11-20 피드백: 계산 검증·활동 기록 화면은 뺀다(C).
+  { key: 'SCHEDULE', label: '일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
 ]
 
 export const canUse = (roleId, group) => group.roles.includes(roleId)
@@ -42,7 +41,8 @@ const fresh = () => ({
   log: [], // 활동 기록(추가만) {id, ts, at, who, roleTitle, kind, action, target, detail}
   history: {}, // 대상별 변경 이력 `${scenarioId}:${vid|'env'}` → [{id, ts, at, who, field, label, from, to, logId}]
   notes: {}, // 선박 메모 `${scenarioId}:${vid}` → [{id, ts, at, who, text}]
-  inbox: {}, // 알림 처리 상태 alertId → {status: 'done'|'archived', at, who}
+  inbox: {}, // 받은 메일 상태 mailId → {status: 'read'|'applied'|'dismissed', at, who}
+  sent: [], // 보낸 메일 {id, at, who, planNo, groupId, toName, to, subject, body, attachments, kind: 'notice'|'manual'}
 })
 let seq = 0
 const nextId = () => ++seq
@@ -124,12 +124,32 @@ export function removeNote(scenarioId, vid, vesselName, id) {
   emit()
 }
 
-/** 알림 처리. status: 'done' | 'archived' | null(새 알림으로 되돌림) */
+/** 받은 메일 상태. status: 'read'(읽음) | 'applied'(돌발 상황 반영) | 'dismissed'(반영 안 함) | null(안 읽음으로) */
 export function setAlertStatus(id, status, title) {
   if (status) ws.inbox[id] = { status, at: nowText(), who: role()?.name }
   else delete ws.inbox[id]
-  addLog('알림', status === 'done' ? '알림 처리 완료' : status === 'archived' ? '알림 보관' : '알림 되돌림', title)
+  if (status !== 'read') addLog('메일', status === 'applied' ? '조건 변경 반영' : status === 'dismissed' ? '조건 변경 반영 안 함' : '안 읽음으로', title)
   emit()
+}
+/** 11-25 조건 변경 결정 되돌리기: 메일 상태를 결정 전 값으로 그대로 돌린다(기록은 부르는 쪽에서 한 번만). */
+export function restoreAlertStatus(id, prev) {
+  if (prev) ws.inbox[id] = prev
+  else delete ws.inbox[id]
+  emit()
+}
+/** 읽음 표시는 기록을 남기지 않는다(열 때마다 쌓이지 않게). */
+export function markRead(id) {
+  if (ws.inbox[id]) return
+  ws.inbox[id] = { status: 'read', at: nowText(), who: role()?.name }
+  emit()
+}
+/** 메일 보내기(시연판은 실제 발송 없이 보낸메일함에 저장). */
+export function sendMail(mail) {
+  const entry = { id: nextId(), at: nowText(), who: role()?.name, ...mail }
+  ws.sent.push(entry)
+  addLog('메일', mail.kind === 'notice' ? '통보 메일 보냄' : '메일 보냄', mail.subject, `${mail.toName} <${mail.to}>${mail.attachments?.length ? ` · 첨부 ${mail.attachments.map((a) => a.name).join(', ')}` : ''}`)
+  emit()
+  return entry
 }
 
 /** 지금 적용 중인 확정 계획(마지막 확정, 취소 안 됨). */
@@ -139,16 +159,35 @@ export const activePlan = () => {
 }
 
 /** 스케줄러 확정. 이후 입력이 바뀌어도 이용자는 확정 당시 일정을 본다(스냅숏). */
+// 11-24 실데이터: 스냅숏에 선박, 부두, 체선료(센트)까지 복사해 둔다. 확정 뒤 계획 조건을 고쳐도 이 값은 바뀌지 않는다.
 export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
   const v = Object.fromEntries(scen.vessels.map((x) => [x.id, x]))
-  const bn = (id) => scen.berths.find((b) => b.id === id)?.name
+  const b = Object.fromEntries(scen.berths.map((x) => [x.id, x]))
   const plan = {
     no: ws.plans.length + 1, candId: cand.id, label: cand.label, total: cand.total, reason, uncheckedRisks,
+    preset: cand.preset ? { id: cand.preset.id, label: cand.preset.label, desc: cand.preset.desc } : null,
+    baselineTotal: null, moves: cand.moves ?? null,
+    status: cand.status, proven: Boolean(cand.proven), solveSec: cand.solveSec ?? null,
+    scenName: scen.name, bundle: scen.bundle ?? null,
     at: nowText(), who: role().name, version, cancelled: false,
-    placements: [...cand.placements].sort((a, b) => a.etb - b.etb).map((p) => ({
-      vid: p.vid, name: v[p.vid].name, product: v[p.vid].product, dir: v[p.vid].dir, ton: v[p.vid].ton, dwt: v[p.vid].dwt,
-      eta: v[p.vid].eta, bid: p.bid, berth: bn(p.bid), etb: p.etb, etu: p.etu,
-    })),
+    tanks: structuredClone(cand.tanks ?? []),
+    // 11-25 메일 템플릿용: 생산계획(탱크 묶음별 주별 t/h), 부두 사용 불가 구간, 야간 도선 규칙
+    production: (scen.tanks ?? []).map((t) => ({ name: t.name, weeks: t.weeks })),
+    blocks: structuredClone(scen.blocks ?? []),
+    nightPilot: scen.nightPilot ?? null,
+    placements: [...cand.placements].sort((a, c) => a.etb - c.etb).map((p) => {
+      const x = v[p.vid] ?? {}
+      const berth = b[p.bid] ?? {}
+      return {
+        vid: p.vid, name: x.name ?? p.vid, callSign: x.callSign ?? null, product: x.product ?? '-', cargo: x.cargo ?? null, dir: x.dir ?? '-', in: Boolean(x.in),
+        ton: x.ton ?? null, dwt: x.dwt ?? null, grt: x.grt ?? null, draft: x.draft ?? null, biz: x.biz ?? null, tank: x.tank ?? null, eta: x.eta ?? p.eta,
+        bid: p.bid, berth: berth.label ?? berth.name ?? p.bid, berthCode: berth.code ?? p.bid, pier: berth.pier ?? null, pierName: berth.pierName ?? null,
+        etb: p.etb, etu: p.etu, night: Boolean(p.night), fixed: Boolean(p.fixed), dem: p.dem?.cents ?? 0,
+        // 11-25 체선 시간은 엔진 값(demurrage_minutes). 배치 그림 · 산출 근거용으로 작업 · 정박시간 · 호스 분리 시각도 남긴다.
+        demMin: p.dem?.excessMin ?? (p.le != null && p.hose != null ? Math.max(0, p.hose - p.le) : null),
+        ws: p.ws ?? null, wf: p.wf ?? null, ls: p.ls ?? null, le: p.le ?? null, hose: p.hose ?? null, waitMin: p.waitMin ?? 0,
+      }
+    }),
   }
   ws.plans.push(plan)
   addLog('확정', '계획 확정', `접안 계획 v${plan.no} · ${cand.label}`, reason)
