@@ -10,6 +10,8 @@ import Mail from './screens/Mail.jsx'
 import Inbox from './screens/Inbox.jsx'
 import Activity from './screens/Activity.jsx'
 import Schedule from './screens/Schedule.jsx'
+import ContractDocs from './screens/ContractDocs.jsx'
+import ContractTerms from './screens/ContractTerms.jsx'
 import VesselDrawer from './screens/VesselDrawer.jsx'
 import Tour from './screens/Tour.jsx'
 
@@ -22,8 +24,9 @@ export default function App() {
   if (new URLSearchParams(window.location.search).get('view') === 'admin') return <Admin onLogout={() => { const url = new URL(window.location.href); url.searchParams.delete('view'); window.location.assign(url) }} />
   if (!role) return <Login />
   let screen
-  if (result.loading && tab !== 'ops') {
-    // 11-26 데이터셋 · 기준 시각 하역 속도는 몇 초뿐이라 안내 없이 빈 화면으로 둔다 (BootCallout은 남겨 둠)
+  // 확정 일정 · 계약 문서 화면은 데이터셋 없이 열린다.
+  const opensWithoutDataset = ['ops', 'docs', 'terms'].includes(tab)
+  if (result.loading && !opensWithoutDataset) {
     screen = <div className="screen-body" />
   } else if (NEEDS_RESULT.includes(tab) && result.error) {
     screen = <div className="screen-body"><Callout intent="danger" icon="error" title="데이터를 불러오지 못함">{result.error}</Callout></div>
@@ -36,6 +39,8 @@ export default function App() {
       inbox: <Inbox />,
       activity: <Activity />,
       ops: <Schedule />,
+      docs: <ContractDocs />,
+      terms: <ContractTerms />,
     }[tab]
   }
   return (

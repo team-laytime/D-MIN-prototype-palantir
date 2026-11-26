@@ -10,6 +10,8 @@ export const ADMIN_LOGIN_ID = 'admin'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
   user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: '3부두 하역 1팀', mail: 'sk3-ops@example.com' },
+  // 11-26 계약 문서 담당(임시): C/P · recap · 매매 확인서를 넣고 파서 추출값을 검토한다
+  contract: { id: 'contract', name: '계약 담당 C', title: '계약 문서 담당', loginId: 'contract', home: 'docs', desc: '계약 문서 등록, 추출값 검토' },
 }
 
 // 왼쪽 레일 = 묶음. roles에 없는 계정에게는 어디에도 나오지 않는다. icon은 Blueprint 아이콘 이름.
@@ -27,6 +29,10 @@ export const NAV = [
   ] },
   // 11-20 피드백: 계산 검증·활동 기록 화면은 뺀다(C).
   { key: 'SCHEDULE', label: '일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
+  { key: 'CONTRACT', label: '계약 문서 업무', roles: ['contract'], items: [
+    { id: 'docs', label: '문서 등록', icon: 'document', no: 1 },
+    { id: 'terms', label: '추출값 검토', icon: 'search-text', no: 2 },
+  ] },
 ]
 
 export const canUse = (roleId, group) => group.roles.includes(roleId)
