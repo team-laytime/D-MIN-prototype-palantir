@@ -19,7 +19,7 @@ function Val({ text }) {
 // shortcut: 합성 계약서는 모두 A4 세로라 쪽 비율을 고정한다. 다른 크기 문서가 오면 이미지 크기에서 읽는다.
 const PAGE_RATIO = 1.414
 const DATE_HINT = '시연용으로 날짜를 옮겨, 화면 값과 원본(2028년)의 날짜가 다릅니다.'
-const CONFIRM = { scan: '변경 조항 없음 확인' }
+const CONFIRM = { scan: '변경 조항 없음 확인', unread: '원본 확인함' }
 
 function SrcLabel({ s }) {
   if (s.clause) return <>{s.clause}</>
@@ -28,12 +28,14 @@ function SrcLabel({ s }) {
 
 // 특약 범위: 특약 근거가 나온 첫 쪽부터 문서 끝까지(특약은 C/P 뒤에 붙는다).
 // shortcut: 파서가 특약 구간의 쪽 범위를 내주지 않아 추정한다. 파서 출력에 범위가 생기면 그걸 쓴다.
-const riderRange = (c) => { const n = pageCount(c.doc_id); return n > c.page ? `${c.page}~${n}쪽` : `${c.page}쪽부터` }
-const checkHint = (c) => (c?.section === 'rider' && c.page ? `특약 ${riderRange(c)}에 이 조항을 바꾸는 문장이 없는지 확인합니다.` : null)
+// 파서가 layout.sections를 주면 그 범위(c.range · c.boxM)를 쓴다.
+const span = ([a, b]) => (a === b ? `${a}쪽` : `${a}~${b}쪽`)
+const riderRange = (c) => { if (c.range) return span(c.range); const n = pageCount(c.doc_id); return n > c.page ? `${c.page}~${n}쪽` : `${c.page}쪽부터` }
+const checkHint = (c) => (c?.section === 'rider' && c.page ? `${c.boxM ? `Box M(${span(c.boxM)})과 ` : ''}특약 ${riderRange(c)}에 이 조항을 바꾸는 문장이 없는지 확인합니다.` : null)
 
 // 출처와 확인할 곳이 다른 행(임시 값 · 양식 기본값): 실제로 볼 문서
 function CheckLabel({ c }) {
-  return <>{KIND[c.kind]} <span className="num">{c.doc_id}</span>{c.scan ? ' 스캔' : ''}{c.section === 'rider' && c.page ? ` · 특약 ${riderRange(c)}` : ''}</>
+  return <>{KIND[c.kind]} <span className="num">{c.doc_id}</span>{c.scan ? ' 스캔' : ''}{c.boxM ? ` · Box M ${span(c.boxM)}` : ''}{c.section === 'rider' && c.page ? ` · 특약 ${riderRange(c)}` : ''}</>
 }
 
 function Quote({ text, value, scan }) {
@@ -145,8 +147,10 @@ function Detail({ row, rv, cur, peers, autoFocus, onConfirm, onConfirmAll, onPic
   const ref = useRef(null)
   // 앞 항목을 확인하고 넘어왔으면 이 항목의 첫 동작(값을 넣어야 하는 행은 입력 칸)에 초점: 키보드로 이어서 검토
   useEffect(() => { if (autoFocus) ref.current?.querySelector('.ct-actions button:not([disabled]), .ct-actions input, .ct-actions select')?.focus() }, [autoFocus])
-  const pick = row.reason === 'diff' || row.reason === 'rate'
-  const fill = row.reason === 'missing' // 값이 없으니 「일치」가 아니라 받은 값을 넣어 끝낸다
+  // 문서 값 고르기: 문서 간 불일치 · C/P 요율 미확인 · 못 읽은 칸을 다른 문서 값으로 임시로 채운 경우
+  const pick = row.reason === 'diff' || row.reason === 'rate' || (row.reason === 'unread' && row.value != null)
+  // 값이 없으니 「일치」가 아니라 받은 값을 넣어 끝낸다(계산에 쓰는 칸)
+  const fill = row.edit && row.value == null && (row.reason === 'missing' || row.reason === 'unread')
   const todo = row.status === 'review' && !rv
   const verb = CONFIRM[row.reason] ?? '원문과 일치'
   return (

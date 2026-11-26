@@ -129,3 +129,21 @@ test('계산에 쓰는 값이 비면 검토 필수(계산 값 없음): C/P 빈�
   // 매매 확인서가 있으면 지금처럼 문서 간 불일치(C/P 빈칸을 매매 확인서 값으로)
   assert.equal(row(dealRows([load('SYN-CP-307'), load('SYN-SC-306')], dealOf('SYN-CP-307')), 'demurrage_rate_per_day').reason, 'diff')
 })
+
+test('파서 layout · unread 출력: 특약 범위 · Box M, OCR 못 읽음', () => {
+  const cp = load('SYN-CP-304')
+  cp.layout = { pages: 5, sections: { part1: [1, 2], box_m: [2, 2], rider: [3, 5] } }
+  // 허용 정박시간: 라벨 줄은 찾았는데 값을 못 읽음 → 계산 값이라 값을 넣어 끝낸다
+  cp.cp.laytime_total_h = { value: null, evidence: { ...cp.cp.laytime_total_h.evidence, unread: true } }
+  // 선적 Laydays 개시일: C/P에서 못 읽고 매매 확인서 값으로 채움 → 임시, 확인할 곳은 스캔 C/P
+  cp.cp.load_laydays_from = { value: null, evidence: { ...cp.cp.load_laydays_from.evidence, unread: true } }
+  const rows = dealRows([cp, load('SYN-SC-302')], dealOf('SYN-CP-304'))
+  const nor = row(rows, 'nor_notice_h')
+  assert.deepEqual([nor.check.page, nor.check.range, nor.check.boxM], [3, [3, 5], [2, 2]])
+  const lt = row(rows, 'laytime_total_h')
+  assert.deepEqual([lt.status, lt.reason, lt.value, lt.src.doc_id], ['review', 'unread', null, 'SYN-CP-304'])
+  const ld = row(rows, 'load_laydays_from')
+  assert.deepEqual([ld.reason, ld.srcTag, ld.src.doc_id, ld.check.doc_id], ['unread', '임시', 'SYN-SC-302', 'SYN-CP-304'])
+  // 글자층 C/P 사본이 같이 있으면 그 값이 기준이라 검토 필수가 아니다
+  assert.equal(row(dealRows([cp, load('SYN-CP-302'), load('SYN-SC-302')], dealOf('SYN-CP-304')), 'load_laydays_from').status, 'rule')
+})

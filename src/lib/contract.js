@@ -9,7 +9,7 @@
 export const KIND = { cp: 'C/P', recap: 'Recap', sales: '매매 확인서' }
 // recap · sales 구역은 문서 종류와 같아 출처에 다시 쓰지 않는다
 export const SECTION = { part1: 'Part I', rider: 'Rider' }
-export const REASON = { ocr: 'OCR 판독', scan: '스캔본 특약 미확인', llm: 'AI 판독', diff: '문서 간 불일치', rate: 'C/P 요율 미확인', missing: '계산 값 없음' }
+export const REASON = { ocr: 'OCR 판독', scan: '스캔본 특약 미확인', llm: 'AI 판독', diff: '문서 간 불일치', rate: 'C/P 요율 미확인', missing: '계산 값 없음', unread: 'OCR 못 읽음' }
 // 계산에 쓰는 4개(값을 고칠 수 있는 칸)를 맨 위에 따로 둔다
 export const GROUPS = ['계산에 쓰는 값', '정박시간 · 레이데이즈', '선박·화물', '계약 당사자·양식', '그 외 특약']
 
@@ -85,7 +85,7 @@ const source = (doc, key, fallbackQuote = null) => {
 /**
  * 한 거래(같은 선박의 문서 묶음)의 추출값 행.
  * docs = 등록이 끝난 이 거래의 파서 문서들, deal = deals.json 항목(없으면 null).
- * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|missing|null, src, sources[], note,
+ * 행: { key, label, group, fmt, edit, value, status: review|rule|default|empty, reason: ocr|scan|llm|diff|rate|missing|unread|null, src, sources[], note,
  *       srcTag: 출처가 확인 대상이 아닐 때 붙이는 말(임시 · 양식 기본값), check: 실제로 확인할 문서 { doc_id, kind, page, section, scan } }
  */
 export function dealRows(docs, deal) {
@@ -128,11 +128,23 @@ export function dealRows(docs, deal) {
       }
     }
     const hit = ds.filter((d) => !(f.key === 'demurrage_rate_per_day' && d.kind === 'sales')).map((d) => source(d, f.key)).find((s) => s.value != null)
+    // 스캔본에서 라벨 줄은 찾았는데 값을 못 읽은 칸(파서 evidence.unread: value null, quote · boxes는 라벨 줄)
+    const unread = ds.map((d) => source(d, f.key)).find((s) => s.ev?.unread)
+    // 다른 문서(recap · 매매 확인서) 값으로 채워졌으면 그 값은 임시, 확인할 곳은 못 읽은 스캔본. 글자층 C/P 사본이 채웠으면 그게 기준이라 그대로
+    if (unread && hit && (hit.kind !== 'cp' || hit.scan)) {
+      return { ...row, value: hit.value, src: hit, sources: [unread, hit], status: 'review', reason: 'unread', srcTag: '임시',
+        check: { doc_id: unread.doc_id, kind: unread.kind, page: unread.page, section: unread.section, scan: true },
+        note: `${KIND[unread.kind]} 스캔본에서 이 칸의 값을 OCR이 읽지 못해 ${KIND[hit.kind]} 값을 임시로 씁니다. ${KIND[unread.kind]} 원본에서 값을 확인하십시오.` }
+    }
     if (hit) {
       const reason = hit.ev?.ocr ? 'ocr' : hit.ev?.method === 'llm' ? 'llm' : null
       const note = reason === 'ocr' ? '스캔본을 OCR로 판독한 문장이라 글자가 틀렸을 수 있습니다.'
         : reason === 'llm' ? `규칙에 맞는 문장이 없어 AI(LLM)가 판독했습니다 (확신도 ${hit.ev.confidence}).` : null
       return { ...row, value: hit.value, src: hit, sources: [hit], status: reason ? 'review' : 'rule', reason, note }
+    }
+    if (unread) {
+      return { ...row, src: unread, sources: [unread], status: 'review', reason: 'unread',
+        note: `스캔본에서 이 칸의 라벨은 찾았지만 OCR이 값을 읽지 못했습니다. 원본에서 값을 확인하십시오.${f.edit ? ' 계산에 쓰는 값이라 값을 넣어야 계산할 수 있습니다.' : ''}` }
     }
     const def = form.startsWith('ASBATANKVOY') ? FORM_DEFAULTS[f.key] : null
     if (def) {
@@ -140,7 +152,9 @@ export function dealRows(docs, deal) {
       if (!scanOnly) return { ...row, value: def.value, src, sources: [src], status: 'default', note: '특약에 바꾸는 조항이 없어 양식 기본값을 씁니다.' }
       // 스캔본은 특약에 조항이 없는 건지 문자 인식이 못 읽은 건지 모른다 → 원본 특약 쪽을 보고 확인
       // 값의 출처는 양식 조항이지만, 확인할 곳은 스캔 C/P의 특약(바꾸는 조항이 없는지). 특약 시작 쪽부터 연다
-      const page = { doc_id: cps[0].doc_id, kind: 'cp', value: null, page: riderPage(cps[0]), section: 'rider', quote: null, scan: true }
+      // 특약 · Box M 쪽 범위는 파서 layout.sections(있으면), 없으면 특약 근거가 나온 첫 쪽부터
+      const sec = cps[0].layout?.sections ?? {}
+      const page = { doc_id: cps[0].doc_id, kind: 'cp', value: null, page: sec.rider?.[0] ?? riderPage(cps[0]), range: sec.rider ?? null, boxM: sec.box_m ?? null, section: 'rider', quote: null, scan: true }
       return { ...row, value: def.value, src, sources: [page, src], status: 'review', reason: 'scan', srcTag: '양식 기본값', check: page,
         note: '스캔본이라 특약에 이 조항을 바꾸는 문장이 없는 건지, OCR이 못 읽은 건지 알 수 없습니다. 원본 특약 쪽에 바꾸는 조항이 없으면 확인하십시오. 그때까지는 양식 기본값을 씁니다.' }
     }

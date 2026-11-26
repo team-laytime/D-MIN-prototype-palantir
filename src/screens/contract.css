@@ -55,7 +55,8 @@
 .ct-scan-btn { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
 /* 근거 확대: 쪽 이미지를 잘라 보이고 근거 줄에 박스. 위치는 모두 % (Crop 참고) */
 .ct-crop-wrap { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-.ct-crop { position: relative; display: block; width: 100%; max-width: 680px; padding: 0; overflow: hidden; border: 1px solid var(--line-3); background: #fff; cursor: zoom-in; }
+/* 테두리는 그림자 선으로: border를 쓰면 % 위치의 기준(안쪽 크기)과 비율의 기준(바깥 크기)이 달라져, 쪽 아래쪽일수록 박스가 한 줄씩 어긋난다 */
+.ct-crop { position: relative; display: block; width: 100%; max-width: 680px; padding: 0; overflow: hidden; border: 0; box-shadow: 0 0 0 1px var(--line-3); background: #fff; cursor: zoom-in; }
 .ct-crop.small { max-width: 420px; }
 .ct-crop img { position: absolute; max-width: none; }
 .ct-box { position: absolute; outline: 2px solid var(--accent); background: var(--accent-wash); mix-blend-mode: multiply; pointer-events: none; }
