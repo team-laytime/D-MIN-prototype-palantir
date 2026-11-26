@@ -1,0 +1,309 @@
+{
+ "doc_id": "SYN-CP-304",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "vessel_name": {
+   "value": "SYN VEGA",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Ionian Crude Carriers S.A. (Registered Owner), as owner of the MT SYN VEGA, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "imo": {
+   "value": "1007017",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO no: 1007017",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "dwt": {
+   "value": 157900.0,
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "Summer deadweight: 157,900 metric tons",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "owner": {
+   "value": "SYN Ionian Crude Carriers S.A.",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Ionian Crude Carriers S.A. (Registered Owner), as owner of the MT SYN VEGA, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Ionian Crude Carriers S.A. (Registered Owner), as owner of the MT SYN VEGA, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_laydays_from": {
+   "value": "2028-04-03T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 2028-04-03",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "load_laydays_to": {
+   "value": "2028-04-05T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "Cancelling: 2028-04-05",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "load_ports": {
+   "value": null,
+   "evidence": null
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "Discharge port(s), in Charterer's option: 1 SB Ulsan, Korea",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "cargo": {
+   "value": "CRUDE",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 1,
+    "section": "part1",
+    "quote": "(ii) Description: Crude Oil fF FREIGHT ae = : @) Worldscale rate:",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "cp_qty_t": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_total_h": {
+   "value": 72.0,
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 2,
+    "section": "part1",
+    "quote": "Total laytime in in running hours: 72 i Metric tons 'per hour: Demurrage pe per r day: USD 46,300 PDPR Hes \"LAW AND ARBITRATION - [ L - — a areata 2 ce = ee oe ones —e — a a oe — Bad General average 'and arbitration: London",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "demurrage_rate_per_day": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "berth_shift_counts": {
+   "value": false,
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 3,
+    "section": "rider",
+    "quote": "Clause 9 - Inter-Berth Moves: When the Vessel moves between berths, the period from unmooring until she is again securely moored is for Owners' account in time and counts neither towards laytime nor towards demurrage.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-304",
+    "page": 2,
+    "section": "part1",
+    "quote": "Currency: USD",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  }
+ },
+ "review": [
+  {
+   "field": "load_ports",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cp_qty_t",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "demurrage_rate_per_day",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cp_form",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "vessel_name",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "imo",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "dwt",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "owner",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "charterer",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "load_laydays_from",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "load_laydays_to",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "discharge_ports",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "cargo",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "laytime_total_h",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "currency",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  }
+ ]
+}

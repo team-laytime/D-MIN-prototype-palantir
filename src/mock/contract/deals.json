@@ -1,0 +1,148 @@
+[
+ {
+  "documents": [
+   "SYN-CP-301",
+   "SYN-SC-301"
+  ],
+  "conflicts": [],
+  "mismatches": [],
+  "cp_gaps": []
+ },
+ {
+  "documents": [
+   "SYN-CP-302",
+   "SYN-CP-304",
+   "SYN-SC-302"
+  ],
+  "conflicts": [],
+  "mismatches": [],
+  "cp_gaps": []
+ },
+ {
+  "documents": [
+   "SYN-CP-303",
+   "SYN-SC-303"
+  ],
+  "conflicts": [],
+  "mismatches": [
+   {
+    "sc": "SYN-SC-303",
+    "field": "load_laydays_from",
+    "cp_value": "2028-03-08 00:00",
+    "sc_value": "2028-03-09 00:00",
+    "resolved_value": "2028-03-08 00:00",
+    "needs_review": true
+   },
+   {
+    "sc": "SYN-SC-303",
+    "field": "load_laydays_to",
+    "cp_value": "2028-03-10 16:00",
+    "sc_value": "2028-03-11 16:00",
+    "resolved_value": "2028-03-10 16:00",
+    "needs_review": true
+   }
+  ],
+  "cp_gaps": []
+ },
+ {
+  "documents": [
+   "SYN-CP-305",
+   "SYN-RECAP-305",
+   "SYN-SC-304"
+  ],
+  "conflicts": [
+   {
+    "documents": [
+     "SYN-CP-305",
+     "SYN-RECAP-305"
+    ],
+    "field": "load_laydays_from",
+    "cp_value": "2028-06-19 00:00",
+    "other_value": "2028-06-18 00:00",
+    "resolved_value": "2028-06-19 00:00",
+    "needs_review": true
+   },
+   {
+    "documents": [
+     "SYN-CP-305",
+     "SYN-RECAP-305"
+    ],
+    "field": "load_laydays_to",
+    "cp_value": "2028-06-21 16:00",
+    "other_value": "2028-06-20 16:00",
+    "resolved_value": "2028-06-21 16:00",
+    "needs_review": true
+   }
+  ],
+  "mismatches": [],
+  "cp_gaps": []
+ },
+ {
+  "documents": [
+   "SYN-CP-307",
+   "SYN-SC-306"
+  ],
+  "conflicts": [],
+  "mismatches": [],
+  "cp_gaps": [
+   {
+    "sc": "SYN-SC-306",
+    "field": "demurrage_rate_per_day",
+    "cp_value": null,
+    "cp_text": "Demurrage per day: To be advised",
+    "sc_value": 12800.0,
+    "resolved_value": 12800.0,
+    "needs_review": true
+   }
+  ]
+ },
+ {
+  "documents": [
+   "SYN-CP-312",
+   "SYN-RECAP-318",
+   "SYN-SC-310"
+  ],
+  "conflicts": [
+   {
+    "documents": [
+     "SYN-CP-312",
+     "SYN-RECAP-318"
+    ],
+    "field": "demurrage_rate_per_day",
+    "cp_value": 40700.0,
+    "other_value": 42100.0,
+    "resolved_value": 40700.0,
+    "needs_review": true
+   }
+  ],
+  "mismatches": [],
+  "cp_gaps": []
+ },
+ {
+  "documents": [
+   "SYN-CP-314",
+   "SYN-SC-312"
+  ],
+  "conflicts": [],
+  "mismatches": [],
+  "cp_gaps": [
+   {
+    "sc": "SYN-SC-312",
+    "field": "demurrage_rate_per_day",
+    "cp_value": null,
+    "cp_text": "Demurrage per day: TBA",
+    "sc_value": 26400.0,
+    "resolved_value": 26400.0,
+    "needs_review": true
+   }
+  ]
+ },
+ {
+  "documents": [
+   "SYN-CP-315"
+  ],
+  "conflicts": [],
+  "mismatches": [],
+  "cp_gaps": []
+ }
+]

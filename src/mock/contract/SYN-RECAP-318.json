@@ -1,0 +1,271 @@
+{
+ "doc_id": "SYN-RECAP-318",
+ "kind": "recap",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "vessel_name": {
+   "value": "SYN BELLATRIX",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "MT SYN BELLATRIX (IMO 1007093)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "imo": {
+   "value": "1007093",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "MT SYN BELLATRIX (IMO 1007093)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "dwt": {
+   "value": 113900.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "113,900 MT SDWT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "owner": {
+   "value": "SYN Lonestar Aframax Ltd.",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "OWNERS : SYN Lonestar Aframax Ltd.",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "CHRTS : Hanbit Refining Co., Ltd. (SYNTHETIC)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_laydays_from": {
+   "value": "2028-11-06T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "LAYCAN : 06-08 NOV 2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_laydays_to": {
+   "value": "2028-11-08T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "LAYCAN : 06-08 NOV 2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_ports": {
+   "value": null,
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "LOAD : 1 SB HOUSTON SHIP CHANNEL, TX",
+    "confidence": 0.5,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "DISCH : 1 SB ULSAN (ONSAN), KOREA",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "cargo": {
+   "value": "CRUDE",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "CARGO : 100,000 MT CRUDE",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "cp_qty_t": {
+   "value": 100000.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "CARGO : 100,000 MT CRUDE",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_total_h": {
+   "value": 72.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "LAYTIME: 72 HRS SHINC",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "demurrage_rate_per_day": {
+   "value": 42100.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "DEM : USD 42,100 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-RECAP-318",
+    "page": 1,
+    "section": "recap",
+    "quote": "DEM : USD 42,100 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  }
+ },
+ "review": [
+  {
+   "field": "load_ports",
+   "reason": "필수 칸 없음"
+  }
+ ]
+}

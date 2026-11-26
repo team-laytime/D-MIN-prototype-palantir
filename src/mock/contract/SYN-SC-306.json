@@ -1,0 +1,141 @@
+{
+ "doc_id": "SYN-SC-306",
+ "kind": "sales",
+ "sales": {
+  "incoterm": {
+   "value": "FOB",
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Delivery Terms: FOB Tuban, Indonesia, one safe berth",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "sk_role": {
+   "value": "매수인",
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Buyer: Hanbit Refining Co., Ltd. (SYNTHETIC)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "rate_basis": {
+   "value": "CP 요율 준용",
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Demurrage at loading port: for Seller's account as per Buyer's charter party rate, USD 12,800 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_laydays_from": {
+   "value": "2028-07-10T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Delivery period: 10 July 2028 to 12 July 2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_laydays_to": {
+   "value": "2028-07-12T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Delivery period: 10 July 2028 to 12 July 2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "discharge_laydays_from": {
+   "value": null,
+   "evidence": null
+  },
+  "discharge_laydays_to": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_total_h": {
+   "value": null,
+   "evidence": null
+  },
+  "load_port_laytime_h": {
+   "value": 24.0,
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Laytime at loading port: 24 hours SHINC",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "demurrage_rate_per_day": {
+   "value": 12800.0,
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Demurrage at loading port: for Seller's account as per Buyer's charter party rate, USD 12,800 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-SC-306",
+    "page": 1,
+    "section": "sales",
+    "quote": "Demurrage at loading port: for Seller's account as per Buyer's charter party rate, USD 12,800 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  }
+ },
+ "review": [],
+ "link": {
+  "imo": "1007055",
+  "vessel_name": "SYN ARCTURUS",
+  "seller": "SYN Java Aromatics Trading Pte. Ltd.",
+  "buyer": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+  "delivery_port": "Tuban, Indonesia, one safe berth",
+  "other_port": "Ulsan, Korea (for information only)",
+  "quantity": "12,000 MT +/- 5% in Seller's option",
+  "product": "Mixed Xylenes"
+ }
+}

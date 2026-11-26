@@ -1,0 +1,266 @@
+{
+ "doc_id": "SYN-RECAP-305",
+ "kind": "recap",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "vessel_name": {
+   "value": "SYN RIGEL",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "MT SYN RIGEL (IMO 1007031)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "imo": {
+   "value": "1007031",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "MT SYN RIGEL (IMO 1007031)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "dwt": {
+   "value": 112600.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "112,600 MT SDWT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "owner": {
+   "value": "SYN Windward Energy Tankers Inc.",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "OWNERS : SYN Windward Energy Tankers Inc.",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "CHRTS : Hanbit Refining Co., Ltd. (SYNTHETIC)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_laydays_from": {
+   "value": "2028-06-18T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "LAYCAN : 18-20 JUN 2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_laydays_to": {
+   "value": "2028-06-20T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "LAYCAN : 18-20 JUN 2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_ports": {
+   "value": "KWMIB",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "LOAD : 1 SB MINA ABDULLAH, KUWAIT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "DISCH : 1 SB ULSAN, REPUBLIC OF KOREA",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "cargo": {
+   "value": "FO",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "CARGO : 95,000 MT FO",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "cp_qty_t": {
+   "value": 95000.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "CARGO : 95,000 MT FO",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_total_h": {
+   "value": 72.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "LAYTIME: 72 HRS SHINC",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "demurrage_rate_per_day": {
+   "value": 36800.0,
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "DEM : USD 36,800 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-RECAP-305",
+    "page": 1,
+    "section": "recap",
+    "quote": "DEM : USD 36,800 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  }
+ },
+ "review": []
+}

@@ -1,0 +1,229 @@
+{
+ "doc_id": "SYN-CP-315",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "vessel_name": {
+   "value": null,
+   "evidence": null
+  },
+  "imo": {
+   "value": "1007110",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO ee: 1007110",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "dwt": {
+   "value": null,
+   "evidence": null
+  },
+  "owner": {
+   "value": null,
+   "evidence": null
+  },
+  "charterer": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_laydays_from": {
+   "value": null,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 1$.05. 2028 (4) Cancettimg: 17 05 N28 (a) Part 11 Cl. Seb) applies Yes Ov) Addatemnal commcnts",
+    "confidence": 0.35,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "load_laydays_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_ports": {
+   "value": null,
+   "evidence": null
+  },
+  "discharge_ports": {
+   "value": null,
+   "evidence": null
+  },
+  "cargo": {
+   "value": null,
+   "evidence": null
+  },
+  "cp_qty_t": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_total_h": {
+   "value": 21.0,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Total laytime @ remeing hours 60 Demerrage per day: 21 390 USD POFR tn} Metric toms por hewr:",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "demurrage_rate_per_day": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "half_rate_events": {
+   "value": "PORT_CONGESTION",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 5,
+    "section": "rider",
+    "quote": "Clause 24 - Vetting Questionnaire: By the fixture date the Owner shall deliver the Veasel's latest OCIMP harmonixed queshonnaire and a lest af the vetting inspections Camicd out in the Last six (6) months, with the observations raised and closed. Any later change of manager, fag or classification saceety shall be advised to the Charterer before the Vessel arrives at the loading port. the crew shall wear personal gas detectors and the respiratory protection recommended by the safety data sheet, and the Master shail restrict access to the deck white tanks are open. The shipper shall supply the safety data shect to the Vessel before haading begins. Claume 26 - Quewe at Termnal: Owners agree that hours on demurrage attributable to congestion of the port are to be mvoiced at half the Part demurrage rate; all other demurrage remains payable im full.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null
+   }
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "currency": {
+   "value": null,
+   "evidence": null
+  }
+ },
+ "review": [
+  {
+   "field": "vessel_name",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "charterer",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "load_ports",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "discharge_ports",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cargo",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cp_qty_t",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "demurrage_rate_per_day",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "currency",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "load_laydays_from",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "load_laydays_to",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cp_form",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "imo",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  },
+  {
+   "field": "laytime_total_h",
+   "reason": "확신도 낮음(OCR 값, 0.63)"
+  }
+ ]
+}

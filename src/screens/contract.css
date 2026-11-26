@@ -1,0 +1,49 @@
+/* 계약 문서 · 추출값 검토 화면. 다른 화면과 섞이지 않게 ct- 접두. 색은 theme.css 토큰만 쓴다. */
+.ct-page { display: flex; flex-direction: column; gap: 10px; }
+.ct-reg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+
+/* 파일 올리기: 라벨 전체가 파일 고르기 버튼, 끌어 놓으면 주 동작 색 */
+.ct-drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 128px; border: 1px dashed var(--line-3); color: var(--fg-2); text-align: center; cursor: pointer; }
+.ct-drop:hover, .ct-drop.on { border-color: var(--accent); color: var(--fg); background: var(--accent-wash); }
+.ct-drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ct-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ct-paste { min-height: 96px; resize: vertical; }
+.ct-paste-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+
+.ct-docs td { vertical-align: top; padding-top: 7px; padding-bottom: 7px; }
+.ct-name { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 추출값 검토: 왼쪽 선박 목록 + 오른쪽 표 */
+.ct-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 10px; align-items: start; }
+.ct-vessels { margin: 0; padding: 0; list-style: none; }
+.ct-vessel { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--fg-2); text-align: left; cursor: pointer; }
+.ct-vessel:hover { background: var(--bg-4); color: var(--fg); }
+.ct-vessel.on { background: var(--accent-wash); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); }
+.ct-vessel-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; margin-right: auto; }
+.ct-vessel-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-check { margin: 0; }
+.ct-callout { margin: 10px 12px 0; }
+
+.ct-terms td:nth-child(1) { width: 26%; }
+.ct-terms td:nth-child(3) { width: 24%; }
+.ct-terms td:nth-child(4) { width: 22%; }
+.ct-group td { height: 26px; background: var(--bg-3); color: var(--fg-2); font-size: calc(11px * var(--fs)); font-weight: 600; letter-spacing: 0.02em; }
+.ct-empty td { color: var(--fg-3); }
+.ct-calc { margin-left: 6px; height: 16px; }
+.ct-rv { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* 행 아래로 열리는 원문 */
+.ct-detail > td { padding: 10px 14px 12px; background: var(--bg-1); }
+.ct-detail-body { display: flex; flex-direction: column; gap: 10px; }
+.ct-note { margin: 0; color: var(--fg-2); font-size: calc(12px * var(--fs)); }
+.ct-src-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--fg-3); font-size: calc(11.5px * var(--fs)); }
+.ct-src-head b { color: var(--fg); font-weight: 500; }
+.ct-quote { margin: 4px 0 0; padding: 6px 10px; border-left: 2px solid var(--line-3); color: var(--fg); line-height: 1.6; }
+.ct-quote mark { padding: 0 2px; background: var(--accent-wash); color: var(--fg); box-shadow: inset 0 -1px 0 var(--accent); }
+.ct-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ct-edit { display: inline-flex; align-items: center; gap: 6px; }
+.ct-edit input { width: 130px; }
+
+@media (max-width: 1180px) {
+  .ct-reg, .ct-grid { grid-template-columns: minmax(0, 1fr); }
+}

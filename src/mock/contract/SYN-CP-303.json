@@ -1,0 +1,280 @@
+{
+ "doc_id": "SYN-CP-303",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "vessel_name": {
+   "value": "SYN DENEB",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Keppelview Product Tankers Pte. Ltd. (Registered Owner), as owner of the MT SYN DENEB, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "imo": {
+   "value": "1007029",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO no.: 1007029",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "dwt": {
+   "value": 50100.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Summer deadweight: 50,100 metric tons",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "owner": {
+   "value": "SYN Keppelview Product Tankers Pte. Ltd.",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Keppelview Product Tankers Pte. Ltd. (Registered Owner), as owner of the MT SYN DENEB, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Keppelview Product Tankers Pte. Ltd. (Registered Owner), as owner of the MT SYN DENEB, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null
+  },
+  "load_laydays_from": {
+   "value": "2028-03-08T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 08.03.2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_laydays_to": {
+   "value": "2028-03-10T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Cancelling: 10.03.2028",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "load_ports": {
+   "value": "INSIK",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Load port(s), in Charterer's option: 1-2 SB Sikka, Jamnagar, Gujarat, India",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Discharge port(s), in Charterer's option: 1-2 SB Ulsan (Onsan), Korea",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "cargo": {
+   "value": "DSL",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "(ii) Description: Gasoil 10ppm",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "cp_qty_t": {
+   "value": 40000.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "(i) Quantity: 40,000 MT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_total_h": {
+   "value": 60.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Total laytime in running hours: sixty (60)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "demurrage_rate_per_day": {
+   "value": 24100.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demurrage per day: US$ 24,100 per day or pro rata",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null
+  },
+  "nor_notice_h": {
+   "value": 0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 5,
+    "section": "rider",
+    "quote": "Clause 25 - Readiness and Laytime Start: Charterers forgo the six-hour allowance that ordinarily follows NOR; laytime begins to count at the time NOR is tendered, irrespective of the Vessel's berthing position.",
+    "confidence": 0.6,
+    "method": "llm",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demurrage per day: US$ 24,100 per day or pro rata",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  }
+ },
+ "review": [
+  {
+   "field": "nor_notice_h",
+   "reason": "확신도 낮음(LLM 값, 0.60)"
+  }
+ ]
+}

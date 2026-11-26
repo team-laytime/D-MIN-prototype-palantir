@@ -11,6 +11,8 @@ import Mail from './screens/Mail.jsx'
 import Inbox from './screens/Inbox.jsx'
 import Activity from './screens/Activity.jsx'
 import Schedule from './screens/Schedule.jsx'
+import ContractDocs from './screens/ContractDocs.jsx'
+import ContractTerms from './screens/ContractTerms.jsx'
 import VesselDrawer from './screens/VesselDrawer.jsx'
 import Tour from './screens/Tour.jsx'
 
@@ -25,7 +27,8 @@ export default function App() {
   if (new URLSearchParams(window.location.search).get('view') === 'admin') return <Admin onLogout={() => { const url = new URL(window.location.href); url.searchParams.delete('view'); window.location.assign(url) }} />
   if (!role) return <Login />
   let screen
-  if (result.loading && tab !== 'ops') {
+  // 확정 일정 · 계약 문서 화면은 데이터셋 없이 열린다
+  if (result.loading && !['ops', 'docs', 'terms'].includes(tab)) {
     screen = <div className="screen-body"><BootCallout boot={result.boot} /></div>
   } else if (NEEDS_RESULT.includes(tab) && result.error) {
     screen = <div className="screen-body"><Callout intent="danger" icon="error" title="데이터를 불러오지 못함">{result.error}</Callout></div>
@@ -40,6 +43,8 @@ export default function App() {
       inbox: <Inbox />,
       activity: <Activity />,
       ops: <Schedule />,
+      docs: <ContractDocs />,
+      terms: <ContractTerms />,
     }[tab]
   }
   return (
