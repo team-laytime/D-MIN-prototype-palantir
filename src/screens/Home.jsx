@@ -79,7 +79,8 @@ function HomeMap() {
     : scen.existing), [confirmed, scen])
   const span = useMemo(() => spanOf([plan]), [plan])
   const START = NOW
-  const end = Math.max(START + 24 * 60, span.end)
+  // 11-26 운영 현황은 계속 바뀌므로 지금부터 72시간까지만 본다 (그래프 · 재생 막대)
+  const end = Math.min(START + 72 * 60, Math.max(START + 24 * 60, span.end))
   const [t, setT] = useState(NOW)
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState(null)
@@ -94,15 +95,6 @@ function HomeMap() {
   // 11-25 부두별 접안 일정: 한 번에 부두 하나만(전체 보기 없음). 처음은 첫 부두.
   const [gPier, setGPier] = useState(null)
   const [gTab, setGTab] = useState('all') // 'all' = 부두별 접안 일정(전체 선석), 'pier' = 부두별 작업 현황(부두 하나씩)
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea|select/i.test(e.target.tagName)) return
-      if (e.key === 'g' || e.key === 'G') setGView('graph')
-      if (e.key === 't' || e.key === 'T') setGView('table')
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
   // 11-25 스케줄 현황 패널은 아래 일정(그래프, 표)과 겹쳐 없앴다. 부두를 누르면 그 부두로 확대한다.
   const bById = useMemo(() => Object.fromEntries(scen.berths.map((b) => [b.id, b])), [scen])
   const zoomTo = (pos, z = 15.5) => mapRef.current?.setView(pos, z)
@@ -538,7 +530,7 @@ function HomeMap() {
             </div>}
             <div className="home-gantt-body">
               {gView === 'graph'
-                ? <PlanGantt sim={plan} scen={scen} range={{ start: START, end }} cursor={t} activeVid={selected} onPick={openCard} showWait berthIds={gTab === 'pier' ? gBerths : undefined} hlPier={hover?.startsWith('pier:') ? hover.slice(5) : null} hlBerth={hover?.startsWith('vessel:') ? states.find((st) => st.v.id === hover.slice(7))?.p.bid : null} />
+                ? <PlanGantt sim={plan} scen={scen} range={{ start: START, end }} fit cursor={t} activeVid={selected} onPick={openCard} berthIds={gTab === 'pier' ? gBerths : undefined} hlPier={hover?.startsWith('pier:') ? hover.slice(5) : null} hlBerth={hover?.startsWith('vessel:') ? states.find((st) => st.v.id === hover.slice(7))?.p.bid : null} />
                 : <ScheduleTable plan={plan} scen={scen} t={t} bById={bById} selected={selected} onPick={openCard} showDem={isScheduler} berthIds={gTab === 'pier' ? gBerths : undefined} />}
             </div>
           </section>

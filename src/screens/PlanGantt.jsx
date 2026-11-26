@@ -3,7 +3,7 @@
 //  - 체선 구간(허용 정박시간 끝 ~ 호스 분리)만 빨간 빗금, 막대 아래에 체선 시간과 금액. 정박지에서 기다리는 동안 체선이 시작됐으면 막대 앞에 ├ 표시.
 //  - 고정한 배는 점선 테두리와 자물쇠. 후보를 바꾸거나 다시 계산하면 막대가 새 자리로 미끄러져 간다(FLIP).
 //  - 막대를 누르면 오른쪽 위에 산출 근거가 뜬다(화면을 내려도 따라옴). 시각과 금액은 엔진 값 그대로다.
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Icon } from '@blueprintjs/core'
 import { NOW, dayStart, fmt, hourOf, money } from '../lib/time.js'
 import { SEV, riskLabel } from '../lib/risk.js'
@@ -35,10 +35,22 @@ export const hm = (min) => {
  * @param cursor    재생 중인 시각 세로선
  * @param showWait  도착 ~ 접안 정박지 대기를 막대 앞에 점선으로
  * @param hlPier · hlBerth  강조할 부두 · 선석 줄
+ * @param fit       true면 구간 전체를 영역 폭에 맞춘다(가로 스크롤 없음, 막대에 안 들어가는 이름은 마우스를 올리면). 운영 현황
  */
-export default function PlanGantt({ sim, sims, scen, range, focus, onFocus, changed, loading = false, risks = [], onOpenCard, refId, onPick, activeVid, berthIds, cursor, showWait = false, hlPier = null, hlBerth = null }) {
-  const W = Math.round(((range.end - range.start) / 60) * PX_PER_H)
-  const x = (t) => ((Math.min(Math.max(t, range.start), range.end) - range.start) / 60) * PX_PER_H
+export default function PlanGantt({ sim, sims, scen, range, focus, onFocus, changed, loading = false, risks = [], onOpenCard, refId, onPick, activeVid, berthIds, cursor, showWait = false, hlPier = null, hlBerth = null, fit = false }) {
+  // 11-26 fit: 영역 폭에 맞춰 1시간 폭을 정한다 (창 크기가 바뀌면 다시)
+  const areaRef = useRef(null)
+  const [areaW, setAreaW] = useState(0)
+  useLayoutEffect(() => {
+    if (!fit || !areaRef.current) return
+    const ro = new ResizeObserver(([e]) => setAreaW(e.contentRect.width))
+    ro.observe(areaRef.current)
+    return () => ro.disconnect()
+  }, [fit])
+  const hours = (range.end - range.start) / 60
+  const pxh = fit && areaW ? Math.max(2, (areaW - LABEL_W - 2) / hours) : PX_PER_H
+  const W = Math.round(hours * pxh)
+  const x = (t) => ((Math.min(Math.max(t, range.start), range.end) - range.start) / 60) * pxh
   const vById = useMemo(() => Object.fromEntries(scen.vessels.map((v) => [v.id, v])), [scen])
   const bById = useMemo(() => Object.fromEntries(scen.berths.map((b) => [b.id, b])), [scen])
   const name = (vid) => vById[vid]?.name ?? sim.placements.find((p) => p.vid === vid)?.name ?? scen.nameByCall?.[vid.split('-')[0]] ?? vid.split('-')[0]
@@ -136,7 +148,7 @@ export default function PlanGantt({ sim, sims, scen, range, focus, onFocus, chan
       prevEnd = Math.max(prevEnd, left + width + 2)
       const on = focusVid === p.vid
       const cls = ['pg-bar', p.fixed && 'pinned', cents > 0 && !hatch && 'dem', changed?.has(p.vid) && 'chg', on ? 'focus' : !onPick && focusVid ? 'dim' : ''].filter(Boolean).join(' ')
-      const tip = `${name(p.vid)} · ${berth.label ?? berth.code} · ${fmt(p.etb)} ~ ${fmt(p.etu)}${cents ? ` · 체선 ${hm(dmin)} ${money(cents)}` : ''}${changed?.has(p.vid) ? ` · 후보 ${refId}와 부두가 다름` : ''}`
+      const tip = `${vById[p.vid]?.fullName ?? name(p.vid)} · ${berth.label ?? berth.code} · ${fmt(p.etb)} ~ ${fmt(p.etu)}${cents ? ` · 체선 ${hm(dmin)} ${money(cents)}` : ''}${changed?.has(p.vid) ? ` · 후보 ${refId}와 부두가 다름` : ''}`
       return (
         <button type="button" key={p.vid} data-vid={p.vid} className={cls} style={{ left, width }} title={tip}
           onClick={(e) => { e.stopPropagation(); if (onPick) onPick(p.vid); else onFocus(on ? null : p.vid) }} aria-label={tip} aria-pressed={on}>
@@ -156,7 +168,7 @@ export default function PlanGantt({ sim, sims, scen, range, focus, onFocus, chan
   const fp = !onPick && focus?.vid && sim.placements.find((p) => p.vid === focus.vid)
   const rk = !onPick && focus?.risk && focus.riskSim === sim.id ? focus.risk : null // 다른 후보로 바꾸면 그 리스크 카드는 닫는다
   return (
-    <div className="pg-area">
+    <div className="pg-area" ref={areaRef}>
       <div className="pg-wrap">
         <div className={`pg ${loading ? 'loading' : ''}`} ref={boxRef} style={{ width: W + LABEL_W }} onClick={() => !onPick && focus?.vid && onFocus(null)}>
           <div className="pg-row pg-axis">
