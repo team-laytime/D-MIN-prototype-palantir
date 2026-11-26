@@ -60,7 +60,7 @@ function Elapsed({ since }) {
 }
 
 export default function Compare() {
-  const { scen, result, all, recalc, editScen, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, go, risks,
+  const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, go, risks,
     whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision } = useApp()
   useWorkspace() // 확정, 취소, 보낸 메일이 바로 보이게 구독
   const [reason, setReason] = useState('')
@@ -101,15 +101,6 @@ export default function Compare() {
   const vname = (vid) => vById[vid]?.name ?? scen.nameByCall?.[vid.split('-')[0]] ?? vid.split('-')[0]
   const plan = activePlan()
   const fixedNow = current && current.version === version
-  const fixedSet = new Set(scen.fixes.map((f) => f.vid))
-  const toggleFix = (p) => {
-    const on = fixedSet.has(p.vid)
-    editScen((d) => {
-      d.fixes = d.fixes.filter((f) => f.vid !== p.vid)
-      if (!on) d.fixes.push({ vid: p.vid, bid: p.bid, etb: p.etb })
-    })
-    logActivity('입력', on ? '선박 고정 해제' : '선박 고정', vname(p.vid), on ? '' : `${focusSim.label} 배정 ${bById[p.bid]?.name ?? p.bid} ${fmt(p.etb)}`)
-  }
   const toGantt = (vid, risk = null, riskSim = null) => { focusVessel(vid, Boolean(vid), risk, riskSim); ganttRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 
   // ── 확정 뒤: 확정 일정 모니터링 + 통보 상태 ────────────────────────────
@@ -291,7 +282,7 @@ export default function Compare() {
             </>}>
             <GanttLegend keys={['bar', 'dem', 'wait', 'pin', 'night']} />
             <PlanGantt sim={gSim} sims={cols} refId={gRef.id} scen={scen} range={range} focus={focus} onFocus={onGanttFocus} loading={blocked}
-              risks={riskOf(gSim.id).data?.risks ?? []} fixedSet={fixedSet} onToggleFix={toggleFix} canEdit={isScheduler} onOpenCard={(vid) => openVessel(focusSim.id, vid, { mode: 'evidence' })} />
+              risks={riskOf(gSim.id).data?.risks ?? []} onOpenCard={(vid) => openVessel(focusSim.id, vid, { mode: 'evidence' })} />
           </Panel>
 
           <DemList title={`${focusSim.label} 체선 발생 선박`} focusVid={focus.vid} onPick={toGantt}

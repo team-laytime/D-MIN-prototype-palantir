@@ -74,25 +74,18 @@
 @keyframes pg-pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
 .pg-detail h3 { margin: 0 0 3px; display: flex; align-items: center; gap: 8px; font-size: calc(14px * var(--fs)); font-weight: 600; }
 .pg-shipbox { font: 600 calc(13px * var(--fs)) var(--sans); border: 1.5px solid var(--fg); padding: 2px 8px; }
-.pg-detail-t { color: var(--fg-2); font-weight: 500; font-size: calc(13px * var(--fs)); }
 .pg-close { margin-left: auto; width: 26px; height: 26px; flex: 0 0 26px; display: grid; place-items: center; border: 1px solid var(--line-2); background: var(--bg-3); color: var(--fg-2); cursor: pointer; }
 .pg-close:hover { background: var(--bg-4); color: var(--fg); }
 .pg-sub { margin: 0 0 10px; font: calc(11.5px * var(--fs)) var(--mono); color: var(--fg-3); }
 .pg-detail dl { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 14px; margin: 0 0 8px; padding: 10px 12px; background: var(--bg-3); border: 1px solid var(--line); }
 .pg-detail dt { font-size: calc(11px * var(--fs)); color: var(--fg-3); }
 .pg-detail dd { margin: 1px 0 0; font: calc(12.5px * var(--fs)) var(--mono); }
+.pg-detail dd.pg-range { display: flex; flex-direction: column; gap: 1px; }
+.pg-range span + span { color: var(--fg-2); }
 .pg-reasons, .pg-risks { margin: 0 0 8px; padding: 8px 12px 8px 26px; font-size: calc(12.5px * var(--fs)); background: var(--bg-3); border: 1px solid var(--line); }
 .pg-reasons li + li, .pg-risks li + li { margin-top: 3px; }
 .pg-risks { list-style: none; padding-left: 12px; }
 .pg-risks li { display: flex; gap: 6px; align-items: flex-start; }
-.pg-xcand { width: 100%; border-collapse: collapse; font-size: calc(12px * var(--fs)); background: var(--bg-3); border: 1px solid var(--line); }
-.pg-xcand th, .pg-xcand td { padding: 6px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); font-weight: 400; }
-.pg-xcand td { font-family: var(--mono); }
-.pg-xcand thead th { color: var(--fg-3); font-size: calc(11px * var(--fs)); }
-.pg-xcand td:last-child, .pg-xcand th:last-child { text-align: right; }
-.pg-xcand tr:last-child th, .pg-xcand tr:last-child td { border-bottom: 0; }
-.pg-xcand .cur th, .pg-xcand .cur td { font-weight: 700; color: var(--fg); background: var(--accent-wash); }
-.pg-xcand td.diff { color: var(--accent); }
 .pg-actions { display: flex; gap: 6px; margin-top: 10px; }
 
 /* 리스크 심각도 표시 (비교 표 · 창 · 산출 근거 공용) */
