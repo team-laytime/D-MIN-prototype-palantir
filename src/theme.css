@@ -91,7 +91,7 @@
 html, body, #root { height: 100%; }
 body {
   margin: 0;
-  min-width: 1280px;
+  min-width: 1024px; /* 11-26 1280 → 1024: 창을 줄여도 화면이 따라오게 (그보다 좁으면 가로 스크롤) */
   background: var(--bg-1);
   color: var(--fg);
   font-family: var(--sans);
