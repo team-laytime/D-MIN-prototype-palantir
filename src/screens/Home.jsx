@@ -71,7 +71,7 @@ function HomeMap() {
   const { incidents } = useInbox()
   // 운영 현황 = 지금 운영 중인 상황 (11-26 사용자 결정). 후보(확정 전 안)는 보이지 않는다.
   //   확정 전: 이전 계획. 따로 없으므로 데이터에 든 예정 ETA · 접안 · 이안(실제 접안 기록)을 최적화 전 계획으로 본다(scen.existing).
-  //            후보 A를 계산하면 같은 계획을 엔진 계산식으로 평가한 값(체선 · 정박시간)이 채워진다 — 계획 자체는 그대로.
+  //            (엔진 평가 값으로 바꾸지 않는다 — 이안 시각이 실제와 달라져 막대가 겹침)
   //   확정 뒤: 확정한 계획(확정 스냅숏, 이 데이터셋에서 확정한 것만). 확정 뒤 계획 조건을 고쳐도 그대로다.
   const confirmed = current ? activePlan() : null
   const plan = useMemo(() => (confirmed && confirmed.scenName === scen.name
@@ -159,7 +159,7 @@ function HomeMap() {
     }
     // 야간 20시~06시 (plan.js isNight와 같은 기준)
     for (let d = dayStart(START) - 1440; d < end; d += 1440) add(`night-${d}`, 'night', d + 20 * 60, d + 30 * 60)
-    for (const w of scen.wind) if (w.ms >= WIND_ALERT_MS) add(`wind-${w.t}`, 'weather', w.t, w.t + 60)
+    // 11-26 강풍은 재생 막대에 표시하지 않는다(지도 위 「강풍 관측」 표시로 충분 — 사용자 결정)
     scen.blocks.forEach((b, i) => add(`block-${i}`, 'block', b.start, b.end))
     return out
   }, [START, end, scen.wind, scen.blocks])
@@ -298,12 +298,21 @@ function HomeMap() {
       // 11-25 축소했을 때(확대 13.5 미만): 부두가 몇 px 안에 몰리므로 이름표를 지도 왼쪽 위에 세로 목록으로 모은다.
       //   연결선은 긋지 않는다(사용자 결정). 실제 위치는 부두 점과 마우스오버 강조로 본다.
       const colIds = new Set()
+      // 11-26 지도 왼쪽 위 상황 표시(강풍 관측 · 야간)가 있으면 그 자리를 먼저 비워 두고 부두 이름표는 그 아래 · 옆으로 피한다
+      const ctxBox = (() => {
+        const el = mapElement.current?.parentElement?.querySelector('.home-map-context')
+        if (!el || !el.children.length) return null
+        const c = mapElement.current.getBoundingClientRect(), r = el.getBoundingClientRect()
+        return { x: r.left - c.left - 4, y: r.top - c.top - 4, w: r.width + 8, h: r.height + 8 }
+      })()
+      if (ctxBox) placed.push(ctxBox)
       if (compact) {
         const h = 11 * fs * 1.25 + 10
         const step = h + 4
+        const top0 = ctxBox ? ctxBox.y + ctxBox.h + 4 : 10
         piers.forEach((pr, i) => {
           const pt = mapRef.current.latLngToContainerPoint(pr.berths[0].pos)
-          const x = 10, y = 10 + i * step
+          const x = 10, y = top0 + i * step
           offsetOf.set(pr.id, { x: x - pt.x, y: y - pt.y })
           colIds.add(pr.id)
           ctx.font = `700 ${11 * fs}px "IBM Plex Sans KR", sans-serif`
@@ -488,7 +497,7 @@ function HomeMap() {
           <div className="home-map-stage">
             <div ref={mapElement} className="home-map" role="region" aria-label="울산항 선박 위치 지도" />
             <div className="home-map-context">
-              {windAhead && <span className={`home-wx-chip ${windAhead.now ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />강풍 {windAhead.now ? '관측' : '예보'}, 최대 <span className="num">{windAhead.ms}m/s</span> (<span className="num">{fmt(windAhead.t)}</span>)</span>}
+              {windAhead && <span className={`home-wx-chip ${windAhead.now ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />강풍 {windAhead.now ? '관측' : '예보'}, 최대 <span className="num">{windAhead.ms.toFixed(1)}m/s</span> (<span className="num">{fmt(windAhead.t)}</span>)</span>}
               {isNight && <span className="home-night"><Icon icon="moon" size={12} />야간 시간대 (20시~06시)</span>}
             </div>
           </div>

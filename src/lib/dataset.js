@@ -2,7 +2,7 @@
 //  - 데이터셋 파일: public/data/<id>.json  (tools/real-data/build_dataset.py가 만든다, 비공개라 저장소에 없음)
 //  - request = 팀 엔진 PlanRequest 그대로. 11-26부터 계산 결과(results)는 넣지 않는다: 처음 열 때 initialResults가
 //    A → (A로 고른) B · C를 엔진으로 계산하고 브라우저 저장소에 남긴다(lib/cache.js). 다음부터는 저장된 결과로 바로 뜬다.
-//  - 계획 조건을 고치면 request를 고쳐 엔진 API(/engine/plans, vite가 127.0.0.1:8000으로 넘김)에 다시 보낸다.
+//  - 계획 조건을 고치면 request를 고쳐 엔진 API(/engine/plan-jobs 작업 접수 · 조회 · 취소, vite가 127.0.0.1:8000으로 넘김)에 다시 보낸다.
 import { toIso, toMin } from './time.js'
 import { cacheGet, cacheSet, hashText, versionOf } from './cache.js'
 import { BERTH_GEO } from './seaRoutes.js'
@@ -197,7 +197,12 @@ export function buildScen(ds, first = ds.results?.[0]?.response ?? null) {
       id: 'existing', label: '기존 계획', preset: null, tanks: [],
       placements: existing.map((p) => ({ vid: p.vessel_id, bid: p.berth, eta: toMin(p.eta), etb: toMin(p.etb), etu: toMin(p.etu), dem: { cents: 0 } })).sort((a, b) => a.etb - b.etb),
     },
-    ...engineFacts(ds, first, existing), // 엔진 결과가 있으면 기존 계획도 엔진 계산값(체선 · 정박시간)으로
+    // 11-26 계획 조건은 후보 A에 기대지 않는다: 기간 = 기준 시각 + days, 탱크 재고 흐름 = 실제 기록(이전 확정 계획으로 본다),
+    //   야간 도선 · 풍속 · Switching 기준 = 엔진 기본값(화면 상수, 엔진 params.default.json과 같음)
+    window: { start: t0, end: t0 + days * 1440 },
+    tanks: tankFlows(req, t0, t0 + days * 1440),
+    nightPilot: NIGHT_PILOT_DEFAULT, windDefault: null, shiftDefault: null,
+    ...engineFacts(ds, first),
     // 스케줄러가 고치는 값: 선박 ETA(vessels[].eta), 부두 사용 불가(blocks), 고정 선박(fixes), 엔진 파라미터(params)
     blocks: [], fixes: [], params: {},
     // 11-25 계획 조건을 바꾸는 받은 메일(시연용, 실제 선박 · 부두로 만듦). 「반영」하면 계획 조건에 들어간다(lib/incidents.js)
@@ -211,32 +216,75 @@ export function buildScen(ds, first = ds.results?.[0]?.response ?? null) {
  * 엔진만 아는 계획 입력: 탱크(1/1부터 실적으로 이어 센 T 재고, 기존 계획대로의 재고 흐름) · 야간 도선 · 풍속 기준 · 계획 구간 끝 · 후보 프리셋.
  * first(후보 A 응답)가 없으면 비워 두고, A가 나오면 이것만 다시 채운다(계획 조건 버전은 그대로 — 스케줄러가 고치는 값이 아님).
  */
-export function engineFacts(ds, first, existing = []) {
-  const req = ds.request
-  const t0 = toMin(req.start)
-  const win1 = first ? toMin(first.window.end) : Math.max(t0 + (ds.days ?? 3) * 1440, ...existing.map((p) => toMin(p.etu)))
-  const weekOf = (d) => toMin(`${d}T00:00:00+09:00`)
-  // 11-25 생산계획과 탱크: 최적화 팀 후보정(make_tank_plan)으로 만든 주별 생산계획(요청 production_plan)과
-  // 엔진이 1/1부터 실적으로 이어 센 기준 시각 재고(응답 tanks의 initial_t). 계획 입력이라 고치지 않는다.
-  const tanks = (first?.tanks ?? []).map((t) => {
-    const rows = (req.production_plan ?? []).filter((w) => w.tank === t.tank).map((w) => ({ from: weekOf(w.week_start), rate: w.rate_t_per_h })).sort((a, b) => a.from - b.from)
-    const cur = rows.filter((w) => w.from <= t0).at(-1)
-    const weeks = [cur, ...rows.filter((w) => w.from > t0 && w.from < win1)].filter(Boolean)
-    // 11-25 재고 흐름 = 기존 계획(엔진 baseline, 다른 스케줄러가 미리 세워 둔 계획으로 가정)대로 갔을 때. 최적화 결과와 무관한 계획 입력이다.
-    const base = t.baseline_levels_t ? { start: toMin(t.start), step: t.step_min ?? 60, lv: t.baseline_levels_t } : null
-    return { name: t.tank, count: t.tanks, cap: t.capacity_t, start: t.initial_t, safeMin: t.safe_min_t, safeMax: t.safe_max_t, weeks, base }
-  })
-  // 기존 계획을 엔진 계산식으로 평가한 값(응답 baseline: 실제 선석 · ETB에서의 작업 · 정박시간 · 체선료)
-  const evaluated = first?.baseline?.vessels?.length
-    ? { existing: { id: 'existing', label: '기존 계획', preset: null, tanks: [], placements: first.baseline.vessels.map(placement).sort((a, b) => a.etb - b.etb) } }
-    : {}
+export function engineFacts(ds, first) {
+  // 11-26 계획 조건은 후보 A(엔진 결과)에 기대지 않는다(사용자 결정). 탱크 · 규칙 기본값 · 기간은 buildScen이 데이터로 정하고,
+  //   여기서는 후보 칸 이름(B 자리)만 A가 나온 뒤에 채운다.
   return {
-    ...evaluated,
-    tanks, nightPilot: first?.params?.night_pilot ?? null, windDefault: first?.params?.weather?.thresholds_ms ?? null,
-    window: { start: t0, end: win1 },
     presets: ds.results?.map((r) => r.preset) ?? [BASE_PRESET, BASE_PRESET, C_PRESET], // B 자리는 A가 나온 뒤 고른다
     engineReady: Boolean(first),
   }
+}
+
+// ── 11-26 탱크 재고 흐름: 엔진에 기대지 않고 데이터로 직접 계산 ─────────────────────────────
+//   엔진 tank_plan.carry · tanks.build_tanks와 같은 규칙:
+//   재고(t) = 1/1 재고(tank_settings.initial_pct × 용량) + 1/1부터 t까지 주별 생산계획(+ 생산 · − 공정 처리)
+//            + 선박마다 작업시작(접안 + 1h) ~ 작업완료(이안 − 2h)에 물량을 고르게 (IM · DI 반입 +, EX · DO 반출 −)
+//   용량 = 탱크 수 × 60만 배럴 ÷ 7.33 배럴/톤 (엔진 params.tank 기본값). 탱크 묶음은 tankGroupOf (엔진 product_direction과 같음)
+//   선박 시각: 확정 전에는 실제 접안 · 이안 기록(= 이전 확정 계획으로 본다). 확정 뒤에는 확정 계획의 작업 시각으로 바꾼다(work)
+export const TANK_TON = Math.round(600000 / 7.33)
+// 엔진 params.night_pilot 기본값 (야간 도선 제한 대상: GRT 7.5만 이상, 또는 3만 이상 수입선 중 흘수 10.5m 이상)
+export const NIGHT_PILOT_DEFAULT = { grt_always: 75000, grt_min: 30000, draft_min: 10.5, grt_pob_2h: 50000, pob_before_sunset_small_h: 1.5, pob_before_sunset_large_h: 2.0, night_start: '02:00', release: '08:00' }
+const WORK_AFTER_ETB = 60, WORK_BEFORE_ETU = 120
+
+/**
+ * @param req    엔진 요청 (vessels · production_plan · tank_settings)
+ * @param t0,t1  보여 줄 구간 (분)
+ * @param work   {선박 ID: {ws, wf}} 확정 계획의 작업 시각 (없으면 모두 실제 기록)
+ * @returns [{name, count, cap, start(t0 재고), weeks, base: {start, step, lv[]}}]
+ */
+export function tankFlows(req, t0, t1, work = null) {
+  const plan = req.production_plan ?? []
+  if (!plan.length) return []
+  const weekOf = (d) => toMin(`${d}T00:00:00+09:00`)
+  const names = [...new Set(plan.map((w) => w.tank))]
+  const setting = Object.fromEntries((req.tank_settings ?? []).map((t) => [t.tank, t]))
+  const rows = Object.fromEntries(names.map((n) => [n, plan.filter((w) => w.tank === n).map((w) => ({ from: weekOf(w.week_start), rate: w.rate_t_per_h })).sort((a, b) => a.from - b.from)]))
+  const origin = Math.min(...names.map((n) => rows[n][0].from))
+  /** 생산계획 a ~ b 합 (톤). 마지막 주 값은 그 뒤로도 이어진다 */
+  const prod = (n, a, b) => {
+    const r = rows[n]
+    let sum = 0
+    for (let k = 0; k < r.length; k++) {
+      const s0 = Math.max(a, r[k].from), s1 = Math.min(b, k + 1 < r.length ? r[k + 1].from : Infinity)
+      if (s1 > s0) sum += r[k].rate * (s1 - s0) / 60
+    }
+    return sum
+  }
+  const flows = Object.fromEntries(names.map((n) => [n, []]))
+  for (const v of req.vessels) {
+    const id = vesselIdOf(v), q = v.qty ?? 0
+    const g = tankGroupOf(v.cargo_group, v.product_class)
+    if (!(q > 0) || !flows[g]) continue
+    let ws, wf
+    if (work?.[id]) ({ ws, wf } = work[id])
+    else if (v.berthed && v.unberthed) { ws = toMin(v.berthed) + WORK_AFTER_ETB; wf = Math.max(ws, toMin(v.unberthed) - WORK_BEFORE_ETU) }
+    else continue
+    flows[g].push({ ws, wf, d: (isIn(v.biz) ? 1 : -1) * q })
+  }
+  const step = 60
+  return names.map((n) => {
+    const st = setting[n] ?? {}
+    const count = st.tanks ?? null
+    const cap = count ? count * TANK_TON : null
+    const init = cap != null ? ((st.initial_pct ?? 50) / 100) * cap : 0
+    const ship = (t) => flows[n].reduce((sum, f) => sum + (t >= f.wf ? f.d : t <= f.ws ? 0 : f.d * (t - f.ws) / Math.max(1, f.wf - f.ws)), 0)
+    const level = (t) => init + prod(n, origin, t) + ship(t)
+    const lv = []
+    for (let t = t0; t <= t1; t += step) lv.push(level(t))
+    const cur = rows[n].filter((w) => w.from <= t0).at(-1)
+    const weeks = [cur, ...rows[n].filter((w) => w.from > t0 && w.from < t1)].filter(Boolean)
+    return { name: n, count, cap, start: lv[0], weeks, base: cap != null ? { start: t0, step, lv } : null }
+  })
 }
 
 /** 엔진 PlanResponse → 화면의 후보(sim) */
@@ -265,6 +313,9 @@ function placement(v) {
  * A 동점 규칙: B가 A와 체선료가 같고 탱크가 더 안전하면, A는 B의 계획을 쓴다(같은 돈이면 더 안전한 쪽). B에는 그 사실을 적는다.
  * request가 있으면 같이 둔다(리스크 모델에 그대로 보냄).
  */
+const samePlan = (a, b) => a.placements.length === b.placements.length
+  && a.placements.every((p) => b.placements.some((q) => q.vid === p.vid && q.bid === p.bid && q.etb === p.etb))
+
 export function rankSims(results) {
   const sims = results.map((r, i) => ({ ...toSim(r.response, r.preset, String.fromCharCode(65 + i)), req: r.request ?? null, resp: r.response }))
   const [a, b] = sims
@@ -273,6 +324,9 @@ export function rankSims(results) {
     merged.notes = [...merged.notes, `체선료가 같은 후보 B(${b.preset.label}) 계획이 탱크가 더 안전해 그 계획을 씀`]
     sims[0] = merged
     sims[1] = { ...b, notes: [...b.notes, '후보 A와 체선료 · 계획이 같음 (A가 이 계획을 씀)'], sameAsA: true }
+  } else if (a && b && samePlan(a, b)) {
+    // 11-26 B 조건으로 풀어도 A와 배치가 똑같으면 (예: 위험이 72시간 밖이라 바꿀 게 없음) 표에 「A와 같음」
+    sims[1] = { ...b, notes: [...b.notes, '이 조건에서는 후보 A와 같은 계획'], sameAsA: true }
   }
   return sims
 }
@@ -281,7 +335,7 @@ export function rankSims(results) {
  * 11-25 리스크 모델 API(POST /risk/risks, 팀 berth_risk): 엔진에 보낸 요청과 받은 응답을 그대로 보내 리스크 목록을 받는다.
  * 응답 {counts: {HIGH, MEDIUM, LOW}, risks[]: {id, kind, severity, title, vessel_ids, berth, tank, start, end, evidence, cost_per_hour}, notes[]}
  */
-//   탱크 리스크는 리스크 모델이 고정 마지노선(기본 20/80%, 1·4·7%p)으로 판정한다(계획의 안전 범위와 무관).
+//   탱크 리스크는 리스크 모델이 고정 마지노선(기본 20/80%, 2 · 3.5 · 5%p)으로 판정한다(계획의 안전 범위와 무관).
 //   요청이 1년치 실적을 담아 6MB가 넘고(지연 규칙이 1/1부터 탱크 재고를 다시 센다) 후보 하나에 5초 이상 걸린다.
 //   같은 요청의 결과는 이 브라우저 세션에 저장해 두고 다시 쓴다(새로고침·화면 이동 때 기다리지 않게).
 // 11-26 리스크 결과는 브라우저 저장소(lib/cache.js)에 리스크 모델 지문(GET /risk/health의 model.version)과 함께 남긴다.
@@ -329,18 +383,53 @@ const merge = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entrie
 //   같은 계획 조건 · 같은 후보면 엔진을 다시 부르지 않는다(처음 화면 · 다시 계산 · 「단독 반영 시」 모두).
 const engineVersion = () => versionOf('plan', '/engine/health', (b) => b?.engine && `${b.engine.version}.${String(b.engine.params_sha256).slice(0, 8)}`)
 
-/** 엔진 POST /plans (저장된 결과가 있으면 그것). 계획을 찾은 결과만 남긴다. 오류는 status를 붙여 던진다(429 = 대기열이 참) */
+const NO_ENGINE = '엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.'
+const problem = (body, status) => Object.assign(new Error(body?.detail ?? body?.title ?? `엔진 오류 ${status}`), { status })
+
+/**
+ * 11-26 엔진 계산 작업(POST /plan-jobs → GET으로 결과 조회). 화면이 계산을 버리면(signal abort) DELETE로 취소한다.
+ *   대기 중이던 작업은 대기열에서 빠지고, 계산 중인 작업은 엔진이 그 계산 프로세스를 끝낸다 — 버린 계산이 작업자를 붙잡지 않는다.
+ *   Idempotency-Key = 요청 내용: 같은 요청(예: 「반영하면?」 미리 계산과 결정 뒤 다시 계산)은 한 작업을 같이 기다린다.
+ *   같이 기다리던 쪽이 취소해 작업이 사라지면(404 · 취소됨) 다시 접수한다.
+ */
+async function runJob(text, idem, signal) {
+  for (;;) {
+    const r = await fetch('/engine/plan-jobs', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idem }, body: text, signal })
+      .catch((e) => { if (e.name === 'AbortError') throw e; return null })
+    if (!r) throw new Error(NO_ENGINE)
+    let job = await r.json().catch(() => null)
+    if (!r.ok) throw problem(job, r.status)
+    const id = job.job_id
+    const cancel = () => { fetch(`/engine/plan-jobs/${id}`, { method: 'DELETE', keepalive: true }).catch(() => {}) }
+    signal?.addEventListener('abort', cancel, { once: true })
+    try {
+      while (job && (job.status === 'QUEUED' || job.status === 'RUNNING')) {
+        await sleep(2000, signal)
+        const g = await fetch(`/engine/plan-jobs/${id}`, { signal }).catch((e) => { if (e.name === 'AbortError') throw e; return null })
+        if (!g) throw new Error(NO_ENGINE)
+        job = g.status === 404 ? null : await g.json()
+      }
+    } finally { signal?.removeEventListener('abort', cancel) }
+    if (job?.status === 'SUCCEEDED') return job.result
+    if (job && job.error?.code !== 'ERR_CONFLICT') throw problem(job.error, job.error?.status ?? 500)
+    // 작업이 사라졌거나 다른 쪽이 취소함 → 다시 접수
+  }
+}
+
+// 11-26 엔진이 끝난 작업 결과를 1시간 들고 있어서, 같은 Idempotency-Key면 다시 계산하지 않고 그 결과를 준다.
+//   시연 초기화 때 이 값을 바꿔(newRun) 엔진도 새로 계산하게 한다. 한 번의 실행 안에서는 같은 요청이 한 작업을 같이 기다린다.
+let runNonce = Date.now().toString(36)
+export function newRun() { runNonce = Date.now().toString(36) }
+
+/** 엔진 계획 계산 (저장된 결과가 있으면 그것). 계획을 찾은 결과만 남긴다. 오류는 status를 붙여 던진다(429 = 대기열이 참) */
 export async function solveCached(request, signal) {
   const text = JSON.stringify(request)
   const ver = await engineVersion()
-  const key = ver && `plan:${ver}:${hashText(text)}`
+  const hash = hashText(text)
+  const key = ver && `plan:${ver}:${hash}`
   const hit = key && await cacheGet(key)
   if (hit) return hit
-  const r = await fetch('/engine/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text, signal })
-    .catch((e) => { if (e.name === 'AbortError') throw e; return null })
-  if (!r) throw new Error('엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.')
-  const body = await r.json().catch(() => null)
-  if (!r.ok) throw Object.assign(new Error(body?.detail ?? body?.title ?? `엔진 오류 ${r.status}`), { status: r.status })
+  const body = await runJob(text, `${ver ?? 'x'}:${hash}:${runNonce}`, signal)
   if (key && body?.plan) cacheSet(key, body)
   return body
 }
@@ -354,7 +443,7 @@ export async function solveOne(scen, preset, signal) {
 /** 엔진 API로 다시 계산 (후보 프리셋마다 한 번, 동시에) */
 export async function recalc(scen, signal, presets = scen.presets) {
   const health = await fetch('/engine/health', { signal }).catch((e) => { if (e.name === 'AbortError') throw e; return null })
-  if (!health?.ok) throw new Error('엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.')
+  if (!health?.ok) throw new Error(NO_ENGINE)
   // 11-25 계획을 못 찾으면(NO_PLAN, 제한 시간이 짧거나 엔진이 바쁠 때) 그 후보만 제한 시간을 20초로 늘려 한 번 더 푼다
   const solve = async (preset, retry) => {
     const request = buildRequest(scen, preset)
@@ -387,10 +476,13 @@ const sleep = (ms, signal) => new Promise((resolve, reject) => {
  * 요청은 「다시 계산」과 같은 규칙(buildRequest)으로 만들어, 조건을 안 바꾸고 다시 계산하면 저장된 결과가 그대로 쓰인다.
  * onStep('A' | 'BC')로 진행을 알린다. 반환: [{preset, request, response}] × 3
  */
-export async function initialResults(ds, onStep, signal) {
+// 11-26 onA(a): A가 끝나는 대로 화면에 먼저 보이게 (B · C는 이어서 계산)
+export async function initialResults(ds, onStep, signal, onA) {
   onStep?.('A')
   const bare = { request: ds.request, vessels: [], blocks: [], fixes: [], params: {} }
   const [a] = await recalc(bare, signal, [BASE_PRESET])
+  if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+  onA?.(a)
   const scenA = buildScen({ ...ds, results: [a] })
   const b = chooseB(scenA, rankSims([a])[0])
   onStep?.('BC')
