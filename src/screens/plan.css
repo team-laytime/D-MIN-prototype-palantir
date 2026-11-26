@@ -537,3 +537,4 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .bt-shift-row { display: flex; flex-wrap: wrap; gap: 8px 22px; }
 /* 날짜 칸: 평소에는 연도까지, 화면이 좁으면 월/일 시:분만 */
 @media (max-width: 1440px) { .dtf-y { display: none; } }
+.tp-wait { display: block; padding: 0 8px; color: var(--fg-3); font-size: calc(12px * var(--fs)); }

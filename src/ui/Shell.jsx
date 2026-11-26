@@ -154,7 +154,10 @@ function DatasetPicker({ datasets, scenarioId, onOpen }) {
     )
   }
   const [day, hm] = draft.split(' ')
-  const valid = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(draft) && day >= d.range.from && day <= d.range.to
+  const wellFormed = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(draft) && day >= d.range.from && day <= d.range.to
+  // 11-26 같은 선석에 두 척이 동시에 있던 기록(겹침)이 계획 기간(기준 시각 + days)에 걸리면 시연용으로 고르지 않는다
+  const clash = wellFormed ? clashesOf(draft, d.days, d.overlaps ?? []) : []
+  const valid = wellFormed && !clash.length
   const close = () => { setOpen(false); setDraft(start ?? '') }
   const pick = (to) => { setOpen(false); if (to && to !== start) onOpen(`${d.id}@${to}`) }
   const hours = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
@@ -182,8 +185,21 @@ function DatasetPicker({ datasets, scenarioId, onOpen }) {
               options={hours.includes(hm) || !hm ? hours : [hm, ...hours]} />
             <Button intent="primary" text="열기" disabled={!valid || draft === start} onClick={() => pick(draft)} />
           </div>
+          {clash.length > 0 && (
+            <p className="scen-pop-warn">
+              {d.days * 24}시간 안에 같은 선석에 두 척이 동시에 있던 기록이 있어 고를 수 없습니다.
+              <span className="scen-pop-warn-list">{clash.slice(0, 3).map((w) => `${w.berth} ${w.start.slice(5).replace('-', '/')}~${w.end.slice(11)}`).join(', ')}{clash.length > 3 ? ` 외 ${clash.length - 3}건` : ''}</span>
+            </p>
+          )}
         </div>
       )}
     </div>
   )
+}
+
+/** 기준 시각(KST 'YYYY-MM-DD HH:MM')부터 days일 안에 걸리는 선석 겹침 구간 */
+function clashesOf(start, days, overlaps) {
+  const t = (x) => Date.parse(`${x.replace(' ', 'T')}:00+09:00`)
+  const t0 = t(start), t1 = t0 + days * 864e5
+  return overlaps.filter((w) => t(w.start) < t1 && t(w.end) > t0)
 }

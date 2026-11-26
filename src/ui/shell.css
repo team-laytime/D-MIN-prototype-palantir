@@ -67,3 +67,5 @@
 .scen-pop-pick { display: flex; gap: 6px; align-items: center; }
 .scen-pop-date { flex: 1; min-width: 0; height: 30px; padding: 0 6px; border: 1px solid var(--line-2); background: var(--input-bg); color: var(--fg); font-size: calc(12.5px * var(--fs)); color-scheme: light dark; }
 .scen-pop-pick .bp6-html-select select { height: 30px; }
+.scen-pop-warn { white-space: normal; word-break: keep-all; overflow-wrap: anywhere; margin: 0; padding: 6px 8px; border-left: 3px solid var(--amber); background: var(--amber-wash); color: var(--fg); font-size: calc(11.5px * var(--fs)); line-height: 1.5; }
+.scen-pop-warn-list { display: block; white-space: normal; overflow-wrap: anywhere; margin-top: 2px; color: var(--fg-2); font-family: var(--mono); font-size: calc(11px * var(--fs)); }

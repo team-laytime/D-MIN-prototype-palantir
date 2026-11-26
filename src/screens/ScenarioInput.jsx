@@ -9,7 +9,8 @@ import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { changeText } from '../lib/incidents.js'
 import { St } from '../ui/kit.jsx'
-import { vesselIdOf } from '../lib/dataset.js'
+import { tankFlows, vesselIdOf } from '../lib/dataset.js'
+import { activePlan } from '../lib/workspace.js'
 import { Screen } from '../ui/kit.jsx'
 import './plan.css'
 
@@ -17,13 +18,22 @@ const WIND_LIMIT = 14 // m/s, 3~8부두와 부이의 하역 중단 기준(팀 �
 const berthsText = (b, byId) => (b.berths ? b.berths.map((id) => byId[id]?.code ?? id).join(', ') : '전 부두')
 
 export default function ScenarioInput() {
-  const { scenInput: scen, editScen, version, result, recalc, go, pendingIncs, decideMails } = useApp()
+  const { scenInput: scen, editScen, version, result, recalc, go, pendingIncs, decideMails, current } = useApp()
   // 11-26 받은 메일 조건 변경 체크(반영할 것). 상단 「후보 비교」를 누를 때 한꺼번에 결정한다
   const [mailPick, setMailPick] = useState({})
   const [query, setQuery] = useState('')
   const [etaDesc, setEtaDesc] = useState(false)
   const [piTab, setPiTab] = useState('vessel')
 
+  // 11-26 탱크 재고 흐름: 확정 전에는 실제 기록(= 이전 확정 계획), 이 기준 시각에서 확정한 뒤에는 확정 계획의 작업 시각대로
+  const confirmed = current ? activePlan() : null
+  const mine = confirmed && scen && confirmed.scenName === scen.name ? confirmed : null
+  const tanks = useMemo(() => {
+    if (!scen) return []
+    if (!mine) return scen.tanks ?? []
+    const work = Object.fromEntries(mine.placements.filter((p) => p.ws != null && p.wf != null).map((p) => [p.vid, { ws: p.ws, wf: p.wf }]))
+    return tankFlows(scen.request, scen.window.start, scen.window.end, work)
+  }, [scen, mine])
   const berthById = useMemo(() => Object.fromEntries((scen?.berths ?? []).map((b) => [b.id, b])), [scen?.berths])
   const vessels = useMemo(() => {
     if (!scen) return []
@@ -206,7 +216,7 @@ export default function ScenarioInput() {
       {/* 11-25 운영 여건: 생산계획과 탱크 재고(최적화 팀 후보정 값), 관측 풍속. 모두 계획 입력이라 고치지 않는다 */}
       {piTab === 'weather' && (
         <div className="env" data-tour="env">
-          <TankPlan tanks={scen.tanks ?? []} win={scen.window} safe={[pv(fieldOf('tank.safe_min_pct')), pv(fieldOf('tank.safe_max_pct'))]}
+          <TankPlan tanks={tanks} basis={mine ? `확정 계획 v${mine.no}대로` : '기존 계획대로'} win={scen.window} safe={[pv(fieldOf('tank.safe_min_pct')), pv(fieldOf('tank.safe_max_pct'))]}
             inputs={<><ParamInput f={fieldOf('tank.safe_min_pct')} scen={scen} setParam={setParam} resetParam={resetParam} /><ParamInput f={fieldOf('tank.safe_max_pct')} scen={scen} setParam={setParam} resetParam={resetParam} /></>} />
           <div className="env-2">
             <Occupied list={scen.occupied ?? []} berthById={berthById} />
@@ -317,7 +327,7 @@ function ParamInput({ f, scen, setParam, resetParam }) {
 }
 
 /** 생산계획과 탱크 재고: 탱크 묶음마다 시간별 재고 흐름(기존 계획대로, 최적화 전), 안전 범위 띠, 주별 생산, 공정 투입 */
-function TankPlan({ tanks, win, safe, inputs }) {
+function TankPlan({ tanks, basis = '기존 계획대로', win, safe, inputs }) {
   if (!tanks.length) return null
   const weeks = tanks[0].weeks
   const W = 600, H = 56
@@ -342,7 +352,7 @@ function TankPlan({ tanks, win, safe, inputs }) {
             <th>탱크 묶음</th>
             <th className="r">현재</th>
             <th className="tp-axis-h">
-              <span className="tp-axis-t">재고 흐름 <small>기존 계획대로</small></span>
+              <span className="tp-axis-t">재고 흐름 <small>{basis}</small></span>
               <svg className="tp-axis" viewBox={`0 0 ${W} 14`} preserveAspectRatio="none" aria-hidden="true">
                 {days.map((t) => <line key={t} x1={x(t)} x2={x(t)} y1={8} y2={14} />)}
               </svg>
@@ -361,12 +371,14 @@ function TankPlan({ tanks, win, safe, inputs }) {
             const minP = pts.length ? Math.min(...pts.map((p) => p[2])) : null
             const maxP = pts.length ? Math.max(...pts.map((p) => p[2])) : null
             const out = pts.some((p) => p[2] < lo || p[2] >= hi)
-            const now = (t.start / t.cap) * 100
+            const known = t.cap != null && t.start != null // 용량 · 기준 시각 재고는 후보 A를 계산하면 채워진다
+            const now = known ? (t.start / t.cap) * 100 : null
             return (
               <tr key={t.name}>
-                <th>{t.name}<small>{t.count}개</small></th>
-                <td className="r tp-now"><b>{now.toFixed(0)}%</b></td>
+                <th>{t.name}{t.count != null && <small>{t.count}개</small>}</th>
+                <td className="r tp-now"><b>{now != null ? `${now.toFixed(0)}%` : '—'}</b></td>
                 <td className="tp-spark">
+                  {!known ? <span className="tp-wait">재고 흐름은 후보 계산 뒤에 표시</span> : <>
                   <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${t.name} 재고 ${minP?.toFixed(0)}~${maxP?.toFixed(0)}%`}>
                     <rect x={0} y={y(hi)} width={W} height={y(lo) - y(hi)} className="tp-band" />
                     {days.map((d) => <line key={d} x1={x(d)} x2={x(d)} y1={0} y2={H} className="tp-grid" />)}
@@ -374,6 +386,7 @@ function TankPlan({ tanks, win, safe, inputs }) {
                     <path d={line} className={`tp-line ${out ? 'out' : ''}`} vectorEffect="non-scaling-stroke" />
                   </svg>
                   <span className="tp-range">{minP != null ? `${minP.toFixed(0)}~${maxP.toFixed(0)}%` : '-'}</span>
+                  </>}
                 </td>
                 {weeks.map((w, i) => {
                   const r = t.weeks[i]?.rate

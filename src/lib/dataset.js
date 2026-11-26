@@ -197,7 +197,12 @@ export function buildScen(ds, first = ds.results?.[0]?.response ?? null) {
       id: 'existing', label: '기존 계획', preset: null, tanks: [],
       placements: existing.map((p) => ({ vid: p.vessel_id, bid: p.berth, eta: toMin(p.eta), etb: toMin(p.etb), etu: toMin(p.etu), dem: { cents: 0 } })).sort((a, b) => a.etb - b.etb),
     },
-    ...engineFacts(ds, first, existing), // 엔진 결과가 있으면 기존 계획도 엔진 계산값(체선 · 정박시간)으로
+    // 11-26 계획 조건은 후보 A에 기대지 않는다: 기간 = 기준 시각 + days, 탱크 재고 흐름 = 실제 기록(이전 확정 계획으로 본다),
+    //   야간 도선 · 풍속 · Switching 기준 = 엔진 기본값(화면 상수, 엔진 params.default.json과 같음)
+    window: { start: t0, end: t0 + days * 1440 },
+    tanks: tankFlows(req, t0, t0 + days * 1440),
+    nightPilot: NIGHT_PILOT_DEFAULT, windDefault: null, shiftDefault: null,
+    ...engineFacts(ds, first),
     // 스케줄러가 고치는 값: 선박 ETA(vessels[].eta), 부두 사용 불가(blocks), 고정 선박(fixes), 엔진 파라미터(params)
     blocks: [], fixes: [], params: {},
     // 11-25 계획 조건을 바꾸는 받은 메일(시연용, 실제 선박 · 부두로 만듦). 「반영」하면 계획 조건에 들어간다(lib/incidents.js)
@@ -211,33 +216,75 @@ export function buildScen(ds, first = ds.results?.[0]?.response ?? null) {
  * 엔진만 아는 계획 입력: 탱크(1/1부터 실적으로 이어 센 T 재고, 기존 계획대로의 재고 흐름) · 야간 도선 · 풍속 기준 · 계획 구간 끝 · 후보 프리셋.
  * first(후보 A 응답)가 없으면 비워 두고, A가 나오면 이것만 다시 채운다(계획 조건 버전은 그대로 — 스케줄러가 고치는 값이 아님).
  */
-export function engineFacts(ds, first, existing = []) {
-  const req = ds.request
-  const t0 = toMin(req.start)
-  const win1 = first ? toMin(first.window.end) : Math.max(t0 + (ds.days ?? 3) * 1440, ...existing.map((p) => toMin(p.etu)))
-  const weekOf = (d) => toMin(`${d}T00:00:00+09:00`)
-  // 11-25 생산계획과 탱크: 최적화 팀 후보정(make_tank_plan)으로 만든 주별 생산계획(요청 production_plan)과
-  // 엔진이 1/1부터 실적으로 이어 센 기준 시각 재고(응답 tanks의 initial_t). 계획 입력이라 고치지 않는다.
-  const tanks = (first?.tanks ?? []).map((t) => {
-    const rows = (req.production_plan ?? []).filter((w) => w.tank === t.tank).map((w) => ({ from: weekOf(w.week_start), rate: w.rate_t_per_h })).sort((a, b) => a.from - b.from)
-    const cur = rows.filter((w) => w.from <= t0).at(-1)
-    const weeks = [cur, ...rows.filter((w) => w.from > t0 && w.from < win1)].filter(Boolean)
-    // 11-25 재고 흐름 = 기존 계획(엔진 baseline, 다른 스케줄러가 미리 세워 둔 계획으로 가정)대로 갔을 때. 최적화 결과와 무관한 계획 입력이다.
-    const base = t.baseline_levels_t ? { start: toMin(t.start), step: t.step_min ?? 60, lv: t.baseline_levels_t } : null
-    return { name: t.tank, count: t.tanks, cap: t.capacity_t, start: t.initial_t, safeMin: t.safe_min_t, safeMax: t.safe_max_t, weeks, base }
-  })
-  // 기존 계획을 엔진 계산식으로 평가한 값(응답 baseline: 실제 선석 · ETB에서의 작업 · 정박시간 · 체선료)
-  const evaluated = first?.baseline?.vessels?.length
-    ? { existing: { id: 'existing', label: '기존 계획', preset: null, tanks: [], placements: first.baseline.vessels.map(placement).sort((a, b) => a.etb - b.etb) } }
-    : {}
+export function engineFacts(ds, first) {
+  // 11-26 계획 조건은 후보 A(엔진 결과)에 기대지 않는다(사용자 결정). 탱크 · 규칙 기본값 · 기간은 buildScen이 데이터로 정하고,
+  //   여기서는 후보 칸 이름(B 자리)만 A가 나온 뒤에 채운다.
   return {
-    ...evaluated,
-    tanks, nightPilot: first?.params?.night_pilot ?? null, windDefault: first?.params?.weather?.thresholds_ms ?? null,
-    shiftDefault: first?.params?.shifting?.hours ?? null, // 부두 그룹별 [Switching, Direction] 기본값 (없으면 화면의 SHIFT_DEFAULT)
-    window: { start: t0, end: win1 },
     presets: ds.results?.map((r) => r.preset) ?? [BASE_PRESET, BASE_PRESET, C_PRESET], // B 자리는 A가 나온 뒤 고른다
     engineReady: Boolean(first),
   }
+}
+
+// ── 11-26 탱크 재고 흐름: 엔진에 기대지 않고 데이터로 직접 계산 ─────────────────────────────
+//   엔진 tank_plan.carry · tanks.build_tanks와 같은 규칙:
+//   재고(t) = 1/1 재고(tank_settings.initial_pct × 용량) + 1/1부터 t까지 주별 생산계획(+ 생산 · − 공정 처리)
+//            + 선박마다 작업시작(접안 + 1h) ~ 작업완료(이안 − 2h)에 물량을 고르게 (IM · DI 반입 +, EX · DO 반출 −)
+//   용량 = 탱크 수 × 60만 배럴 ÷ 7.33 배럴/톤 (엔진 params.tank 기본값). 탱크 묶음은 tankGroupOf (엔진 product_direction과 같음)
+//   선박 시각: 확정 전에는 실제 접안 · 이안 기록(= 이전 확정 계획으로 본다). 확정 뒤에는 확정 계획의 작업 시각으로 바꾼다(work)
+export const TANK_TON = Math.round(600000 / 7.33)
+// 엔진 params.night_pilot 기본값 (야간 도선 제한 대상: GRT 7.5만 이상, 또는 3만 이상 수입선 중 흘수 10.5m 이상)
+export const NIGHT_PILOT_DEFAULT = { grt_always: 75000, grt_min: 30000, draft_min: 10.5, grt_pob_2h: 50000, pob_before_sunset_small_h: 1.5, pob_before_sunset_large_h: 2.0, night_start: '02:00', release: '08:00' }
+const WORK_AFTER_ETB = 60, WORK_BEFORE_ETU = 120
+
+/**
+ * @param req    엔진 요청 (vessels · production_plan · tank_settings)
+ * @param t0,t1  보여 줄 구간 (분)
+ * @param work   {선박 ID: {ws, wf}} 확정 계획의 작업 시각 (없으면 모두 실제 기록)
+ * @returns [{name, count, cap, start(t0 재고), weeks, base: {start, step, lv[]}}]
+ */
+export function tankFlows(req, t0, t1, work = null) {
+  const plan = req.production_plan ?? []
+  if (!plan.length) return []
+  const weekOf = (d) => toMin(`${d}T00:00:00+09:00`)
+  const names = [...new Set(plan.map((w) => w.tank))]
+  const setting = Object.fromEntries((req.tank_settings ?? []).map((t) => [t.tank, t]))
+  const rows = Object.fromEntries(names.map((n) => [n, plan.filter((w) => w.tank === n).map((w) => ({ from: weekOf(w.week_start), rate: w.rate_t_per_h })).sort((a, b) => a.from - b.from)]))
+  const origin = Math.min(...names.map((n) => rows[n][0].from))
+  /** 생산계획 a ~ b 합 (톤). 마지막 주 값은 그 뒤로도 이어진다 */
+  const prod = (n, a, b) => {
+    const r = rows[n]
+    let sum = 0
+    for (let k = 0; k < r.length; k++) {
+      const s0 = Math.max(a, r[k].from), s1 = Math.min(b, k + 1 < r.length ? r[k + 1].from : Infinity)
+      if (s1 > s0) sum += r[k].rate * (s1 - s0) / 60
+    }
+    return sum
+  }
+  const flows = Object.fromEntries(names.map((n) => [n, []]))
+  for (const v of req.vessels) {
+    const id = vesselIdOf(v), q = v.qty ?? 0
+    const g = tankGroupOf(v.cargo_group, v.product_class)
+    if (!(q > 0) || !flows[g]) continue
+    let ws, wf
+    if (work?.[id]) ({ ws, wf } = work[id])
+    else if (v.berthed && v.unberthed) { ws = toMin(v.berthed) + WORK_AFTER_ETB; wf = Math.max(ws, toMin(v.unberthed) - WORK_BEFORE_ETU) }
+    else continue
+    flows[g].push({ ws, wf, d: (isIn(v.biz) ? 1 : -1) * q })
+  }
+  const step = 60
+  return names.map((n) => {
+    const st = setting[n] ?? {}
+    const count = st.tanks ?? null
+    const cap = count ? count * TANK_TON : null
+    const init = cap != null ? ((st.initial_pct ?? 50) / 100) * cap : 0
+    const ship = (t) => flows[n].reduce((sum, f) => sum + (t >= f.wf ? f.d : t <= f.ws ? 0 : f.d * (t - f.ws) / Math.max(1, f.wf - f.ws)), 0)
+    const level = (t) => init + prod(n, origin, t) + ship(t)
+    const lv = []
+    for (let t = t0; t <= t1; t += step) lv.push(level(t))
+    const cur = rows[n].filter((w) => w.from <= t0).at(-1)
+    const weeks = [cur, ...rows[n].filter((w) => w.from > t0 && w.from < t1)].filter(Boolean)
+    return { name: n, count, cap, start: lv[0], weeks, base: cap != null ? { start: t0, step, lv } : null }
+  })
 }
 
 /** 엔진 PlanResponse → 화면의 후보(sim) */
@@ -266,6 +313,9 @@ function placement(v) {
  * A 동점 규칙: B가 A와 체선료가 같고 탱크가 더 안전하면, A는 B의 계획을 쓴다(같은 돈이면 더 안전한 쪽). B에는 그 사실을 적는다.
  * request가 있으면 같이 둔다(리스크 모델에 그대로 보냄).
  */
+const samePlan = (a, b) => a.placements.length === b.placements.length
+  && a.placements.every((p) => b.placements.some((q) => q.vid === p.vid && q.bid === p.bid && q.etb === p.etb))
+
 export function rankSims(results) {
   const sims = results.map((r, i) => ({ ...toSim(r.response, r.preset, String.fromCharCode(65 + i)), req: r.request ?? null, resp: r.response }))
   const [a, b] = sims
@@ -274,6 +324,9 @@ export function rankSims(results) {
     merged.notes = [...merged.notes, `체선료가 같은 후보 B(${b.preset.label}) 계획이 탱크가 더 안전해 그 계획을 씀`]
     sims[0] = merged
     sims[1] = { ...b, notes: [...b.notes, '후보 A와 체선료 · 계획이 같음 (A가 이 계획을 씀)'], sameAsA: true }
+  } else if (a && b && samePlan(a, b)) {
+    // 11-26 B 조건으로 풀어도 A와 배치가 똑같으면 (예: 위험이 72시간 밖이라 바꿀 게 없음) 표에 「A와 같음」
+    sims[1] = { ...b, notes: [...b.notes, '이 조건에서는 후보 A와 같은 계획'], sameAsA: true }
   }
   return sims
 }

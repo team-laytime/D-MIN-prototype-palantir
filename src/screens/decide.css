@@ -243,3 +243,15 @@
   .risk-layout { grid-template-columns: minmax(0, 1fr); }
   .risk-sidebar { position: static; max-height: none; overflow: visible; }
 }
+
+/* 11-26 후보 비교 위쪽: 후보 비교 표 | 조건 변경 요청. 요청 패널은 표 높이에 맞추고 넘치면 안에서 스크롤 */
+.cmp-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.cmp-top.with-req { grid-template-columns: minmax(0, 1fr) minmax(300px, 30%); }
+.cmp-top-side { position: relative; min-height: 240px; }
+.cmp-top-side > .panel { position: absolute; inset: 0; }
+.cmp-top-side > .panel > .panel-body { flex: 1; min-height: 0; overflow-y: auto; }
+@media (max-width: 1180px) {
+  .cmp-top.with-req { grid-template-columns: minmax(0, 1fr); }
+  .cmp-top-side { position: static; min-height: 0; }
+  .cmp-top-side > .panel { position: static; max-height: 360px; }
+}

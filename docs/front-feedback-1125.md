@@ -19,12 +19,14 @@
 
 ```bash
 # 1) 묶음 사본에 탱크 후보정 (원본 묶음은 그대로). 데이터 팀 11-26 묶음 기준
-cp -R ../optimizer_data_2025_1126/optimizer_2025-01-01 ../optimizer_data_2025_1126/optimizer_2025-01-01_tank
-../D-MIN-optimization/.venv/bin/python ../D-MIN-optimization/scripts/make_tank_plan.py --bundle ../optimizer_data_2025_1126/optimizer_2025-01-01_tank
+cp -R ../optimizer_data_2025/optimizer_2025-01-01 ../optimizer_data_2025/optimizer_2025-01-01_tank
+#    11-26 생산계획 목표 범위를 25~75%(스크립트 기본) 대신 20~80%로 (사용자 결정 — 실적 일정 재고가 마지노선 가까이까지 가는 날이 생기게)
+#    스크립트는 고치지 않고 TARGET만 바꿔 실행한다 (엔진 저장소에서)
+cd ../D-MIN-optimization && .venv/bin/python -c "import importlib.util,sys; s=importlib.util.spec_from_file_location('m','scripts/make_tank_plan.py'); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); m.TARGET=(0.2,0.8); sys.argv=['x','--bundle','../optimizer_data_2025/optimizer_2025-01-01_tank']; m.main()" && cd -
 
 # 2) 1년치 데이터셋 하나 (몇 초). 기준 시각은 화면에서 고른다
 ../D-MIN-optimization/.venv/bin/python tools/real-data/build_dataset.py \
-  --engine ../D-MIN-optimization --bundle ../optimizer_data_2025_1126/optimizer_2025-01-01_tank --id real-2025
+  --engine ../D-MIN-optimization --bundle ../optimizer_data_2025/optimizer_2025-01-01_tank --id real-2025
 
 # 3) 선박명 · 제원표 (D-MIN-dataset data/reference)
 ../D-MIN-optimization/.venv/bin/python tools/real-data/build_vessel_ref.py ../D-MIN-dataset
@@ -113,7 +115,7 @@ cp -R ../optimizer_data_2025_1126/optimizer_2025-01-01 ../optimizer_data_2025_11
 ## 4. 11-26 데이터 팀 새 묶음 · 엔진 · 계산 방식
 
 - **데이터 팀 11-26 묶음**(`optimizer_data_2025.zip`): 한 입항의 두 번째 이후 접안 ETA = 직전 이안(`eta_basis = DERIVED_PREV_UNBERTH`, 1년 471건), 급유선 제외(1년 199척). 1년 5,762척.
-- **탱크 후보정 다시**: 새 묶음 사본 `optimizer_data_2025_1126/optimizer_2025-01-01_tank`에 `make_tank_plan.py`. 물량 줄인 배 32척(전과 같음).
+- **탱크 후보정 다시**: 새 묶음 사본 `optimizer_data_2025/optimizer_2025-01-01_tank`에 `make_tank_plan.py`. 물량 줄인 배 32척(전과 같음).
 - **엔진(D-MIN-optimization)**:
   - 같은 배는 한 번에 한 선석: 같은 호출부호 · 연도 · 항차의 접안이 둘 다 계획 대상이면 순번대로, 다음 접안은 앞 접안 ETU(+ `shifting.same_vessel_gap_h`, 기본 0) 뒤에만. 앞 접안 때문에 기다리는 것은 불필요한 대기가 아니다.
   - 선석 이동(`multi_berth = SAME_JOB_SHIFT`)은 허용 정박시간을 이어 센다: 다음 접안이 NOR가 같아 정박개시부터 마지막 호스 분리까지를 세므로, 앞 접안 체선료는 0(두 번 세지 않음). 앞 접안이 NOR + 6h 전에 접안한 경우는 근사.
@@ -129,3 +131,22 @@ cp -R ../optimizer_data_2025_1126/optimizer_2025-01-01 ../optimizer_data_2025_11
 - 확인: 네 날짜 모두 이렇게 만든 요청이 날짜별 파일의 요청과 같다(선박 5,762척 필드 · 하역 속도 · 기준정보 · 생산계획 전부, 기상은 옛 파일 구간 289시간이 같고 1년치가 더 들어감).
 - 날짜끼리 영향 없음: 확정 · 메모 · 변경 이력 · 조건 변경 결정은 「파일@기준 시각」으로 따로 남는다. 날짜마다 그 날 기존 계획과 후보를 비교한다.
 - 연초 며칠은 탱크 재고를 1/1부터 이어 셀 실적이 짧아 시연에는 피한다.
+
+### 데이터 다시 만들기 (11-26 저녁)
+
+- 기존 묶음 · 산출물을 지우고 `optimizer_data_2025 (1).zip`(11-26 판과 같은 파일)으로 `berth/optimizer_data_2025/`를 새로 만듦.
+- 탱크 후보정 생산계획 목표 범위 **20~80%** (스크립트 기본 `TARGET = (0.25, 0.75)` 대신). 물량 줄인 배 27척(25~75%일 때 32척).
+  스크립트 요약에 「목표 밖 n일」(양방향 10일 등)이 나오지만, 그것은 상한 검사 = 반입 작업시작에 전량처럼 가장 불리하게 잡은 판정이다.
+  화면 · 엔진의 재고 흐름(작업시작~완료에 고르게)으로는 1년 내내 20~80% 안.
+- 실제 기록 기준 72시간 안에 마지노선에 가장 가까운 날: 06-13 09:00 특수 반출 79.7%(0.3%p), 07-31 09:00 화학 반출 20.6%(0.6%p),
+  04-26 09:00 화학 반출 78.8%, 10-12 09:00 양방향 21.4%. 시연 바로가기 03-03 · 03-10 · 10-15 · 11-09는 각각 최소 3.3 · 6.1 · 2.0 · 9.4%p.
+- 시연 바로가기 3개(`build_dataset.py --shortcuts` 기본값): **03-03 09:00** 2025년 최대 풍속 17.4 m/s(72시간 중 26시간 14 m/s 이상) ·
+  **06-13 09:00** 탱크 마지노선 최근접(특수 반출 +49h 79.7%) · **11-09 09:00** 원래 쓰던 날(처음 여는 시각). 셋 다 선석 겹침 구간 없음.
+
+### 탱크 판정은 72시간 안만 (11-26)
+
+- 후보 B 고르기(`presets.js` `tankGrade` · `tankMargin`), 리스크 모델 TANK(`criteria.tank_horizon_h` 72), 엔진 안전 범위 제약(`params.tank.judge_h` 72)이
+  모두 기준 시각부터 72시간까지만 본다. 풍속 판정 · 계획 조건 재고 흐름 · 운영 현황과 같은 구간.
+- 이유: 그 뒤 재고는 이번 계획에 없는 배가 정해 어떤 후보로도 바꿀 수 없다. 03-03에서 03/09의 80% 근접을 쫓아 B가 안전재고 강화로 뽑혔다가
+  풀지 못하고 A와 같은 계획이 되던 문제. 이제 03-03은 B = 보수적 풍속 기준, 06-13은 B = 안전재고 강화(A의 특수 반출 77.1% 근접 해소, +$3,880).
+- B의 배치가 A와 똑같으면 후보 비교 표에 「A와 같음」.

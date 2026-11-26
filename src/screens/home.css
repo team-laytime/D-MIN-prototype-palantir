@@ -661,3 +661,9 @@ body:has(.home-console) { min-width: 0; }
 .home-map-tip .tip-rows .tip-pct { color: var(--green); }
 .home-map-tip .tip-big b { color: var(--amber); }
 .home-map-tip .tip-big span { color: var(--fg-2); }
+
+/* 11-26 재생 막대: 밤은 막대 전체 바탕, 강풍 · 사용 불가는 아래쪽 띠로(밤 표시를 가리지 않게), 글자는 밤에만 */
+.home-time-band.weather, .home-time-band.block { top: auto; bottom: 0; height: 5px; border-radius: 0; }
+.home-time-band.weather em, .home-time-band.block em { display: none; }
+/* 지도 왼쪽 위 상황 표시(강풍 관측 등)는 지도 위 표시들보다 위에 */
+.home-top .home-map-context { z-index: 1000; }
