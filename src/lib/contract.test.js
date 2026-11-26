@@ -26,7 +26,7 @@ test('규칙 추출만 있는 거래는 검토 필수가 없고, 비어 있는 �
   assert.equal(row(rows, 'incoterm').src.doc_id, 'SYN-SC-301')
 })
 
-test('검토 필수 세 경우: OCR · LLM · 문서끼리 다름', () => {
+test('검토 필수: OCR · LLM · 문서 간 불일치', () => {
   const ocr = dealRows([load('SYN-CP-304'), load('SYN-SC-302')], dealOf('SYN-CP-304'))
   assert.equal(row(ocr, 'laytime_total_h').reason, 'ocr')
   const llm = dealRows([load('SYN-CP-303'), load('SYN-SC-303')], dealOf('SYN-CP-303'))
@@ -35,6 +35,24 @@ test('검토 필수 세 경우: OCR · LLM · 문서끼리 다름', () => {
   assert.equal(row(llm, 'load_laydays_from').reason, 'diff')
   assert.equal(row(llm, 'load_laydays_from').src.doc_id, 'SYN-CP-303')
   assert.equal(row(llm, 'load_laydays_from').sources.length, 2)
+})
+
+test('일 체선료: 매매 확인서가 CP 요율 준용이면 C/P 값이 기준', () => {
+  // SYN VEGA: 스캔 C/P에서 못 읽음 → 매매 확인서 값을 임시로 쓰고 검토 필수
+  const vega = row(dealRows([load('SYN-CP-304'), load('SYN-SC-302')], dealOf('SYN-CP-304')), 'demurrage_rate_per_day')
+  assert.equal(vega.reason, 'rate')
+  assert.equal(vega.value, 46300)
+  assert.deepEqual(vega.sources.map((x) => x.doc_id), ['SYN-CP-304', 'SYN-SC-302'])
+  // 두 문서 값이 다르면 문서 간 불일치, 적용값은 C/P
+  const sc = load('SYN-SC-302')
+  sc.sales.demurrage_rate_per_day.value = 47000
+  const diff = row(dealRows([load('SYN-CP-302'), sc], null), 'demurrage_rate_per_day')
+  assert.equal(diff.reason, 'diff')
+  assert.equal(diff.value, 46300)
+  assert.equal(diff.src.doc_id, 'SYN-CP-302')
+  // 별도 요율은 다른 계약이라 쓰지 않는다
+  sc.sales.rate_basis.value = '별도'
+  assert.equal(row(dealRows([load('SYN-CP-304'), sc], null), 'demurrage_rate_per_day').status, 'empty')
 })
 
 test('cp_gaps: C/P가 비어 매매 확인서 값을 적용값으로, C/P 쪽 원문은 deals의 cp_text', () => {

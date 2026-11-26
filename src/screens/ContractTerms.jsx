@@ -58,7 +58,7 @@ function Detail({ row, rv, cur, onConfirm, onSave }) {
           <div className="ct-src-head">
             <span className="num">{srcText(s)}</span>
             {s.clause && <span className="chip">양식 조항 요약</span>}
-            {row.reason === 'diff' && <span>이 문서 값 <b className="num">{fmtValue(row, s.value, cur)}</b></span>}
+            {(row.reason === 'diff' || row.reason === 'rate') && <span>이 문서 값 <b className="num">{fmtValue(row, s.value, cur)}</b></span>}
             {s.ev?.ocr && <span className="chip amber">스캔 문자 인식</span>}
           </div>
           <Quote text={s.quote} value={s.clause ? null : s.value ?? row.value} />
@@ -110,7 +110,7 @@ export default function ContractTerms() {
   const visible = view.rows.filter((r) => showEmpty || r.status !== 'empty' || r.edit)
 
   return (
-    <Screen tab="terms" title="추출값 검토" desc="검토 필수는 스캔 문자 인식, LLM 판정, 문서끼리 다른 값뿐입니다. 나머지는 원문만 볼 수 있습니다.">
+    <Screen tab="terms" title="추출값 검토" desc="검토 필수는 스캔 문자 인식, LLM 판정, 문서 간 불일치뿐입니다. 나머지는 원문만 볼 수 있습니다.">
       <div className="ct-grid">
         <Panel code="VESSELS" title="선박" desc={`${views.length}척`}>
           <ul className="ct-vessels">
