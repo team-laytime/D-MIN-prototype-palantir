@@ -172,12 +172,11 @@ export function buildScen(ds, first = ds.results?.[0]?.response ?? null) {
     rates: v.rate_t_per_h ?? {}, compat: Object.keys(v.rate_t_per_h ?? {}),
     actual: v.actual_berth ? { bid: v.actual_berth, etb: toMin(v.berthed), etu: toMin(v.unberthed) } : null,
   })).sort((a, b) => a.eta - b.eta)
-  // 같은 배가 기간 안에 여러 번 들어오면 이름이 겹친다. 겹칠 때만 항차를, 그래도 겹치면 접안 순번을 붙인다.
-  const count = (key) => { const d = {}; for (const v of vessels) d[key(v)] = (d[key(v)] ?? 0) + 1; return d }
-  const d1 = count((v) => v.name)
-  for (const v of vessels) if (d1[v.name] > 1) v.name = `${v.name} ${Number(v.voyage)}항차`
-  const d2 = count((v) => v.name)
-  for (const v of vessels) if (d2[v.name] > 1) v.name = `${v.name} (${Number(v.id.split('-').at(-1))}번째 접안)`
+  // 11-26 화면에는 이름만(사용자 결정). 항차 · 접안 순번은 fullName으로 — 마우스를 올렸을 때와 선박 카드에서만 쓴다.
+  for (const v of vessels) {
+    const seq = Number(v.id.split('-').at(-1))
+    v.fullName = `${v.name} ${Number(v.voyage)}항차${seq > 1 ? ` (${seq}번째 접안)` : ''}`
+  }
   const t0 = T
   const wind = (req.weather ?? []).map((w) => ({ t: toMin(w.time), ms: w.wind_ms, thunder: w.thunder, typhoon: w.typhoon })).filter((w) => w.t >= t0 - 24 * 60)
   // 기존 계획: 계획 대상 배의 실제 접안 기록 (엔진 응답 baseline과 같은 모양)

@@ -375,7 +375,7 @@ function HomeMap() {
         name: v.name, phase: pose.moving === 'out' ? 'left' : pose.moving ? 'coming' : state.phase, cog: Math.round(pose.cog), selected: isSelected, ticking: false,
         extra: isSelected && state.phase === 'waiting' ? `→ ${bById[state.p.bid]?.label ?? state.p.bid} ${fmt(state.p.etb).split(' ')[1]} 접안` : state.phase === 'berthed' && isSelected ? `작업 중, ${fmt(state.p.etu).split(' ')[1]} 이안` : '',
       }), `${v.name} 선박 카드`, tipHtml({
-        title: v.name, sub: [v.nameEn, v.cls].filter(Boolean).join(', '),
+        title: v.fullName ?? v.name, sub: [v.nameEn, v.cls].filter(Boolean).join(', '),
         chip: state.phase === 'waiting' ? '정박지 대기' : state.phase === 'berthed' ? '작업 중' : '이동 중', tone: state.phase === 'waiting' ? 'warn' : state.phase === 'berthed' ? 'ok' : 'idle',
         big: state.phase === 'berthed' ? { value: fmtDur(Math.max(0, state.p.etu - t)), label: '뒤 이안' } : { value: fmtDur(Math.max(0, state.p.etb - t)), label: `뒤 ${bById[state.p.bid]?.label ?? state.p.bid} 접안` },
         rows: [
@@ -478,7 +478,7 @@ function HomeMap() {
               {coming.length === 0 && <div className="home-arr-empty">이 시각 뒤로 들어올 배가 없습니다</div>}
               {coming.map(({ v, p }) => <button type="button" key={v.id} className={`home-arr ${selected === v.id ? 'on' : ''}`} onClick={() => openCard(v.id)}>
                 <span className="home-arr-time num"><b>{fmt(v.eta).split(' ')[1]}</b> <small>{fmt(v.eta).split(' ')[0]}</small></span>
-                <strong className="home-arr-name" title={v.name}>{v.name}</strong>
+                <strong className="home-arr-name" title={v.fullName ?? v.name}>{v.name}</strong>
                 <span className="home-arr-cargo" title={`${v.product} ${v.dir}${v.ton ? `, ${v.ton.toLocaleString()}t` : ''}`}>{v.product} {v.dir}{v.ton ? <span className="num">, {v.ton.toLocaleString()}t</span> : null}</span>
                 <span className="home-arr-berth">→ {bById[p.bid]?.label ?? p.bid}</span>
                 <span className="home-arr-left num">{fmtDur(v.eta - t)} 후</span>
@@ -490,7 +490,7 @@ function HomeMap() {
             <div className="home-time-controls">
               <Button variant="minimal" size="small" icon="step-backward" aria-label="지금으로" title="지금으로" onClick={() => { setPlaying(false); setT(START) }} />
               <Button variant="minimal" size="small" icon="chevron-left" aria-label="1시간 전" title="1시간 전" disabled={t <= START} onClick={() => step(-60)} />
-              <Button intent="primary" size="small" icon={playing ? 'pause' : 'play'} aria-label={playing ? '멈춤' : '재생'} title={playing ? '멈춤' : '재생'} onClick={() => { if (!playing && t >= end) setT(START); setPlaying(!playing) }} />
+              <Button variant="minimal" size="small" icon={playing ? 'pause' : 'play'} aria-label={playing ? '멈춤' : '재생'} title={playing ? '멈춤' : '재생'} onClick={() => { if (!playing && t >= end) setT(START); setPlaying(!playing) }} />
               <Button variant="minimal" size="small" icon="chevron-right" aria-label="1시간 후" title="1시간 후" disabled={t >= end} onClick={() => step(60)} />
             </div>
             <div className="home-clock"><time className="num">{t === NOW ? '지금' : `+${Math.round((t - NOW) / 60)}h`}</time><span><span className="num">{fmt(t)}</span> ({weekdayOf(t)})</span></div>
@@ -501,18 +501,18 @@ function HomeMap() {
             </div>
           </div>
           {/* 11-25 지도 아래: 부두별 접안 일정. 그래프(G) = 선석마다 누가 언제 붙고 그 전에 얼마나 기다렸는지, 표(T) = 같은 내용을 접안 순으로 */}
-          <section className="home-gantt" aria-label="부두별 접안 일정">
+          <section className="home-gantt" aria-label="접안 일정">
             <header className="home-gantt-head">
               <div className="home-gantt-tabs" role="tablist" aria-label="일정 보기">
-                <button type="button" role="tab" aria-selected={gTab === 'all'} className={gTab === 'all' ? 'on' : ''} onClick={() => setGTab('all')}>부두별 접안 일정</button>
+                <button type="button" role="tab" aria-selected={gTab === 'all'} className={gTab === 'all' ? 'on' : ''} onClick={() => setGTab('all')}>접안 일정</button>
                 <button type="button" role="tab" aria-selected={gTab === 'pier'} className={gTab === 'pier' ? 'on' : ''} onClick={() => setGTab('pier')}>부두별 작업 현황</button>
               </div>
               <span className="home-gantt-stat busy"><b className="num">{busyNow}</b>척 작업 중</span>
               <span className="home-gantt-stat"><b className="num">{waitNow}</b>척 정박지 대기</span>
               {isScheduler && <span className="home-gantt-stat dem"><b className="num">{demCount}</b>척 체선</span>}
               <div className="home-gantt-switch" role="tablist" aria-label="보기">
-                <button type="button" role="tab" aria-selected={gView === 'graph'} className={gView === 'graph' ? 'on' : ''} onClick={() => setGView('graph')} title="그래프 (G)"><Icon icon="timeline-bar-chart" size={13} />그래프 <kbd>G</kbd></button>
-                <button type="button" role="tab" aria-selected={gView === 'table'} className={gView === 'table' ? 'on' : ''} onClick={() => setGView('table')} title="표 (T)"><Icon icon="th" size={13} />표 <kbd>T</kbd></button>
+                <button type="button" role="tab" aria-selected={gView === 'graph'} className={gView === 'graph' ? 'on' : ''} onClick={() => setGView('graph')}><Icon icon="timeline-bar-chart" size={13} />그래프</button>
+                <button type="button" role="tab" aria-selected={gView === 'table'} className={gView === 'table' ? 'on' : ''} onClick={() => setGView('table')}><Icon icon="th" size={13} />표</button>
               </div>
             </header>
             {gTab === 'pier' && <div className="home-gantt-piers" role="tablist" aria-label="부두 고르기">

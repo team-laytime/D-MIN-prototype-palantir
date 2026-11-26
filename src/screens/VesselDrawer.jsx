@@ -116,7 +116,7 @@ export default function VesselDrawer() {
         <header className="vessel-drawer-head">
           <Icon icon="cargo-ship" size={15} className="muted" />
           <div>
-            <h2 id="vessel-drawer-title">{v.name}{view === 'evidence' && <span>계획 일정</span>}</h2>
+            <h2 id="vessel-drawer-title">{v.fullName ?? v.name}{view === 'evidence' && <span>계획 일정</span>}</h2>
             <span className="vessel-drawer-ident">{live && <St tone={PHASE[me.phase].tone}>{PHASE[me.phase].label}</St>}<span className="muted">{v.nameEn ?? v.callSign}</span></span>
           </div>
           <Button icon="cross" variant="minimal" aria-label="닫기" onClick={closeDrawer} />
