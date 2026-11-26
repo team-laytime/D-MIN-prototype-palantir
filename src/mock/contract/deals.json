@@ -28,17 +28,17 @@
    {
     "sc": "SYN-SC-303",
     "field": "load_laydays_from",
-    "cp_value": "2028-03-08 00:00",
-    "sc_value": "2028-03-09 00:00",
-    "resolved_value": "2028-03-08 00:00",
+    "cp_value": "2025-11-12 00:00",
+    "sc_value": "2025-11-13 00:00",
+    "resolved_value": "2025-11-12 00:00",
     "needs_review": true
    },
    {
     "sc": "SYN-SC-303",
     "field": "load_laydays_to",
-    "cp_value": "2028-03-10 16:00",
-    "sc_value": "2028-03-11 16:00",
-    "resolved_value": "2028-03-10 16:00",
+    "cp_value": "2025-11-14 16:00",
+    "sc_value": "2025-11-15 16:00",
+    "resolved_value": "2025-11-14 16:00",
     "needs_review": true
    }
   ],
@@ -57,9 +57,9 @@
      "SYN-RECAP-305"
     ],
     "field": "load_laydays_from",
-    "cp_value": "2028-06-19 00:00",
-    "other_value": "2028-06-18 00:00",
-    "resolved_value": "2028-06-19 00:00",
+    "cp_value": "2025-11-14 00:00",
+    "other_value": "2025-11-13 00:00",
+    "resolved_value": "2025-11-14 00:00",
     "needs_review": true
    },
    {
@@ -68,9 +68,9 @@
      "SYN-RECAP-305"
     ],
     "field": "load_laydays_to",
-    "cp_value": "2028-06-21 16:00",
-    "other_value": "2028-06-20 16:00",
-    "resolved_value": "2028-06-21 16:00",
+    "cp_value": "2025-11-16 16:00",
+    "other_value": "2025-11-15 16:00",
+    "resolved_value": "2025-11-16 16:00",
     "needs_review": true
    }
   ],

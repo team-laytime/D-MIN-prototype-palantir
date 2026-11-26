@@ -89,12 +89,12 @@
    "evidence": null
   },
   "load_laydays_from": {
-   "value": "2028-04-03T00:00:00",
+   "value": "2025-11-13T00:00:00",
    "evidence": {
     "doc_id": "SYN-CP-304",
     "page": 1,
     "section": "part1",
-    "quote": "Commencing: 2028-04-03",
+    "quote": "Commencing: 2025-11-13",
     "confidence": 0.63,
     "method": "rule",
     "ocr": true,
@@ -102,12 +102,12 @@
    }
   },
   "load_laydays_to": {
-   "value": "2028-04-05T16:00:00",
+   "value": "2025-11-15T16:00:00",
    "evidence": {
     "doc_id": "SYN-CP-304",
     "page": 1,
     "section": "part1",
-    "quote": "Cancelling: 2028-04-05",
+    "quote": "Cancelling: 2025-11-15",
     "confidence": 0.63,
     "method": "rule",
     "ocr": true,

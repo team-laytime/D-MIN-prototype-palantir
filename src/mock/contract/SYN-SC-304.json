@@ -50,12 +50,12 @@
    "evidence": null
   },
   "load_laydays_from": {
-   "value": "2028-06-19T00:00:00",
+   "value": "2025-11-14T00:00:00",
    "evidence": {
     "doc_id": "SYN-SC-304",
     "page": 1,
     "section": "sales",
-    "quote": "Laydays: 19 JUN 2028 to 21 JUN 2028",
+    "quote": "Laydays: 14 NOV 2025 to 16 NOV 2025",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
@@ -63,12 +63,12 @@
    }
   },
   "load_laydays_to": {
-   "value": "2028-06-21T16:00:00",
+   "value": "2025-11-16T16:00:00",
    "evidence": {
     "doc_id": "SYN-SC-304",
     "page": 1,
     "section": "sales",
-    "quote": "Laydays: 19 JUN 2028 to 21 JUN 2028",
+    "quote": "Laydays: 14 NOV 2025 to 16 NOV 2025",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,

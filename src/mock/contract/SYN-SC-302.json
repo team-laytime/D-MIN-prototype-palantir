@@ -50,12 +50,12 @@
    "evidence": null
   },
   "load_laydays_from": {
-   "value": "2028-04-03T00:00:00",
+   "value": "2025-11-13T00:00:00",
    "evidence": {
     "doc_id": "SYN-SC-302",
     "page": 1,
     "section": "sales",
-    "quote": "Loading Laycan: 2028-04-03 to 2028-04-05",
+    "quote": "Loading Laycan: 2025-11-13 to 2025-11-15",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
@@ -63,12 +63,12 @@
    }
   },
   "load_laydays_to": {
-   "value": "2028-04-05T16:00:00",
+   "value": "2025-11-15T16:00:00",
    "evidence": {
     "doc_id": "SYN-SC-302",
     "page": 1,
     "section": "sales",
-    "quote": "Loading Laycan: 2028-04-03 to 2028-04-05",
+    "quote": "Loading Laycan: 2025-11-13 to 2025-11-15",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,

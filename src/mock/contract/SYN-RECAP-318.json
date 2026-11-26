@@ -89,12 +89,12 @@
    "evidence": null
   },
   "load_laydays_from": {
-   "value": "2028-11-06T00:00:00",
+   "value": "2025-11-16T00:00:00",
    "evidence": {
     "doc_id": "SYN-RECAP-318",
     "page": 1,
     "section": "recap",
-    "quote": "LAYCAN : 06-08 NOV 2028",
+    "quote": "LAYCAN : 16-18 NOV 2025",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
@@ -102,12 +102,12 @@
    }
   },
   "load_laydays_to": {
-   "value": "2028-11-08T16:00:00",
+   "value": "2025-11-18T16:00:00",
    "evidence": {
     "doc_id": "SYN-RECAP-318",
     "page": 1,
     "section": "recap",
-    "quote": "LAYCAN : 06-08 NOV 2028",
+    "quote": "LAYCAN : 16-18 NOV 2025",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,

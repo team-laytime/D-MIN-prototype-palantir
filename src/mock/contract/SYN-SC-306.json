@@ -50,12 +50,12 @@
    "evidence": null
   },
   "load_laydays_from": {
-   "value": "2028-07-10T00:00:00",
+   "value": "2025-11-15T00:00:00",
    "evidence": {
     "doc_id": "SYN-SC-306",
     "page": 1,
     "section": "sales",
-    "quote": "Delivery period: 10 July 2028 to 12 July 2028",
+    "quote": "Delivery period: 15 November 2025 to 17 November 2025",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,
@@ -63,12 +63,12 @@
    }
   },
   "load_laydays_to": {
-   "value": "2028-07-12T16:00:00",
+   "value": "2025-11-17T16:00:00",
    "evidence": {
     "doc_id": "SYN-SC-306",
     "page": 1,
     "section": "sales",
-    "quote": "Delivery period: 10 July 2028 to 12 July 2028",
+    "quote": "Delivery period: 15 November 2025 to 17 November 2025",
     "confidence": 0.9,
     "method": "rule",
     "ocr": false,

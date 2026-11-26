@@ -1,7 +1,6 @@
-// 계약 문서 등록 · 추출값 검토 상태(시연용, 새로고침하면 처음으로). 두 화면이 같이 쓰므로 workspace.js처럼 작은 외부 저장소로 둔다.
+// 계약 문서 등록 · 추출값 검토 상태(시연용, 새로고침하면 처음으로). 날짜는 기준 시각 2025-11-09 09:00 기준: 등록은 직전 며칠, Laydays는 직후 며칠. 두 화면이 같이 쓰므로 workspace.js처럼 작은 외부 저장소로 둔다.
 // 파서 서버가 없어서 「올리기」는 흉내다: 몇 초 「추출 중」 뒤, 미리 만든 파서 결과(src/mock/contract, D-MIN-contract eval4_llm)를 종류별로 차례로 붙인다.
 import { useSyncExternalStore } from 'react'
-import { nowText } from '../lib/workspace.js'
 import { dealRows, detectKind, vesselOf } from '../lib/contract.js'
 import DEALS from '../mock/contract/deals.json'
 
@@ -9,25 +8,30 @@ const DOCS = Object.fromEntries(Object.values(import.meta.glob('../mock/contract
 export const FORM = { pdf: 'PDF', scan: '스캔 PDF', docx: 'DOCX', eml: '메일 (eml)', paste: '메일 붙여 넣기' }
 export const ERROR = { vessel: '선박을 못 찾음', kind: '종류 판정 실패', empty: '글자를 하나도 못 읽음', duplicate: '중복 등록', pool: '시연용 추출 결과 없음' }
 const EXTRACT_MS = 1800
+// 시연 시계: 상단 기준 시각(데이터셋 기본 2025-11-09 09:00)에서 화면을 연 뒤 흐른 만큼. 등록 · 검토 시각이 실제 오늘 날짜와 섞이지 않게 한다.
+// shortcut: 기준 시각을 다른 날로 골라도 따라가지 않는다. 계약 화면이 데이터셋 시각을 쓰게 되면 app 상태의 T를 받는다.
+const T0 = Date.parse('2025-11-09T09:00:00+09:00')
+const OPENED = Date.now()
+const clock = () => new Date(T0 + Date.now() - OPENED + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' ')
 
-// 처음부터 등록돼 있는 문서: [파서 doc_id | null, 형태, 파일 이름, 등록 시각, 오류]
+// 처음부터 등록돼 있는 문서: [파서 doc_id | null, 형태, 파일 이름, 등록 월-일 시각(기준 시각 직전 며칠), 오류]
 const BY = '계약 담당 C'
 const SEED = [
-  ['SYN-CP-301', 'pdf', 'SYN_ALTAIR_CP_signed.pdf', '08:41'],
-  ['SYN-SC-301', 'pdf', 'SYN_ALTAIR_매매확인서.pdf', '08:42'],
-  ['SYN-CP-304', 'scan', 'SYN_VEGA_CP_scan.pdf', '08:47'],
-  ['SYN-SC-302', 'docx', 'SYN_VEGA_매매확인서.docx', '08:48'],
-  ['SYN-CP-303', 'pdf', 'SYN_DENEB_CP_signed.pdf', '08:55'],
-  ['SYN-SC-303', 'pdf', 'SYN_DENEB_매매확인서.pdf', '08:56'],
-  ['SYN-CP-305', 'pdf', 'SYN_RIGEL_CP_signed.pdf', '09:03'],
-  ['SYN-RECAP-305', 'paste', 'Fixture recap - SYN RIGEL', '09:05'],
-  ['SYN-SC-304', 'eml', 'SYN_RIGEL_매매확인서.eml', '09:06'],
-  ['SYN-CP-307', 'pdf', 'SYN_ARCTURUS_CP_signed.pdf', '09:12'],
-  ['SYN-SC-306', 'pdf', 'SYN_ARCTURUS_매매확인서.pdf', '09:13'],
-  ['SYN-CP-315', 'scan', 'scan_0412.pdf', '09:20'], // 문자 인식으로 선박명을 못 읽음 → 선박을 못 찾음
-  [null, 'eml', 'Fwd_ 선적 일정 문의.eml', '09:24', 'kind'],
-  [null, 'scan', 'scan_0413.pdf', '09:25', 'empty'],
-  [null, 'pdf', 'SYN_ALTAIR_CP_signed.pdf', '09:31', 'duplicate'],
+  ['SYN-CP-301', 'pdf', 'SYN_ALTAIR_CP_signed.pdf', '11-05 08:41'],
+  ['SYN-SC-301', 'pdf', 'SYN_ALTAIR_매매확인서.pdf', '11-05 08:42'],
+  ['SYN-CP-304', 'scan', 'SYN_VEGA_CP_scan.pdf', '11-06 08:47'],
+  ['SYN-SC-302', 'docx', 'SYN_VEGA_매매확인서.docx', '11-06 08:48'],
+  ['SYN-CP-303', 'pdf', 'SYN_DENEB_CP_signed.pdf', '11-06 08:55'],
+  ['SYN-SC-303', 'pdf', 'SYN_DENEB_매매확인서.pdf', '11-06 08:56'],
+  ['SYN-CP-305', 'pdf', 'SYN_RIGEL_CP_signed.pdf', '11-07 09:03'],
+  ['SYN-RECAP-305', 'paste', 'Fixture recap - SYN RIGEL', '11-07 09:05'],
+  ['SYN-SC-304', 'eml', 'SYN_RIGEL_매매확인서.eml', '11-07 09:06'],
+  ['SYN-CP-307', 'pdf', 'SYN_ARCTURUS_CP_signed.pdf', '11-07 09:12'],
+  ['SYN-SC-306', 'pdf', 'SYN_ARCTURUS_매매확인서.pdf', '11-07 09:13'],
+  ['SYN-CP-315', 'scan', 'scan_0412.pdf', '11-08 09:20'], // 문자 인식으로 선박명을 못 읽음 → 선박을 못 찾음
+  [null, 'eml', 'Fwd_ 선적 일정 문의.eml', '11-08 09:24', 'kind'],
+  [null, 'scan', 'scan_0413.pdf', '11-08 09:25', 'empty'],
+  [null, 'pdf', 'SYN_ALTAIR_CP_signed.pdf', '11-08 09:31', 'duplicate'],
 ]
 // 올리면 붙는 파서 결과(종류별 차례). recap을 먼저 붙여 넣으면 SYN BELLATRIX가 「recap만 있음」이 되고, C/P를 올리면 풀린다.
 const POOL = { cp: ['SYN-CP-302', 'SYN-CP-312', 'SYN-CP-314'], recap: ['SYN-RECAP-318'], sales: ['SYN-SC-310', 'SYN-SC-312'] }
@@ -39,7 +43,7 @@ const reg = (docId, form, name, at, error = null, by = BY) => {
 }
 const fresh = () => {
   seq = 0
-  return { regs: SEED.map(([id, form, name, hm, err]) => reg(id, form, name, `2026-11-26 ${hm}`, err)), reviews: {}, pick: null }
+  return { regs: SEED.map(([id, form, name, md, err]) => reg(id, form, name, `2025-${md}`, err)), reviews: {}, pick: null }
 }
 
 let state = fresh()
@@ -58,7 +62,7 @@ const extDoc = (name) => {
 
 /** 등록 한 건. 중복·빈 문서는 바로 오류, 나머지는 「추출 중」 뒤에 종류 판정 → 파서 결과 붙이기. */
 function add({ form, name, empty, dupKey, probe }, by) {
-  const at = nowText()
+  const at = clock()
   const dup = state.regs.some((r) => r.status !== 'error' && (r.dupKey ?? r.name) === dupKey)
   const error = dup ? 'duplicate' : empty ? 'empty' : null
   const r = { ...reg(null, form, name, at, error, by), dupKey, status: error ? 'error' : 'extracting' }
@@ -89,7 +93,7 @@ export function registerText(text, by) {
 export function pickDeal(key) { set({ pick: key }) }
 /** 검토 기록. value가 없으면 「원문과 일치」, 있으면 직접 고친 값(이것도 검토 완료). */
 export function review(dealKey, field, by, value) {
-  set({ reviews: { ...state.reviews, [`${dealKey}:${field}`]: { by, at: nowText().slice(0, 16), ...(value !== undefined ? { value } : {}) } } })
+  set({ reviews: { ...state.reviews, [`${dealKey}:${field}`]: { by, at: clock().slice(0, 16), ...(value !== undefined ? { value } : {}) } } })
 }
 
 /** 거래(선박)별 화면 모델: 등록이 끝난 문서만으로 행을 만든다. 선박명을 못 읽은 문서는 빠진다. */
