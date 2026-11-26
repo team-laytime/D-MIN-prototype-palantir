@@ -1,6 +1,9 @@
-# 11-25 프론트 개편: 후보 비교 · 확정, 리스크, 조건 변경 요청
+# 프론트 가이드: 실행 · 데이터셋 · 후보 · 리스크 · 화면 동작
 
-브랜치 `feat/front-feedback-1123`. 후보 비교 · 확정 화면을 [D-MIN-optimization-front](https://github.com/team-laytime/D-MIN-optimization-front) 방식(배치 그림 · 후보 비교 표 · 리스크 모델)으로 바꾸고, 후보 구성 · 리스크 기준 · 받은 메일 반영 흐름을 새로 정했다.
+서버 띄우기와 데이터셋 만들기(§1), 후보 · 리스크 · 화면이 어떻게 동작하는지(§2), 남은 일(§3), 11-26 바뀐 것(§4)을 모은 문서.
+(11-25 브랜치 `feat/front-feedback-1123`에서 시작해 `feat/front-GOAT`에서 이어 씀. 옛 이름 `front-feedback-1125.md`)
+
+후보 비교 · 확정 화면을 [D-MIN-optimization-front](https://github.com/team-laytime/D-MIN-optimization-front) 방식(배치 그림 · 후보 비교 표 · 리스크 모델)으로 바꾸고, 후보 구성 · 리스크 기준 · 받은 메일 반영 흐름을 새로 정했다.
 
 ## 1. 실행
 
