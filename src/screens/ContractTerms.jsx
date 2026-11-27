@@ -6,7 +6,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } f
 import { Button, ButtonGroup, Callout, Checkbox, Drawer, HTMLSelect, Icon, NonIdealState } from '@blueprintjs/core'
 import { useApp } from '../state/app.jsx'
 import { dealViews, docFile, pageCount, pageImage, pickDeal, review, reviewMany, useContract } from '../state/useContract.js'
-import { GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, editKind, findInQuote, findQuoteInText, fmtValue, fromDraft, norm, toDraft } from '../lib/contract.js'
+import { GROUPS, KIND, REASON, SECTION, WEATHER, bodyOf, editKind, findInQuote, findQuoteInText, fmtValue, fromDraft, norm, ocrLow, toDraft } from '../lib/contract.js'
 import { Panel, Screen, St } from '../ui/kit.jsx'
 import './contract.css'
 
@@ -97,7 +97,7 @@ function Source({ s, row, cur, pick, onOpen }) {
         {s.clause && <span className="chip">양식 조항 요약</span>}
         {pick && <span>이 문서 값 <b><Val text={value} /></b></span>}
         {s.scan && <span className="chip amber">{s.ev?.ocr ? 'OCR 판독' : '스캔본'}</span>}
-        {s.ev?.ocr_conf != null && <span>인식 신뢰도 <span className="num">{Math.round(s.ev.ocr_conf * 100)}%</span></span>}
+        {ocrLow(s.ev) && <span className="c-amber">인식 낮음 · 원본 확인</span>}
         {file && <Button size="small" variant="minimal" icon="document-open" text="원본 보기" onClick={open} />}
       </div>
       {crop
@@ -222,7 +222,7 @@ function PopInfo({ k, doc, row, rv, cur, onGoto, onClose }) {
       <div className="ct-pop-head"><b>{row?.label ?? k}</b><Button size="small" variant="minimal" icon="cross" aria-label="설명 닫기" onClick={onClose} /></div>
       <div>이 문서 값 <b><Val text={v} /></b></div>
       <div className={row?.status === 'review' && !rv ? 'c-amber' : 'muted'}>{rowStatus(row, rv)}</div>
-      {c.evidence.ocr_conf != null && <div className="faint">인식 신뢰도 <span className="num">{Math.round(c.evidence.ocr_conf * 100)}%</span></div>}
+      {ocrLow(c.evidence) && <div className="c-amber">인식 낮음 · 원본 확인</div>}
       {row?.src?.doc_id && row.src.doc_id !== doc.doc_id && <div className="faint">적용값은 {KIND[row.src.kind]} <span className="num">{row.src.doc_id}</span> 값</div>}
       {row && <Button size="small" icon="th" text="추출값 표에서 보기" onClick={() => onGoto(row.key)} />}
     </>
