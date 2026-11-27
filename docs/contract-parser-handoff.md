@@ -61,8 +61,8 @@ evidence: { doc_id, page, section: "part1" | "rider" | "sales" | ..., quote, con
 `cross_checks`는 지금 화면이 쓰지 않는다.
 
 **근거 위치와 쪽 이미지**:
-- 화면은 evidence의 `boxes`(줄마다 `[x0, y0, x1, y1]`, 쪽 대비 비율, 왼쪽 위 0)로 근거 줄을 쪽 이미지에서 잘라 확대하고 박스를 친다(`Crop`). 원본 보기에서는 그 쪽의 근거를 모두 표시한다. `ocr_conf`는 「인식 신뢰도」로 보인다.
-- 목업 PDF 16건(스캔 2 · 글자층 14)은 파서 브랜치 `scan-review-info`(153e2f9)를 규칙만 돌린 출력(`data/out/front/rules`)이다. `layout` · `evidence.unread` · `boxes` · `ocr_conf`(값 낱말 기준)가 들어 있다. 그 출력에서 빈 LLM 칸 2개(SYN-CP-303 nor_notice_h, SYN-CP-314 laytime_prorate)만 eval4_llm 것을 남겼고, recap 2건과 recap 대조 기록은 eval4_llm 그대로다. LLM 최종본이 오면 바꾼다.
+- 화면은 evidence의 `boxes`(줄마다 `[x0, y0, x1, y1]`, 쪽 대비 비율, 왼쪽 위 0)로 근거 줄을 쪽 이미지에서 잘라 확대하고 박스를 친다(`Crop`). 원본 보기에서는 그 쪽의 근거를 모두 표시한다. `ocr_conf`는 백분율로 보이지 않는다. 확률이 아니라 검토 신호라서 0.5 미만일 때만 「인식 낮음 · 원본 확인」으로 보인다(`ocrLow`).
+- 목업 PDF 16건(스캔 2 · 글자층 14)은 파서 브랜치 `scan-review-info`(153e2f9)의 LLM 최종본(`data/out/front/llm`, qwen3:8b · tesseract)이다. `layout` · `evidence.unread` · `boxes` · `ocr_conf`(값 낱말 기준)가 들어 있다. recap 2건과 recap 대조 기록은 eval4_llm 그대로다. `deals.json`의 `cross_checks`는 목업에 옮기지 않았다(화면이 쓰지 않음).
 - 글자층 PDF도 쪽 이미지(1비트 PNG)에 박스를 얹는다. 파서 자체 검사로 박스 213개 중 다른 줄에 붙은 것은 0개다.
 - recap(텍스트 · 메일)은 원본 본문에서 근거 문장을 찾아 굵게 · 밑줄로 표시한다(`findQuoteInText`). 목업 값은 날짜를 옮겨 원본과 숫자가 달라, 숫자 · 달 이름은 느슨하게 맞춘다.
 - 박스가 없는 근거(문자 인식이 값을 못 읽음, 특약에 조항이 없는지 확인하는 기본값)는 쪽 전체 썸네일과 원본 보기로 확인한다.

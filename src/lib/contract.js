@@ -9,6 +9,8 @@
 export const KIND = { cp: 'C/P', recap: 'Recap', sales: '매매 확인서' }
 // recap · sales 구역은 문서 종류와 같아 출처에 다시 쓰지 않는다
 export const SECTION = { part1: 'Part I', rider: 'Rider' }
+// 파서 ocr_conf: 값 낱말 가운데 가장 낮은 tesseract 신뢰도. 확률이 아니라 0.5 미만이면 원본 확인이라는 신호(바르게 읽은 낱말도 0 근처가 흔함)
+export const ocrLow = (ev) => ev?.ocr_conf != null && ev.ocr_conf < 0.5
 export const REASON = { ocr: 'OCR 판독', scan: '스캔본 특약 미확인', llm: 'AI 판독', diff: '문서 간 불일치', rate: 'C/P 요율 미확인', missing: '계산 값 없음', unread: 'OCR 못 읽음' }
 // 계산에 쓰는 4개(값을 고칠 수 있는 칸)를 맨 위에 따로 둔다
 export const GROUPS = ['계산에 쓰는 값', '정박시간 · 레이데이즈', '선박·화물', '계약 당사자·양식', '그 외 특약']
