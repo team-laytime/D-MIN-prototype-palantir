@@ -130,7 +130,7 @@
       0.4902
      ]
     ],
-    "ocr_conf": 0.0,
+    "ocr_conf": null,
     "unread": true
    },
    "checks": []
@@ -175,6 +175,12 @@
      [
       0.086,
       0.7578,
+      0.3207,
+      0.7815
+     ],
+     [
+      0.4878,
+      0.7748,
       0.7549,
       0.7964
      ]
@@ -196,15 +202,15 @@
     "doc_id": "SYN-CP-315",
     "page": 1,
     "section": "part1",
-    "quote": "60 Demerrage per day: 21 390 USD POFR",
+    "quote": "Demerrage per day: 21 390 USD POFR",
     "confidence": 0.504,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
     "boxes": [
      [
-      0.3038,
-      0.7661,
+      0.4878,
+      0.7748,
       0.7549,
       0.7964
      ]
@@ -266,17 +272,17 @@
     "doc_id": "SYN-CP-315",
     "page": 3,
     "section": "rider",
-    "quote": "Clause 9 - Vessel Repositionmg: Laytine and demurrage are suspended while the Vessel shifts between berths, and resume when the 1s all fast at the new berth.",
+    "quote": "Laytine and demurrage are suspended while the Vessel shifts between berths, and resume when the 1s all fast at the new berth.",
     "confidence": 0.56,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
     "boxes": [
      [
-      0.0927,
+      0.3334,
       0.6094,
       0.9207,
-      0.6548
+      0.6445
      ],
      [
       0.0949,
@@ -296,54 +302,12 @@
     "doc_id": "SYN-CP-315",
     "page": 5,
     "section": "rider",
-    "quote": "Clause 24 - Vetting Questionnaire: By the fixture date the Owner shall deliver the Veasel's latest OCIMP harmonixed queshonnaire and a lest af the vetting inspections Camicd out in the Last six (6) months, with the observations raised and closed. Any later change of manager, fag or classification saceety shall be advised to the Charterer before the Vessel arrives at the loading port. the crew shall wear personal gas detectors and the respiratory protection recommended by the safety data sheet. and the Master shail restnict access to the deck while tanks are open. The shipper shall supply the safety data shect to the Vessel before haading begins. Claume 26 - Quewe at Termnal: Owners agree that hours on demurrage attributable to congestion of the port are to be mvoiced at half the Part demurrage rate; all other demurrage remains payable im full.",
+    "quote": "Claume 26 - Quewe at Termnal: Owners agree that hours on demurrage attributable to congestion of the port are to be mvoiced at half the Part demurrage rate",
     "confidence": 0.56,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
     "boxes": [
-     [
-      0.1101,
-      0.0521,
-      0.8897,
-      0.0898
-     ],
-     [
-      0.1079,
-      0.0692,
-      0.9063,
-      0.1084
-     ],
-     [
-      0.1068,
-      0.0879,
-      0.9173,
-      0.1275
-     ],
-     [
-      0.1053,
-      0.1063,
-      0.537,
-      0.1349
-     ],
-     [
-      0.1031,
-      0.1516,
-      0.9317,
-      0.1917
-     ],
-     [
-      0.1021,
-      0.1697,
-      0.907,
-      0.2094
-     ],
-     [
-      0.101,
-      0.1881,
-      0.4115,
-      0.2131
-     ],
      [
       0.099,
       0.2147,
@@ -353,8 +317,8 @@
      [
       0.0984,
       0.2327,
-      0.7783,
-      0.2689
+      0.4502,
+      0.2593
      ]
     ],
     "ocr_conf": 0.893,
@@ -388,15 +352,15 @@
     "doc_id": "SYN-CP-315",
     "page": 1,
     "section": "part1",
-    "quote": "60 Demerrage per day: 21 390 USD POFR",
+    "quote": "Demerrage per day: 21 390 USD POFR",
     "confidence": 0.504,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
     "boxes": [
      [
-      0.3038,
-      0.7661,
+      0.4878,
+      0.7748,
       0.7549,
       0.7964
      ]
@@ -487,8 +451,8 @@
   }
  },
  "run": {
-  "llm": null,
-  "llm_digest": null,
+  "llm": "qwen3:8b",
+  "llm_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
   "vision": null,
   "vision_digest": null,
   "ocr_engine": "tesseract",

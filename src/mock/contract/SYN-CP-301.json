@@ -15,9 +15,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.0942,
+      0.3279,
       0.0836,
-      0.2698,
+      0.5328,
       0.0977
      ]
     ],
@@ -39,15 +39,15 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.649,
+      0.5743,
       0.1244,
-      0.9766,
+      0.8813,
       0.1392
      ],
      [
       0.0863,
       0.1398,
-      0.985,
+      0.8724,
       0.1546
      ]
     ],
@@ -69,9 +69,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1182,
+      0.1053,
       0.231,
-      0.2459,
+      0.229,
       0.2451
      ]
     ],
@@ -99,9 +99,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1262,
+      0.1133,
       0.3022,
-      0.4294,
+      0.3904,
       0.3163
      ]
     ],
@@ -129,15 +129,15 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.649,
+      0.5743,
       0.1244,
-      0.9766,
+      0.8813,
       0.1392
      ],
      [
       0.0863,
       0.1398,
-      0.985,
+      0.8724,
       0.1546
      ]
     ],
@@ -159,15 +159,15 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.649,
+      0.5743,
       0.1244,
-      0.9766,
+      0.8813,
       0.1392
      ],
      [
       0.0863,
       0.1398,
-      0.985,
+      0.8724,
       0.1546
      ]
     ],
@@ -199,9 +199,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1182,
+      0.1053,
       0.4828,
-      0.3416,
+      0.3185,
       0.4969
      ]
     ],
@@ -229,9 +229,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1262,
+      0.1098,
       0.497,
-      0.3496,
+      0.3052,
       0.5111
      ]
     ],
@@ -261,13 +261,13 @@
      [
       0.0863,
       0.5636,
-      0.5331,
+      0.4899,
       0.5777
      ],
      [
       0.0863,
       0.5778,
-      0.182,
+      0.1634,
       0.5919
      ]
     ],
@@ -291,13 +291,13 @@
      [
       0.5101,
       0.5636,
-      0.941,
+      0.8811,
       0.5777
      ],
      [
       0.5101,
       0.5778,
-      0.55,
+      0.5491,
       0.5919
      ]
     ],
@@ -321,7 +321,7 @@
      [
       0.0863,
       0.6301,
-      0.3017,
+      0.2614,
       0.6442
      ]
     ],
@@ -345,7 +345,7 @@
      [
       0.0863,
       0.6158,
-      0.2778,
+      0.2556,
       0.6299
      ]
     ],
@@ -378,9 +378,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1182,
+      0.1053,
       0.7726,
-      0.5012,
+      0.4272,
       0.7867
      ]
     ],
@@ -415,7 +415,7 @@
      [
       0.5101,
       0.7726,
-      0.8771,
+      0.8376,
       0.7867
      ]
     ],
@@ -436,22 +436,22 @@
     "doc_id": "SYN-CP-301",
     "page": 3,
     "section": "rider",
-    "quote": "Clause 4 - Laytime Allocation: Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance; hours saved at one port shall not be credited to the other.",
+    "quote": "Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance",
     "confidence": 0.8,
     "method": "rule",
     "ocr": false,
     "reviewed_by": null,
     "boxes": [
      [
-      0.0863,
+      0.3198,
       0.3415,
-      1.0,
+      0.9008,
       0.3579
      ],
      [
       0.0863,
       0.3599,
-      1.0,
+      0.4886,
       0.3763
      ]
     ],
@@ -466,22 +466,22 @@
     "doc_id": "SYN-CP-301",
     "page": 3,
     "section": "rider",
-    "quote": "Clause 4 - Laytime Allocation: Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance; hours saved at one port shall not be credited to the other.",
+    "quote": "Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance",
     "confidence": 0.8,
     "method": "rule",
     "ocr": false,
     "reviewed_by": null,
     "boxes": [
      [
-      0.0863,
+      0.3198,
       0.3415,
-      1.0,
+      0.9008,
       0.3579
      ],
      [
       0.0863,
       0.3599,
-      1.0,
+      0.4886,
       0.3763
      ]
     ],
@@ -507,22 +507,22 @@
     "doc_id": "SYN-CP-301",
     "page": 3,
     "section": "rider",
-    "quote": "Clause 4 - Laytime Allocation: Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance; hours saved at one port shall not be credited to the other.",
+    "quote": "Of the total laytime, forty (40) hours are allotted to loading and forty-four (44) hours to discharging, each being a separate allowance",
     "confidence": 0.8,
     "method": "rule",
     "ocr": false,
     "reviewed_by": null,
     "boxes": [
      [
-      0.0863,
+      0.3198,
       0.3415,
-      1.0,
+      0.9008,
       0.3579
      ],
      [
       0.0863,
       0.3599,
-      1.0,
+      0.4886,
       0.3763
      ]
     ],
@@ -578,22 +578,22 @@
     "doc_id": "SYN-CP-301",
     "page": 3,
     "section": "rider",
-    "quote": "Clause 1 - Waiting for Berth: Demurrage incurred while the Vessel waits because the berth is taken by other tonnage owing to port congestion shall be settled at one-half of the daily rate fixed in Part I, I.",
+    "quote": "Demurrage incurred while the Vessel waits because the berth is taken by other tonnage owing to port congestion shall be settled at one-half of the daily rate fixed in Part I, I.",
     "confidence": 0.8,
     "method": "rule",
     "ocr": false,
     "reviewed_by": null,
     "boxes": [
      [
-      0.0863,
+      0.307,
       0.0957,
-      1.0,
+      0.8868,
       0.112
      ],
      [
       0.0863,
       0.1141,
-      1.0,
+      0.7802,
       0.1304
      ]
     ],
@@ -637,7 +637,7 @@
      [
       0.5101,
       0.7726,
-      0.8771,
+      0.8376,
       0.7867
      ]
     ],
@@ -671,8 +671,8 @@
   }
  },
  "run": {
-  "llm": null,
-  "llm_digest": null,
+  "llm": "qwen3:8b",
+  "llm_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
   "vision": null,
   "vision_digest": null,
   "ocr_engine": null,
