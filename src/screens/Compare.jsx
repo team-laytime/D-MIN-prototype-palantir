@@ -10,6 +10,8 @@ import { NOW, fmt, fmtDur, money, toMin } from '../lib/time.js'
 import { spanOf, stateAt } from '../lib/plan.js'
 import { SEV, KIND, checkRisks, riskLabel, riskShip, sortRisks } from '../lib/risk.js'
 import { activePlan, cancelPlan, fixPlan, logActivity, useWorkspace, ws } from '../lib/workspace.js'
+import { comparisonContext, solverDiagnosticContext } from '../lib/precedentComparison.js'
+import { decisionScope, decisionsFor, newDecisionId } from '../lib/precedentDecision.js'
 import { changeText } from '../lib/incidents.js'
 import SimilarCases from './SimilarCases.jsx'
 import BootCallout from '../ui/BootCallout.jsx'
@@ -31,6 +33,23 @@ const signed = (cents) => (cents === 0 ? '0' : `${cents > 0 ? '+' : '−'}${mone
 /** 선석 짧은 이름: '1-1', 'B2'는 그대로, 선석이 하나뿐인 부두('7')는 '7부두' */
 export const shortBerth = (b, id) => (!b ? id : /^\d+$/.test(b.code) ? `${b.code}부두` : b.code)
 const TOP = 4
+const EMPTY_DECISION = { reason: '', recheck: '', alternativeSlot: '', reference: null }
+
+function DecisionHistory({ scenarioId }) {
+  const revision = useWorkspace()
+  const reviews = useMemo(() => {
+    try { return decisionsFor(globalThis.localStorage, scenarioId) } catch { return [] }
+  }, [scenarioId, revision]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!reviews.length) return null
+  return <details className="sc-history">
+    <summary>이 브라우저의 판단 기록 {reviews.length}건</summary>
+    <ul>{reviews.map((record) => <li key={record.id}>
+      <b>{record.at} / v{record.planNo} / 후보 {record.selectedSlot}{record.cancelled && ' / 확정 취소'}</b>
+      <p>{record.reason}</p>
+      {record.reference && <p>참고 사례 {record.reference.asOf.slice(0, 10)} {record.reference.title}</p>}
+    </li>)}</ul>
+  </details>
+}
 
 /** 금액이 바뀌면 이전 값에서 새 값으로 0.65초 동안 세어 올라간다 */
 function CountMoney({ cents }) {
@@ -64,7 +83,9 @@ export default function Compare() {
   const { scen, result, all, recalc, focusId, setFocusId, openVessel, version, current, isScheduler, checks, setCheck, go, risks,
     whatIf, whatIfKey, pendingIncs, mailDecision, decideMails, undoMailDecision } = useApp()
   useWorkspace() // 확정, 취소, 보낸 메일이 바로 보이게 구독
-  const [reason, setReason] = useState('')
+  const [draft, setDraft] = useState(null)
+  const [decisionError, setDecisionError] = useState('')
+  const attempt = useRef(null)
   const [asking, setAsking] = useState(false)
   const [showCands, setShowCands] = useState(false)
   const [monFilter, setMonFilter] = useState('all')
@@ -94,12 +115,7 @@ export default function Compare() {
   if (!all.length && result.boot) {
     return <Screen tab="compare" title="후보 비교·확정"><BootCallout boot={result.boot} /></Screen>
   }
-  if (!all.length) {
-    return <Screen tab="compare" title="후보 비교·확정"><Callout intent="danger" title="후보가 없습니다">{result.error ?? result.calcError ?? '계산 결과가 비어 있습니다.'}</Callout></Screen>
-  }
-
-  const best = all[0]
-  const focusSim = all.find((s) => s.id === focusId) ?? best
+  const scenarioKey = scen.id ?? scen.name
   const vById = Object.fromEntries(scen.vessels.map((v) => [v.id, v]))
   const bById = Object.fromEntries(scen.berths.map((b) => [b.id, b]))
   const vname = (vid) => vById[vid]?.name ?? scen.nameByCall?.[vid.split('-')[0]] ?? vid.split('-')[0]
@@ -136,7 +152,7 @@ export default function Compare() {
     const prange = spanOf([psim])
     const pdem = plan.placements.filter((p) => p.dem > 0)
     return (
-      <Screen tab="compare" title="접안 계획 확정됨" bodyClass="plan-stack cmp-fixed" actions={<Button icon="comparison" onClick={() => setShowCands(true)}>후보 비교 다시 보기</Button>}>
+      <Screen tab="compare" title="접안 계획 확정됨" bodyClass="plan-stack cmp-fixed" actions={<Button icon="comparison" onClick={() => { attempt.current = null; setDecisionError(''); setShowCands(true) }}>후보 비교 다시 보기</Button>}>
         <div className="cmp-banner">
           <div className="cmp-banner-mark">확정</div>
           <div>
@@ -177,8 +193,16 @@ export default function Compare() {
             </Panel>
             <Panel code="FIX-NOTE" title="판단 근거" pad>
               <p className="small">{plan.reason}</p>
+              {plan.decision?.alternativeSlot && <p className="small">경합안 {plan.decision.alternativeSlot}</p>}
+              {plan.decision?.reference && <p className="small">참고 사례 {plan.decision.reference.asOf.slice(0, 10)} {plan.decision.reference.title}</p>}
+              {plan.decision?.recheck && <p className="small">재검토 조건 {plan.decision.recheck}</p>}
               {plan.uncheckedRisks.length > 0 && <p className="small c-amber">확인하지 않은 리스크 {plan.uncheckedRisks.length}건과 함께 확정: {plan.uncheckedRisks.join(', ')}</p>}
-              <Button size="small" icon="undo" disabled={!isScheduler} onClick={() => cancelPlan('스케줄러 확정 취소')}>확정 취소</Button>
+              {decisionError && <p className="small c-red" role="alert">{decisionError}</p>}
+              <Button size="small" icon="undo" disabled={!isScheduler} onClick={() => {
+                try { cancelPlan('스케줄러 확정 취소'); attempt.current = null; setDecisionError('') }
+                catch (error) { setDecisionError(`취소 기록을 저장하지 못했습니다. ${error.message}`) }
+              }}>확정 취소</Button>
+              {isScheduler && <DecisionHistory scenarioId={scenarioKey} />}
             </Panel>
             <DemList title="체선 발생 선박" items={[...pdem].sort((a, b) => b.dem - a.dem).map((p) => ({ vid: p.vid, name: p.name, berth: p.berth, etb: p.etb, cents: p.dem }))} focusVid={focus.vid} onPick={toGantt} />
           </div>
@@ -187,11 +211,45 @@ export default function Compare() {
     )
   }
 
+  if (!all.length) {
+    const availability = result.availability
+    const context = availability && solverDiagnosticContext(scen, availability)
+    return (
+      <Screen tab="compare" title="후보 비교·확정" bodyClass="plan-stack"
+        actions={isScheduler && <>
+          {fixedNow && plan && <Button icon="comparison" onClick={() => setShowCands(false)}>확정 일정 보기</Button>}
+          <Button icon="refresh" disabled={result.running} onClick={recalc}>다시 계산</Button>
+        </>}>
+        {result.running ? <Callout intent="primary" icon={<Spinner size={16} />}>후보를 다시 계산하고 있습니다.</Callout>
+          : <Callout intent={availability ? 'warning' : 'danger'} title={availability ? '후보 비교를 진행할 수 없습니다' : '후보가 없습니다'}>
+            {result.error ?? result.calcError ?? '계산 결과가 비어 있습니다.'}
+            {availability && <ul className="sc-candidate-status">{availability.map((candidate) => (
+              <li key={candidate.slot}><b>후보 {candidate.slot}</b>{' '}
+                {candidate.available ? '산출'
+                  : candidate.reason === 'depends_on_a' ? '미실행 (후보 A에 의존)'
+                    : `미산출 (${candidate.status ?? '상태 미확인'})`}
+                {Number.isFinite(candidate.timeLimit) && ` · 계산 한도 ${candidate.timeLimit}초`}
+              </li>
+            ))}</ul>}
+          </Callout>}
+        {!result.running && isScheduler && context && <SimilarCases context={context} />}
+      </Screen>
+    )
+  }
+
+  const best = all[0]
+  const focusSim = all.find((s) => s.id === focusId) ?? best
+  const scope = decisionScope(scen, version, focusSim, all)
+  const currentDraft = draft?.scope === scope ? draft : EMPTY_DECISION
+  const updateDraft = (patch) => setDraft((previous) => ({ ...(previous?.scope === scope ? previous : EMPTY_DECISION), ...patch, scope }))
+
   // ── 확정 전: 후보 3개 비교 + 배치 그림 + 바뀐 선박 + 확정 ──────────────────
   // 반영 여부를 정하지 않은 조건 변경 메일과 그 「반영하면?」 미리 계산(app.jsx가 백그라운드에서 돌림)
   const mails = pendingIncs.map((inc) => ({ inc, e: whatIf[whatIfKey(inc.id)] }))
   const cols = all
-  const riskOf = (id) => risks[id] ?? { state: 'running' }
+  const currentRisks = Object.fromEntries(all.map((candidate) => [candidate.id,
+    risks[candidate.id]?.subject === candidate ? risks[candidate.id] : { state: 'running' }]))
+  const riskOf = (id) => currentRisks[id] ?? { state: 'running' }
   const focusRisk = riskOf(focusSim.id)
   const toCheck = checkRisks(focusRisk.data)
   const checkKey = (k) => `${version}:${focusSim.id}:${k}`
@@ -204,13 +262,22 @@ export default function Compare() {
   const checkedN = toCheck.filter((r) => checks[checkKey(r.id)]).length
   const blocked = result.stale || result.running
   const riskWait = focusRisk.state === 'running'
+  const context = comparisonContext(scen, focusSim, all, currentRisks)
+  const reference = currentDraft.reference && (!currentDraft.reference.currentRiskId ||
+    riskOf(currentDraft.reference.currentRiskSlot).data?.risks?.some((r) => r.id === currentDraft.reference.currentRiskId)) ? currentDraft.reference : null
   const fix = (force) => {
-    if (blocked || riskWait) return
-    if (unchecked.length && !force) { setAsking(true); return }
-    fixPlan({ cand: focusSim, scen, version, reason: reason.trim() || '(사유 미입력)', uncheckedRisks: unchecked })
-    setAsking(false); setReason(''); setShowCands(false)
+    if (!isScheduler || blocked || riskWait || (force && attempt.current?.scope !== scope)) return
+    setDecisionError('')
+    try {
+      if (attempt.current?.scope !== scope) attempt.current = { scope, id: newDecisionId() }
+      if (unchecked.length && !force) { setAsking(true); return }
+      fixPlan({ cand: focusSim, scen, version, reason: currentDraft.reason.trim() || '(사유 미입력)',
+        uncheckedRisks: unchecked, requestId: attempt.current.id, candidates: all, risks: currentRisks,
+        alternativeSlot: currentDraft.alternativeSlot, reference, recheck: currentDraft.recheck.trim() })
+      setAsking(false); setDraft(null); setShowCands(false)
+    } catch (error) { setDecisionError(`확정 기록을 저장하지 못했습니다. ${error.message}`) }
   }
-  const pick = (id) => { setAsking(false); setFocusId(id) }
+  const pick = (id) => { setAsking(false); setDecisionError(''); setFocusId(id) }
   const pickRisk = (simId, r) => { pick(simId); toGantt(riskShip(r), r, simId) }
 
 
@@ -291,7 +358,8 @@ export default function Compare() {
 
           <DemList title={`${focusSim.label} 체선 발생 선박`} focusVid={focus.vid} onPick={toGantt}
             items={demOf(focusSim).sort((a, b) => b.dem.cents - a.dem.cents).map((p) => ({ vid: p.vid, name: vname(p.vid), berth: shortBerth(bById[p.bid], p.bid), etb: p.etb, cents: p.dem.cents, min: p.dem.excessMin }))} />
-          <SimilarCases scen={scen} all={all} risks={risks} pendingIncs={pendingIncs} />
+          {isScheduler && <SimilarCases key={scope} context={context} reference={reference} blocked={blocked}
+            onReference={(record) => updateDraft({ reference: record ? { ...record, scope } : null })} />}
 
         </div>
 
@@ -327,15 +395,31 @@ export default function Compare() {
               </div>
               <div className="risk-reason-field">
                 <label htmlFor="risk-reason">판단 근거</label>
-                <TextArea id="risk-reason" fill rows={3} value={reason} disabled={!isScheduler} onChange={(e) => setReason(e.currentTarget.value)} placeholder="예: 체선료가 가장 낮고, 작업 간격이 빠듯한 7부두는 하역팀과 미리 조율" />
+                <TextArea id="risk-reason" fill rows={3} value={currentDraft.reason} disabled={!isScheduler} onChange={(e) => updateDraft({ reason: e.currentTarget.value })} placeholder="어떤 조건과 비용 차이로 이 안을 골랐나요?" />
               </div>
+              <div className="risk-reason-field">
+                <label htmlFor="competing-candidate">경합한 후보</label>
+                <div className="bp6-html-select"><select id="competing-candidate" value={currentDraft.alternativeSlot}
+                  disabled={!isScheduler} onChange={(e) => updateDraft({ alternativeSlot: e.currentTarget.value })}>
+                  <option value="">선택 안 함</option>
+                  {all.filter((s) => s.id !== focusSim.id).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select></div>
+              </div>
+              <div className="risk-reason-field">
+                <label htmlFor="decision-recheck">재검토 조건</label>
+                <TextArea id="decision-recheck" fill rows={2} value={currentDraft.recheck} disabled={!isScheduler}
+                  onChange={(e) => updateDraft({ recheck: e.currentTarget.value })} placeholder="어떤 조건이 바뀌면 다시 비교하나요?" />
+              </div>
+              {reference && <p className="small">참고 사례 {reference.asOf.slice(0, 10)} {reference.title}</p>}
+              {decisionError && <p className="small c-red" role="alert">{decisionError}</p>}
               {blocked && <p className="small c-amber">{result.running ? '다시 계산하는 중입니다.' : '계획 조건이 바뀌어 다시 계산한 뒤에 확정할 수 있습니다.'}</p>}
-              {asking ? (
+              {asking && attempt.current?.scope === scope ? (
                 <Callout className="risk-confirmation" intent="warning" icon="warning-sign">
                   <p className="small"><b>확인하지 않은 리스크 · 결정 안 한 조건 변경 {unchecked.length}건</b>이 확정 기록에 함께 남습니다.</p>
                   <div className="risk-buttons"><Button size="small" onClick={() => setAsking(false)}>돌아가기</Button><Button size="small" intent="warning" onClick={() => fix(true)}>그래도 확정</Button></div>
                 </Callout>
               ) : <Button intent="primary" icon="endorsed" fill disabled={!isScheduler || blocked || riskWait} onClick={() => fix(false)}>{focusSim.label}로 확정</Button>}
+              {isScheduler && <DecisionHistory scenarioId={scenarioKey} />}
             </div>
           </Panel>
           {fixedNow && <Button icon="arrow-left" onClick={() => setShowCands(false)}>확정 화면으로</Button>}

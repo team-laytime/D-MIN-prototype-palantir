@@ -1,23 +1,23 @@
-/* 11-25 유사 과거 사례 (목업) */
+/* 후보 비교의 유사 사례 */
 .sc .panel-body { font-size: calc(12px * var(--fs)); }
-.sc-sub { margin: 0 0 8px; color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
+.sc-sub, .sc-message { margin: 0 0 8px; color: var(--fg-2); }
 .sc-now { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line-2); }
-.sc-label { color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
-.sc-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
-.sc-tag { padding: 1px 8px; border: 1px solid var(--line-2); color: var(--fg-3); font: 500 calc(11.5px * var(--fs))/1.6 var(--sans); white-space: nowrap; }
-.sc-tag.hit { border: 1.5px solid var(--fg); color: var(--fg); font-weight: 600; }
-.sc-hit { color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
-.sc-safety { display: flex; gap: 12px; font: calc(12px * var(--fs)) var(--mono); }
-.sc-safety b { font-family: var(--sans); }
+.sc-now select { max-width: 100%; }
+.sc-now .bp6-control { margin: 0; font-size: inherit; }
+.sc-label { color: var(--fg-2); }
+.sc-message { margin-top: 8px; }
+.sc-current-checks { margin: 8px 0; line-height: 1.5; }
+.sc-candidate-status { margin: 6px 0 0; padding-left: 19px; }
 .sc-list { list-style: none; margin: 0; padding: 0; }
-.sc-case { display: grid; gap: 5px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.sc-case { display: grid; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.sc-case:last-child { border-bottom: 0; }
 .sc-title { font-size: calc(12.5px * var(--fs)); }
-.sc-case p { margin: 0; color: var(--fg-2); line-height: 1.45; }
+.sc-case p { margin: 0; color: var(--fg-2); line-height: 1.5; }
 .sc-case p b { color: var(--fg); }
-.sc-more { margin-top: 8px; padding: 0; border: 0; background: none; color: var(--fg); font: 600 calc(12px * var(--fs)) var(--sans); text-decoration: underline; cursor: pointer; }
-.sc-more:hover { color: var(--accent); }
-.sc-dialog.bp6-dialog { width: min(640px, calc(100vw - 40px)); }
-.sc-all { padding: 4px 18px 12px; max-height: 70vh; overflow-y: auto; }
+.sc-history { margin-top: 8px; color: var(--fg-2); font-size: calc(11.5px * var(--fs)); }
+.sc-history summary { cursor: pointer; }
+.sc-history ul { padding-left: 18px; }
+.sc-history p { margin: 2px 0 6px; }
 
 /* 「반영하면?」 (후보 비교) */
 .cmp-checks-sub { margin: 6px 0 2px; padding-top: 6px; border-top: 1px dashed var(--line-2); color: var(--amber); font: 600 calc(11.5px * var(--fs)) var(--sans); }

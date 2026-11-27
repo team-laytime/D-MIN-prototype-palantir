@@ -3,7 +3,7 @@
 //   - 데이터셋을 불러오면 후보 3개(엔진 프리셋별 계획)가 바로 있다.
 //   - 계획 조건(ETA·부두 사용 불가·고정·파라미터)을 고치면 「다시 계산」으로 엔진 API에 보낸다(약 1분).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { buildRequest, buildScen, engineFacts, fetchRisks, initialResults, loadDataset, loadIndex, rankSims, recalc as engineRecalc, scenarioIdOf } from '../lib/dataset.js'
+import { buildRequest, buildScen, candidateAvailability, engineFacts, fetchRisks, initialResults, loadDataset, loadIndex, rankSims, recalc as engineRecalc, scenarioIdOf } from '../lib/dataset.js'
 import { setTimeBase } from '../lib/time.js'
 import { applyChange } from '../lib/incidents.js'
 import { chooseB, presetsFor } from '../lib/presets.js'
@@ -16,6 +16,14 @@ const TOUR = TOUR_ALL.filter((s) => groupOf(s.tab === 'risk' ? 'compare' : s.tab
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
 const EMPTY_DRAFT = { selId: null, judgment: null, mail: {} }
+
+function calculationState(results, version, at) {
+  const availability = candidateAvailability(results)
+  if (availability.some((candidate) => !candidate.available)) {
+    return { sims: [], version, availability, error: 'A/B/C 후보 비교에 필요한 계획이 일부 산출되지 않았습니다.', running: false, at }
+  }
+  return { sims: rankSims(results), version, error: null, running: false, at }
+}
 
 export function AppProvider({ children }) {
   const wsRev = useWorkspace()
@@ -42,8 +50,10 @@ export function AppProvider({ children }) {
   // 11-26 처음 열 때 후보 계산 진행 {step: 'A' | 'BC', since} (데이터셋에 결과가 없고 브라우저 저장소에도 없을 때 몇 분)
   const [boot, setBoot] = useState(null)
   const bootRef = useRef(null)
+  const abortRef = useRef(null)
   const open = useCallback(async (id) => {
     setLoadError(null)
+    abortRef.current?.abort()
     bootRef.current?.abort()
     const ctl = new AbortController(); bootRef.current = ctl
     // 11-26 다른 기준 시각을 고르면 앞 화면을 비우고(불러오는 중) 그 시각의 하역 속도부터 받는다
@@ -72,7 +82,7 @@ export function AppProvider({ children }) {
     if (!ds.results?.length) {
       setCalc({ sims: [], version: v, error: null, running: true, at: null })
       try {
-        ds.results = await initialResults(ds, (step) => setBoot({ step, since: Date.now() }), ctl.signal)
+        ds.results = await initialResults(scen, (step) => setBoot({ step, since: Date.now() }), ctl.signal)
         ds.built_at = nowText().slice(0, 16)
       } catch (e) {
         if (ctl.signal.aborted) return // 다른 데이터셋을 열었거나 다시 열림 — 그쪽이 이어서 계산한다
@@ -86,11 +96,13 @@ export function AppProvider({ children }) {
       replaceScen({ scen, version: cur.version })
     }
     // 데이터셋 결과는 요청을 따로 담지 않는다. 같은 계획 조건으로 다시 만들어 리스크 모델에 보낸다.
-    const sims = rankSims(ds.results.map((r) => ({ ...r, request: buildRequest(scen, r.preset) })))
+    const results = ds.results.map((r) => r.response?.plan && !r.request ? { ...r, request: buildRequest(scen, r.preset) } : r)
+    const next = calculationState(results, v, ds.built_at)
+    const sims = next.sims
     // B 칸의 '고른 이유'는 데이터셋을 만들 때 쓴 σ로 적혀 있다. 지금 규칙으로 다시 골라 같은 안이면 이유만 새로 쓴다
     const nb = sims[0] && sims[1] && chooseB(scen, sims[0])
     if (nb && nb.id === sims[1].preset?.id) sims[1] = { ...sims[1], preset: { ...sims[1].preset, why: nb.why, grades: nb.grades } }
-    setCalc({ sims, version: v, error: null, running: false, at: ds.built_at })
+    setCalc(next)
     // 메일별 「단독 반영 시」는 화면이 뒤에서 계산한다(엔진 결과는 브라우저 저장소에 남아 다음부터는 바로)
     setWhatIf({})
   }, [replaceScen])
@@ -117,23 +129,30 @@ export function AppProvider({ children }) {
   }, [replaceScen])
 
   // 다시 계산: 지금 계획 조건으로 엔진 API를 부른다(프리셋 3개 동시).
-  const abortRef = useRef(null)
   const recalc = useCallback(async () => {
     const { scen: s, version: v } = scenRef.current
+    const previous = calcRef.current.sims
     abortRef.current?.abort()
     const ctl = new AbortController(); abortRef.current = ctl
-    setCalc((c) => ({ ...c, running: true, error: null }))
+    setCalc((c) => ({ ...c, running: true, availability: null, error: null }))
     logActivity('계산', '다시 계산 요청', s.name, `계획 조건 v${v}`)
     try {
       // B는 지금 A 계획 · 계획 조건으로 다시 고른다(상황형 자리)
-      const results = await engineRecalc(s, ctl.signal, presetsFor(s, calcRef.current.sims))
-      setCalc({ sims: rankSims(results), version: v, error: null, running: false, at: nowText().slice(0, 16) })
-      logActivity('계산', '다시 계산 완료', s.name, results.map((r) => `${r.preset.label} ${r.response.status}`).join(', '))
+      const results = previous.length ? await engineRecalc(s, ctl.signal, presetsFor(s, previous))
+        : await initialResults(s, null, ctl.signal)
+      if (ctl.signal.aborted) return
+      const next = calculationState(results, v, nowText().slice(0, 16))
+      if (!previous.length && next.sims.length && scenRef.current.version === v) {
+        replaceScen({ scen: { ...s, ...engineFacts({ ...s, results }, results[0].response) }, version: v })
+      }
+      setCalc(next)
+      logActivity('계산', next.error ? '일부 후보 미산출' : '다시 계산 완료', s.name,
+        results.map((r, i) => `${String.fromCharCode(65 + i)} ${r.response?.status ?? '미실행'}`).join(', '))
     } catch (e) {
-      if (e.name === 'AbortError') return
+      if (ctl.signal.aborted || e.name === 'AbortError') return
       setCalc((c) => ({ ...c, running: false, error: e.message }))
     }
-  }, [])
+  }, [replaceScen])
 
   // 11-25 리스크: 후보가 바뀔 때마다 팀 리스크 모델(POST /risk/risks)로 후보마다 계산한다(약 5초). 계획과 따로 실패할 수 있다.
   //   risks[simId] = {state: 'running'|'done'|'error', data, error}. 다시 계산하는 동안에는 직전 결과를 흐리게 보인다.
@@ -141,12 +160,12 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!calc.sims.length) return
     const ctl = new AbortController()
-    setRisks(Object.fromEntries(calc.sims.map((s) => [s.id, { state: 'running', data: null, error: null }])))
+    setRisks(Object.fromEntries(calc.sims.map((s) => [s.id, { state: 'running', data: null, error: null, subject: s }])))
     for (const s of calc.sims) {
-      if (!s.req) { setRisks((r) => ({ ...r, [s.id]: { state: 'error', data: null, error: '요청 원문이 없어 리스크를 계산하지 못했습니다' } })); continue }
+      if (!s.req) { setRisks((r) => ({ ...r, [s.id]: { state: 'error', data: null, error: '요청 원문이 없어 리스크를 계산하지 못했습니다', subject: s } })); continue }
       fetchRisks(s.req, s.resp, ctl.signal)
-        .then((data) => setRisks((r) => ({ ...r, [s.id]: { state: 'done', data, error: null } })))
-        .catch((e) => { if (e.name !== 'AbortError') setRisks((r) => ({ ...r, [s.id]: { state: 'error', data: null, error: e.message } })) })
+        .then((data) => { if (!ctl.signal.aborted) setRisks((r) => ({ ...r, [s.id]: { state: 'done', data, error: null, subject: s } })) })
+        .catch((e) => { if (!ctl.signal.aborted && e.name !== 'AbortError') setRisks((r) => ({ ...r, [s.id]: { state: 'error', data: null, error: e.message, subject: s } })) })
     }
     return () => ctl.abort()
   }, [calc.sims])
@@ -157,6 +176,7 @@ export function AppProvider({ children }) {
     loading: !scen && !loadError, boot,
     stale: !!scen && calc.version !== version, // 계획 조건이 후보 계산 뒤에 바뀜
     running: calc.running, calcError: calc.error, calcAt: calc.at,
+    availability: calc.version === version ? calc.availability : null,
     // 11-25 엔진 baseline은 "다른 스케줄러가 미리 세워 둔 기존 계획"으로 가정한다(사용자 결정).
     //   지금은 계획 조건의 탱크 재고 흐름에만 쓰고(scen.tanks[].base), 후보안과 비교하는 화면에는 아직 넣지 않았다.
     baseline: null,

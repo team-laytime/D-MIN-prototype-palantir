@@ -200,7 +200,13 @@ export function buildScen(ds, first = ds.results?.[0]?.response ?? null) {
     },
     ...engineFacts(ds, first, existing), // 엔진 결과가 있으면 기존 계획도 엔진 계산값(체선 · 정박시간)으로
     // 스케줄러가 고치는 값: 선박 ETA(vessels[].eta), 부두 사용 불가(blocks), 고정 선박(fixes), 엔진 파라미터(params)
-    blocks: [], fixes: [], params: {},
+    blocks: (req.blocks ?? []).map((block, i) => ({
+      ...block, id: `input-block-${i}`, start: toMin(block.start), end: toMin(block.end), source: '계획 입력',
+    })),
+    fixes: (req.fixes ?? []).map((fix) => ({
+      vid: fix.vessel_id, bid: fix.berth, etb: toMin(fix.etb), source: '계획 입력',
+    })),
+    params: {},
     // 11-25 계획 조건을 바꾸는 받은 메일(시연용, 실제 선박 · 부두로 만듦). 「반영」하면 계획 조건에 들어간다(lib/incidents.js)
     //   11-26 기존 계획(실제 접안 기록)으로 만든다 → 엔진 결과와 상관없이 늘 같은 메일
     incidents: seedIncidents({ vessels, berths, window: { start: t0, end: t0 + days * 1440 } }, existing, existing),
@@ -267,6 +273,8 @@ function placement(v) {
  * request가 있으면 같이 둔다(리스크 모델에 그대로 보냄).
  */
 export function rankSims(results) {
+  const missing = results.find((r) => !r.response?.plan)
+  if (missing) throw new Error(`${missing.preset?.label ?? '상황형 후보'}: 이 조건으로 계획을 찾지 못했습니다 (${missing.response?.status ?? '미실행'})`)
   const sims = results.map((r, i) => ({ ...toSim(r.response, r.preset, String.fromCharCode(65 + i)), req: r.request ?? null, resp: r.response }))
   const [a, b] = sims
   if (a && b && a.total === b.total && tankMargin(b) > tankMargin(a) + 0.05) {
@@ -276,6 +284,16 @@ export function rankSims(results) {
     sims[1] = { ...b, notes: [...b.notes, '후보 A와 체선료 · 계획이 같음 (A가 이 계획을 씀)'], sameAsA: true }
   }
   return sims
+}
+
+export function candidateAvailability(results) {
+  return results.map(({ response, request, reason }, i) => ({
+    slot: String.fromCharCode(65 + i),
+    available: Boolean(response?.plan),
+    status: response?.status ?? null,
+    timeLimit: request?.params?.solver?.time_limit_s ?? null,
+    reason,
+  }))
 }
 
 /**
@@ -342,6 +360,7 @@ export async function solveCached(request, signal) {
   if (!r) throw new Error('엔진 서버(127.0.0.1:8000)에 연결되지 않았습니다. 엔진 저장소에서 `python -m berth_sim.api`로 띄우십시오.')
   const body = await r.json().catch(() => null)
   if (!r.ok) throw Object.assign(new Error(body?.detail ?? body?.title ?? `엔진 오류 ${r.status}`), { status: r.status })
+  if (typeof body?.status !== 'string') throw new Error('엔진 응답에 계산 상태가 없습니다.')
   if (key && body?.plan) cacheSet(key, body)
   return body
 }
@@ -371,10 +390,8 @@ export async function recalc(scen, signal, presets = scen.presets) {
     }
   }
   return Promise.all(presets.map(async (preset) => {
-    let out = await solve(preset, false)
-    if (!out.response.plan) out = await solve(preset, true)
-    if (!out.response.plan) throw new Error(`${preset.label}: 이 조건으로 계획을 찾지 못했습니다 (${out.response.status})`)
-    return out
+    const out = await solve(preset, false)
+    return out.response.plan ? out : solve(preset, true)
   }))
 }
 
@@ -386,13 +403,18 @@ const sleep = (ms, signal) => new Promise((resolve, reject) => {
 /**
  * 11-26 처음 열 때 후보 A · B · C (데이터셋에 결과가 없을 때). B는 A 계획의 탱크 · 예보 풍속으로 고르므로 A를 먼저 푼다.
  * 요청은 「다시 계산」과 같은 규칙(buildRequest)으로 만들어, 조건을 안 바꾸고 다시 계산하면 저장된 결과가 그대로 쓰인다.
- * onStep('A' | 'BC')로 진행을 알린다. 반환: [{preset, request, response}] × 3
+ * A가 미산출이면 B는 생략하고 A와 독립적인 C의 결과를 확인한다.
+ * 반환 순서는 항상 A · B · C다. 응답이 없는 B는 생략 이유를 담는다.
  */
-export async function initialResults(ds, onStep, signal) {
+export async function initialResults(scen, onStep, signal) {
   onStep?.('A')
-  const bare = { request: ds.request, vessels: [], blocks: [], fixes: [], params: {} }
-  const [a] = await recalc(bare, signal, [BASE_PRESET])
-  const scenA = buildScen({ ...ds, results: [a] })
+  const [a] = await recalc(scen, signal, [BASE_PRESET])
+  if (!a.response.plan) {
+    onStep?.('C')
+    const [c] = await recalc(scen, signal, [C_PRESET])
+    return [a, { reason: 'depends_on_a' }, c]
+  }
+  const scenA = { ...scen, ...engineFacts(scen, a.response) }
   const b = chooseB(scenA, rankSims([a])[0])
   onStep?.('BC')
   const [rb, rc] = await recalc(scenA, signal, [b, C_PRESET])

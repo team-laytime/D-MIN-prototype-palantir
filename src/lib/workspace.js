@@ -1,8 +1,9 @@
-// 계정 · 메뉴 권한 · 업무 기록(시연용, 새로고침하면 사라짐).
+// 계정과 활성 업무 상태는 시연 세션용이다. 확정 판단 기록은 브라우저에 보관한다.
 // 계정은 둘이다. 일정을 짜는 스케줄러와 확정된 일정을 받아 쓰는 이용자. 로그인할 때 역할이 정해지고, 그 역할의 메뉴만 보인다.
 //   HN-092 확정·취소는 스케줄러만 · HN-094 이용자는 확정본만 · HN-095 요율·금액은 스케줄러만
 // Vue 원본의 reactive 대신 작은 외부 저장소로 두고, React는 useWorkspace()로 구독한다.
 import { useSyncExternalStore } from 'react'
+import { decisionScope, saveCancellation, saveDecision, snapshotCandidate } from './precedentDecision.js'
 
 export const PASSWORD = '1234'
 // 11-25 시스템 관리자 시연 계정: 로그인하면 관리자 화면(?view=admin)으로 간다. 비밀번호는 다른 시연 계정과 같다.
@@ -160,16 +161,36 @@ export const activePlan = () => {
 
 /** 스케줄러 확정. 이후 입력이 바뀌어도 이용자는 확정 당시 일정을 본다(스냅숏). */
 // 11-24 실데이터: 스냅숏에 선박, 부두, 체선료(센트)까지 복사해 둔다. 확정 뒤 계획 조건을 고쳐도 이 값은 바뀌지 않는다.
-export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
+export function fixPlan({ cand, scen, version, reason, uncheckedRisks, requestId, candidates, risks, alternativeSlot, reference, recheck }) {
+  if (ws.roleId !== 'scheduler') throw new Error('스케줄러만 확정할 수 있습니다.')
+  if (!requestId || !candidates.includes(cand)) throw new Error('확정 후보의 계산 버전을 찾지 못했습니다.')
+  const scope = decisionScope(scen, version, cand, candidates)
+  const repeated = ws.plans.find((p) => p.decision?.id === requestId)
+  if (repeated) {
+    if (repeated.decision.scope !== scope) throw new Error('확정 요청의 후보 버전이 달라졌습니다.')
+    return repeated
+  }
+  if (reference && reference.scope !== scope) throw new Error('참고 사례를 현재 후보에서 다시 선택해야 합니다.')
   const v = Object.fromEntries(scen.vessels.map((x) => [x.id, x]))
   const b = Object.fromEntries(scen.berths.map((x) => [x.id, x]))
+  const at = nowText()
+  const who = role().name
+  const number = ws.plans.length + 1
+  const decision = structuredClone({
+    id: requestId, scope, planNo: number, scenarioId: scen.id ?? scen.name, asOf: scen.request.start, version,
+    at, who, source: 'prototype_scheduler_confirmation', operationalOutcome: null,
+    selectedSlot: cand.id, alternativeSlot: alternativeSlot || null, reason, recheck, uncheckedRisks,
+    planningDays: scen.request.params?.horizon?.days ?? scen.days ?? null,
+    blocks: scen.blocks ?? [], fixes: scen.fixes ?? [],
+    candidates: candidates.map((c) => snapshotCandidate(c, risks[c.id])), reference: reference ?? null,
+  })
   const plan = {
-    no: ws.plans.length + 1, candId: cand.id, label: cand.label, total: cand.total, reason, uncheckedRisks,
+    no: number, candId: cand.id, label: cand.label, total: cand.total, reason, uncheckedRisks: [...uncheckedRisks], decision,
     preset: cand.preset ? { id: cand.preset.id, label: cand.preset.label, desc: cand.preset.desc } : null,
     baselineTotal: null, moves: cand.moves ?? null,
     status: cand.status, proven: Boolean(cand.proven), solveSec: cand.solveSec ?? null,
     scenName: scen.name, bundle: scen.bundle ?? null,
-    at: nowText(), who: role().name, version, cancelled: false,
+    at, who, version, cancelled: false,
     tanks: structuredClone(cand.tanks ?? []),
     // 11-25 메일 템플릿용: 생산계획(탱크 묶음별 주별 t/h), 부두 사용 불가 구간, 야간 도선 규칙
     production: (scen.tanks ?? []).map((t) => ({ name: t.name, weeks: t.weeks })),
@@ -189,14 +210,17 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
       }
     }),
   }
+  if (!saveDecision(globalThis.localStorage, decision)) return null
   ws.plans.push(plan)
   addLog('확정', '계획 확정', `접안 계획 v${plan.no} · ${cand.label}`, reason)
   emit()
   return plan
 }
 export function cancelPlan(reason) {
+  if (ws.roleId !== 'scheduler') return
   const p = activePlan()
   if (!p) return
+  if (p.decision) saveCancellation(globalThis.localStorage, { id: p.decision.id, at: nowText(), who: role().name, reason })
   p.cancelled = true
   addLog('확정', '확정 취소', `접안 계획 v${p.no} · ${p.label}`, reason)
   emit()
