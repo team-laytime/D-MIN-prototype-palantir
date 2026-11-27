@@ -161,13 +161,13 @@
    "checks": []
   },
   "laytime_total_h": {
-   "value": 21.0,
+   "value": null,
    "evidence": {
     "doc_id": "SYN-CP-315",
     "page": 1,
     "section": "part1",
-    "quote": "Total laytime @ remeing hours 60 Demerrage per day: 21 390 USD POFR",
-    "confidence": 0.63,
+    "quote": "Total laytime @ remeing hours 60",
+    "confidence": 0.35,
     "method": "rule",
     "ocr": true,
     "reviewed_by": null,
@@ -177,24 +177,12 @@
       0.7578,
       0.3207,
       0.7815
-     ],
-     [
-      0.4878,
-      0.7748,
-      0.7549,
-      0.7964
      ]
     ],
-    "ocr_conf": 0.687,
-    "unread": false
+    "ocr_conf": null,
+    "unread": true
    },
-   "checks": [
-    {
-     "name": "range",
-     "ok": true,
-     "detail": null
-    }
-   ]
+   "checks": []
   },
   "demurrage_rate_per_day": {
    "value": 21390.0,
@@ -397,6 +385,10 @@
    "reason": "필수 칸 없음"
   },
   {
+   "field": "laytime_total_h",
+   "reason": "OCR 못 읽음"
+  },
+  {
    "field": "load_laydays_from",
    "reason": "OCR 못 읽음"
   },
@@ -415,10 +407,6 @@
   {
    "field": "dwt",
    "reason": "확신도 낮음(OCR 값, 0.50): 다른 엔진·recap·선박 표의 확인 없음"
-  },
-  {
-   "field": "laytime_total_h",
-   "reason": "스캔본 계산 값(OCR, 0.63): 원본 쪽과 대조"
   },
   {
    "field": "demurrage_rate_per_day",
