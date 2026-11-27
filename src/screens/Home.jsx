@@ -164,7 +164,7 @@ function HomeMap() {
     return out
   }, [START, end, scen.wind, scen.blocks])
   const dayTicks = useMemo(() => {
-    const out = [{ key: 'now', at: START, text: '지금' }]
+    const out = [{ key: 'now', at: START, text: '현재' }]
     for (let d = dayStart(START) + 1440; d < end; d += 1440) if (pct(d) > 6) out.push({ key: d, at: d, text: fmt(d).split(' ')[0] })
     return out
   }, [START, end]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -526,14 +526,14 @@ function HomeMap() {
           </div>
           <div className="home-time-dock" data-tour="time-dock">
             <div className="home-time-controls">
-              <Button variant="minimal" size="small" icon="step-backward" aria-label="지금으로" title="지금으로" onClick={() => { setPlaying(false); setT(START) }} />
+              <Button variant="minimal" size="small" icon="step-backward" aria-label="현재로" title="현재로" onClick={() => { setPlaying(false); setT(START) }} />
               <Button variant="minimal" size="small" icon="chevron-left" aria-label="1시간 전" title="1시간 전" disabled={t <= START} onClick={() => step(-60)} />
               <Button variant="minimal" size="small" icon={playing ? 'pause' : 'play'} aria-label={playing ? '멈춤' : '재생'} title={playing ? '멈춤' : '재생'} onClick={() => { if (!playing && t >= end) setT(START); setPlaying(!playing) }} />
               <Button variant="minimal" size="small" icon="chevron-right" aria-label="1시간 후" title="1시간 후" disabled={t >= end} onClick={() => step(60)} />
             </div>
-            <div className="home-clock"><time className="num">{t === NOW ? '지금' : `+${Math.round((t - NOW) / 60)}h`}</time><span><span className="num">{fmt(t)}</span> ({weekdayOf(t)})</span></div>
+            <div className="home-clock"><time className="num">{t === NOW ? '현재' : `+${Math.round((t - NOW) / 60)}h`}</time><span><span className="num">{fmt(t)}</span> ({weekdayOf(t)})</span></div>
             <div className="home-time-slider">
-              <div className="home-time-track">{bands.map((band) => <span key={band.key} className={`home-time-band ${band.kind}`} style={{ left: `${band.left}%`, width: `${band.width}%` }} title={band.kind === 'night' ? '밤 20시~06시' : band.kind === 'weather' ? `강풍 ${WIND_ALERT_MS}m/s 이상` : '사용 불가'}>{band.width > 3 && <em>{band.kind === 'night' ? '밤' : band.kind === 'weather' ? '강풍' : '사용 불가'}</em>}</span>)}</div>
+              <div className="home-time-track">{bands.map((band) => <span key={band.key} className={`home-time-band ${band.kind}`} style={{ left: `${band.left}%`, width: `${band.width}%` }} title={band.kind === 'night' ? '밤 20시~06시' : band.kind === 'weather' ? `강풍 ${WIND_ALERT_MS}m/s 이상` : '사용 불가'}>{band.width > 3 && <em>{band.kind === 'night' ? '야간' : band.kind === 'weather' ? '강풍' : '사용 불가'}</em>}</span>)}</div>
               <input type="range" min={START} max={end} step={STEP_MIN} value={t} aria-label="시각" aria-valuetext={fmt(t)} onChange={(event) => { setPlaying(false); setT(Number(event.target.value)) }} />
               <div className="home-time-ticks">{dayTicks.map((tick) => <span key={tick.key} className="num" style={{ left: `${pct(tick.at)}%` }}>{tick.text}</span>)}</div>
             </div>
@@ -590,7 +590,7 @@ function ScheduleTable({ plan, scen, t, bById, selected, onPick, showDem, berthI
   return (
     <table className="dt home-sched-table">
       <thead><tr>
-        <th>선박</th><th>부두</th><th className="r">도착</th><th className="r">대기</th><th className="r">접안</th><th className="r">이안</th><th>지금 상태</th>{showDem && <th className="r">체선료</th>}
+        <th>선박</th><th>부두</th><th className="r">도착</th><th className="r">대기</th><th className="r">접안</th><th className="r">이안</th><th>현재 상태</th>{showDem && <th className="r">체선료</th>}
       </tr></thead>
       <tbody>{rows.map((p) => {
         const v = vById[p.vid]

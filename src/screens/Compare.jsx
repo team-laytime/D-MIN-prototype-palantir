@@ -28,7 +28,7 @@ const pctText = (a, b) => {
 /** 선석 짧은 이름: '1-1', 'B2'는 그대로, 선석이 하나뿐인 부두('7')는 '7부두' */
 export const shortBerth = (b, id) => (!b ? id : /^\d+$/.test(b.code) ? `${b.code}부두` : b.code)
 const TOP = 4
-const CANDIDATE_LABELS = [['후보 A', '기본'], ['후보 B', '상황형'], ['후보 C', '배별 지연 대비']]
+const CANDIDATE_LABELS = [['후보 A', '기본'], ['후보 B', '상황형'], ['후보 C', '도착 · 작업 지연 대비']]
 
 function CandidateStatus({ children }) {
   return <span className="chip blue cmp-status" role="status">{children}</span>
@@ -152,7 +152,7 @@ export default function Compare() {
             actions={<SegmentedControl size="small" value={monFilter} onValueChange={setMonFilter} options={filters} />}>
             <div className="cmp-scroll">
               <table className="dt cmp-monitor">
-                <thead><tr><th>선박</th><th>화물</th><th>부두</th><th>지금</th><th>도착(ETA)</th><th>계획 접안</th><th>계획 이안</th><th className="r">체선료</th><th>판정</th></tr></thead>
+                <thead><tr><th>선박</th><th>화물</th><th>부두</th><th>현재</th><th>도착(ETA)</th><th>계획 접안</th><th>계획 이안</th><th className="r">체선료</th><th>판정</th></tr></thead>
                 <tbody>{shown.map((m) => <tr key={m.p.vid} className={`click ${m.tone !== 'ok' ? 'warn' : ''} ${focus.vid === m.p.vid ? 'on' : ''}`} onClick={() => toGantt(m.p.vid)}>
                   <td className="strong">{m.p.fixed && '🔒 '}{m.p.name}</td><td className="small">{m.p.product}, {m.p.dir}</td><td>{m.p.berth}</td><td><St tone={m.phaseTone}>{m.phaseText}</St></td>
                   <td className="num">{fmt(m.v.eta)}{m.shift !== 0 && <span className="small muted"> (확정 때 {fmt(m.p.eta)})</span>}</td>
@@ -257,7 +257,7 @@ export default function Compare() {
 
       {result.stale && (
         <Callout className="cmp-stale" intent="warning" icon="refresh" title="계획 조건이 바뀌었습니다. 다시 계산해야 후보가 맞습니다">
-          <p className="small">지금 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 그대로 둡니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
+          <p className="small">현재 보이는 후보는 바뀌기 전 조건으로 계산한 값입니다{scen.fixes.length ? `. 고정한 배 ${scen.fixes.length}척은 다시 계산할 때 그대로 둡니다` : ''}. 다시 계산하기 전에는 확정할 수 없습니다.</p>
           <div className="risk-buttons">
             <Button intent="warning" icon="refresh" disabled={!isScheduler || result.running} onClick={recalc}>다시 계산</Button>
           </div>

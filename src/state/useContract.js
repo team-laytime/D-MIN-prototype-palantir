@@ -131,9 +131,7 @@ export function dealViews(s) {
 export const leftFor = (view, docId) => view.left.filter((r) => r.sources.some((x) => x.doc_id === docId)).length
 export const docOf = (docId) => DOCS[docId] ?? null
 // 원본 쪽 이미지: 합성 계약서 원본 PDF 쪽을 그림으로 바꿔 넣은 것(pages/<doc_id>-<쪽>.jpg|png). 없으면 null → 화면은 자리 표시.
-// PDF 16건의 파서 출력은 D-MIN-contract scan-review-info(153e2f9)를 규칙만(tesseract, LLM 없이) 돌린 것(data/out/front/rules).
-// 그 출력에서 빈 LLM 칸 2개(SYN-CP-303 nor_notice_h, SYN-CP-314 laytime_prorate)만 eval4_llm 것을 남겼고, recap 2건은 eval4_llm 그대로.
-// shortcut: LLM 최종본(data/out/front/llm)이 오면 16건을 그걸로 바꾸고 남긴 LLM 칸은 지운다.
+// PDF 16건의 파서 출력은 D-MIN-contract scan-review-info(153e2f9)의 LLM 최종본(data/out/front/llm, qwen3:8b · tesseract). recap 2건은 eval4_llm 그대로.
 // shortcut: 파서를 붙이면 서버가 쪽 이미지를 내보내는 주소로 바꾼다.
 // 글자층 PDF 쪽은 1비트 PNG(150dpi, 쪽당 35~50KB), 스캔본은 흑백 JPEG(110dpi). 근거 박스는 둘 다 같은 방식(쪽 대비 비율)으로 얹는다
 const PAGES = Object.fromEntries(Object.entries(import.meta.glob('../mock/contract/pages/*.{jpg,png}', { eager: true, query: '?url', import: 'default' }))

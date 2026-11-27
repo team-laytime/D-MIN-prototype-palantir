@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { FIELDS, dealRows, detectKind, editKind, findInQuote, findQuoteInText, fmtValue, fromDraft, toDraft, weatherDeductPct } from './contract.js'
+import { FIELDS, dealRows, detectKind, editKind, findInQuote, findQuoteInText, fmtValue, fromDraft, ocrLow, toDraft, weatherDeductPct } from './contract.js'
 
 const load = (name) => JSON.parse(readFileSync(new URL(`../mock/contract/${name}.json`, import.meta.url), 'utf8'))
 const deals = load('deals')
@@ -168,4 +168,11 @@ test('값 고치기: 칸 종류마다 입력 꼴, 입력 → 문서 JSON과 같�
   assert.equal(toDraft(f('laytime_terms'), 'SHINC_NONREV'), 'SHINC, 비가역')
   assert.equal(fromDraft(f('imo'), ' 1007017 '), '1007017')
   assert.equal(fromDraft(f('imo'), '  '), undefined)
+})
+
+test('ocrLow: 0.5 미만만 원본 확인, 못 읽은 칸(null)은 표시 없음', () => {
+  assert.equal(ocrLow({ ocr_conf: 0 }), true)
+  assert.equal(ocrLow({ ocr_conf: 0.5 }), false)
+  assert.equal(ocrLow({ ocr_conf: null }), false)
+  assert.equal(ocrLow(undefined), false)
 })

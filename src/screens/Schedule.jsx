@@ -76,8 +76,8 @@ export default function Schedule() {
     <Screen tab="ops" title="확정 접안 일정" actions={<St tone="live">확정 v{plan.no} 적용 중, {plan.at}</St>} bodyClass="schedule-page">
       <Stats items={[
         { label: '내 부두 다음 접안', value: myNext ? <span className="schedule-prose">{myNext.name}</span> : '-', sub: myNext ? `${myNext.berth}, ${fmt(myNext.etb)}` : '예정 없음', tone: 'accent' },
-        { label: '접안까지', value: myNext ? <span className="num">{fmtDur(myNext.etb - NOW)}</span> : '-', sub: `지금 ${fmt(NOW)} 기준`, tone: myNext && myNext.etb - NOW < 6 * 60 ? 'amber' : undefined },
-        { label: '내 부두 지금', value: <span className="schedule-prose">{myNow ? myNow.name : '비어 있음'}</span>, sub: myNow ? `작업 종료 ${fmt(myNow.etu)}` : '' },
+        { label: '접안까지', value: myNext ? <span className="num">{fmtDur(myNext.etb - NOW)}</span> : '-', sub: `현재 ${fmt(NOW)} 기준`, tone: myNext && myNext.etb - NOW < 6 * 60 ? 'amber' : undefined },
+        { label: '내 부두 현재', value: <span className="schedule-prose">{myNow ? myNow.name : '비어 있음'}</span>, sub: myNow ? `작업 종료 ${fmt(myNow.etu)}` : '' },
         { label: '내 담당', value: <span className="schedule-prose">{role.team}</span>, sub: `${myTeam.lead}, ${myTeam.tel} (가상)` },
       ]} />
 
@@ -148,7 +148,7 @@ export default function Schedule() {
       )}
 
       {view === 'chart' && (
-        <Panel code="BERTH-GANTT" title="선석별 접안 차트" desc="막대 = 접안부터 작업 종료까지, 세로선 = 지금, 부두 순서(내 부두 먼저)" pad>
+        <Panel code="BERTH-GANTT" title="선석별 접안 차트" desc="막대 = 접안부터 작업 종료까지, 세로선 = 현재, 부두 순서(내 부두 먼저)" pad>
           <div className="sch-gantt">
             <div className="sch-gantt-axis">{days.map(([d, at]) => <span key={d} style={{ left: X(Math.max(at, t0)) }}>{d}</span>)}</div>
             {shownPiers.flatMap((pr) => pr.berths.map(([bid, name]) => (

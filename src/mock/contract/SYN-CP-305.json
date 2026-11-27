@@ -15,9 +15,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.0942,
+      0.3279,
       0.0836,
-      0.2698,
+      0.5328,
       0.0977
      ]
     ],
@@ -39,15 +39,15 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.6154,
+      0.5613,
       0.1244,
-      0.9514,
+      0.871,
       0.1392
      ],
      [
       0.0863,
       0.1398,
-      0.9766,
+      0.8603,
       0.1546
      ]
     ],
@@ -69,9 +69,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1182,
+      0.1053,
       0.231,
-      0.2459,
+      0.229,
       0.2451
      ]
     ],
@@ -99,9 +99,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1262,
+      0.1133,
       0.3022,
-      0.4294,
+      0.3904,
       0.3163
      ]
     ],
@@ -129,15 +129,15 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.6154,
+      0.5613,
       0.1244,
-      0.9514,
+      0.871,
       0.1392
      ],
      [
       0.0863,
       0.1398,
-      0.9766,
+      0.8603,
       0.1546
      ]
     ],
@@ -159,15 +159,15 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.6154,
+      0.5613,
       0.1244,
-      0.9514,
+      0.871,
       0.1392
      ],
      [
       0.0863,
       0.1398,
-      0.9766,
+      0.8603,
       0.1546
      ]
     ],
@@ -199,9 +199,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1182,
+      0.1053,
       0.4828,
-      0.3017,
+      0.2902,
       0.4969
      ]
     ],
@@ -229,9 +229,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1262,
+      0.1098,
       0.497,
-      0.3097,
+      0.2769,
       0.5111
      ]
     ],
@@ -261,13 +261,13 @@
      [
       0.0863,
       0.5636,
-      0.5331,
+      0.4702,
       0.5777
      ],
      [
       0.0863,
       0.5778,
-      0.1341,
+      0.1333,
       0.5919
      ]
     ],
@@ -291,13 +291,13 @@
      [
       0.5101,
       0.5636,
-      0.933,
+      0.8669,
       0.5777
      ],
      [
       0.5101,
       0.5778,
-      0.6457,
+      0.628,
       0.5919
      ]
     ],
@@ -321,7 +321,7 @@
      [
       0.0863,
       0.6301,
-      0.3576,
+      0.3119,
       0.6442
      ]
     ],
@@ -345,7 +345,7 @@
      [
       0.0863,
       0.6158,
-      0.2698,
+      0.2476,
       0.6299
      ]
     ],
@@ -378,9 +378,9 @@
     "reviewed_by": null,
     "boxes": [
      [
-      0.1182,
+      0.1053,
       0.7726,
-      0.5012,
+      0.4334,
       0.7867
      ]
     ],
@@ -415,7 +415,7 @@
      [
       0.5101,
       0.7726,
-      0.7814,
+      0.7769,
       0.7867
      ]
     ],
@@ -466,29 +466,23 @@
     "doc_id": "SYN-CP-305",
     "page": 3,
     "section": "rider",
-    "quote": "Clause 3 - Laytime Cut-Off: Time for discharging, and any time on demurrage, runs only until the cargo hoses have been disconnected on completion; any later wait for Bills of Lading, cargo documents or customs clearance is not entered in the time sheet.",
+    "quote": "Time for discharging, and any time on demurrage, runs only until the cargo hoses have been disconnected on completion",
     "confidence": 0.8,
     "method": "rule",
     "ocr": false,
     "reviewed_by": null,
     "boxes": [
      [
-      0.0863,
+      0.3003,
       0.2596,
-      1.0,
+      0.9033,
       0.2759
      ],
      [
       0.0863,
       0.278,
-      1.0,
+      0.3778,
       0.2943
-     ],
-     [
-      0.0863,
-      0.2964,
-      0.4836,
-      0.3127
      ]
     ],
     "ocr_conf": null,
@@ -546,7 +540,7 @@
      [
       0.5101,
       0.7726,
-      0.7814,
+      0.7769,
       0.7867
      ]
     ],
@@ -575,8 +569,8 @@
   }
  },
  "run": {
-  "llm": null,
-  "llm_digest": null,
+  "llm": "qwen3:8b",
+  "llm_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
   "vision": null,
   "vision_digest": null,
   "ocr_engine": null,
