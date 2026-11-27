@@ -1,0 +1,555 @@
+{
+ "doc_id": "SYN-CP-312",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.3279,
+      0.0836,
+      0.5328,
+      0.0977
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "vessel_name": {
+   "value": "SYN BELLATRIX",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Lonestar Aframax Ltd. (Registered Owner), as owner of the MT SYN BELLATRIX, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.572,
+      0.1244,
+      0.906,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8225,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "imo": {
+   "value": "1007093",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO no.: 1007093",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1053,
+      0.231,
+      0.229,
+      0.2451
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "dwt": {
+   "value": 113900.0,
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Summer deadweight: 113,900 metric tons",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1133,
+      0.3022,
+      0.3904,
+      0.3163
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "owner": {
+   "value": "SYN Lonestar Aframax Ltd.",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Lonestar Aframax Ltd. (Registered Owner), as owner of the MT SYN BELLATRIX, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.572,
+      0.1244,
+      0.906,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8225,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Lonestar Aframax Ltd. (Registered Owner), as owner of the MT SYN BELLATRIX, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.572,
+      0.1244,
+      0.906,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8225,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_laydays_from": {
+   "value": "2025-11-16T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: November 16, 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1053,
+      0.4828,
+      0.3243,
+      0.4969
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_laydays_to": {
+   "value": "2025-11-18T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Cancelling: November 18, 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1098,
+      0.497,
+      0.311,
+      0.5111
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_ports": {
+   "value": null,
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Load port(s), in Charterer's option: 1 SB Houston Ship Channel, Texas, USA",
+    "confidence": 0.5,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.5636,
+      0.4564,
+      0.5777
+     ],
+     [
+      0.0863,
+      0.5778,
+      0.2254,
+      0.5919
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Discharge port(s), in Charterer's option: 1 SB Ulsan (Onsan), Korea",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5101,
+      0.5636,
+      0.8629,
+      0.5777
+     ],
+     [
+      0.5101,
+      0.5778,
+      0.6085,
+      0.5919
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cargo": {
+   "value": "CRUDE",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "(ii) Description: Crude Oil",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.6301,
+      0.2614,
+      0.6442
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cp_qty_t": {
+   "value": 100000.0,
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "(i) Quantity: 100,000 MT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.6158,
+      0.2556,
+      0.6299
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "qty_vs_dwt",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_total_h": {
+   "value": 72.0,
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Total laytime in running hours: 3 days",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1053,
+      0.7726,
+      0.366,
+      0.7867
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "demurrage_rate_per_day": {
+   "value": 40700.0,
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demurrage per day: USD 40,700 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5101,
+      0.7726,
+      0.7769,
+      0.7867
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-312",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demurrage per day: USD 40,700 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5101,
+      0.7726,
+      0.7769,
+      0.7867
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  }
+ },
+ "review": [
+  {
+   "field": "load_ports",
+   "reason": "필수 칸 없음"
+  }
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": "qwen3:8b",
+  "llm_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
+}

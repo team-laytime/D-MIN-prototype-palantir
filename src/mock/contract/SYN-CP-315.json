@@ -1,0 +1,477 @@
+{
+ "doc_id": "SYN-CP-315",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.3591,
+      0.0792,
+      0.5647,
+      0.1044
+     ]
+    ],
+    "ocr_conf": 0.854,
+    "unread": false
+   },
+   "checks": []
+  },
+  "vessel_name": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "imo": {
+   "value": "1007110",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO ee: 1007110",
+    "confidence": 0.63,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1056,
+      0.216,
+      0.2506,
+      0.2339
+     ]
+    ],
+    "ocr_conf": 0.632,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "dwt": {
+   "value": 46900.0,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Sameer deadweight 46.900 mnecerx tows",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1312,
+      0.2887,
+      0.399,
+      0.3137
+     ]
+    ],
+    "ocr_conf": 0.727,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "owner": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "charterer": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_laydays_from": {
+   "value": null,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 1$.11. 2025",
+    "confidence": 0.35,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1045,
+      0.4701,
+      0.2792,
+      0.4902
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": true
+   },
+   "checks": []
+  },
+  "load_laydays_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_ports": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "discharge_ports": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "cargo": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "cp_qty_t": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_total_h": {
+   "value": null,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Total laytime @ remeing hours 60",
+    "confidence": 0.35,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.086,
+      0.7578,
+      0.3207,
+      0.7815
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": true
+   },
+   "checks": []
+  },
+  "demurrage_rate_per_day": {
+   "value": 21390.0,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demerrage per day: 21 390 USD POFR",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.4878,
+      0.7748,
+      0.7549,
+      0.7964
+     ]
+    ],
+    "ocr_conf": 0.687,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "berth_shift_counts": {
+   "value": false,
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 3,
+    "section": "rider",
+    "quote": "Laytine and demurrage are suspended while the Vessel shifts between berths, and resume when the 1s all fast at the new berth.",
+    "confidence": 0.56,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.3334,
+      0.6094,
+      0.9207,
+      0.6445
+     ],
+     [
+      0.0949,
+      0.6445,
+      0.4551,
+      0.6731
+     ]
+    ],
+    "ocr_conf": 0.53,
+    "unread": false
+   },
+   "checks": []
+  },
+  "half_rate_events": {
+   "value": "PORT_CONGESTION",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 5,
+    "section": "rider",
+    "quote": "Claume 26 - Quewe at Termnal: Owners agree that hours on demurrage attributable to congestion of the port are to be mvoiced at half the Part demurrage rate",
+    "confidence": 0.56,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.099,
+      0.2147,
+      0.9295,
+      0.2548
+     ],
+     [
+      0.0984,
+      0.2327,
+      0.4502,
+      0.2593
+     ]
+    ],
+    "ocr_conf": 0.893,
+    "unread": false
+   },
+   "checks": []
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-315",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demerrage per day: 21 390 USD POFR",
+    "confidence": 0.504,
+    "method": "rule",
+    "ocr": true,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.4878,
+      0.7748,
+      0.7549,
+      0.7964
+     ]
+    ],
+    "ocr_conf": 0.687,
+    "unread": false
+   },
+   "checks": []
+  }
+ },
+ "review": [
+  {
+   "field": "vessel_name",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "charterer",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "load_ports",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "discharge_ports",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cargo",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cp_qty_t",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "laytime_total_h",
+   "reason": "OCR 못 읽음"
+  },
+  {
+   "field": "load_laydays_from",
+   "reason": "OCR 못 읽음"
+  },
+  {
+   "field": "load_laydays_to",
+   "reason": "필수 칸 없음"
+  },
+  {
+   "field": "cp_form",
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
+  },
+  {
+   "field": "imo",
+   "reason": "확신도 낮음(OCR 값, 0.63): 다른 엔진·recap·선박 표의 확인 없음"
+  },
+  {
+   "field": "dwt",
+   "reason": "확신도 낮음(OCR 값, 0.50): 다른 엔진·recap·선박 표의 확인 없음"
+  },
+  {
+   "field": "demurrage_rate_per_day",
+   "reason": "스캔본 계산 값(OCR, 0.50): 원본 쪽과 대조"
+  },
+  {
+   "field": "berth_shift_counts",
+   "reason": "스캔본 계산 값(OCR, 0.56): 원본 쪽과 대조"
+  },
+  {
+   "field": "half_rate_events",
+   "reason": "스캔본 계산 값(OCR, 0.56): 원본 쪽과 대조"
+  },
+  {
+   "field": "currency",
+   "reason": "확신도 낮음(OCR 값, 0.50): 다른 엔진·recap·선박 표의 확인 없음"
+  }
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": "qwen3:8b",
+  "llm_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": "tesseract",
+  "second_engine": null,
+  "vessels": false
+ },
+ "ocr_pages": [
+  {
+   "page": 1,
+   "conf_mean": 0.605,
+   "low_words": 0.419
+  },
+  {
+   "page": 2,
+   "conf_mean": 0.669,
+   "low_words": 0.337
+  },
+  {
+   "page": 3,
+   "conf_mean": 0.873,
+   "low_words": 0.075
+  },
+  {
+   "page": 4,
+   "conf_mean": 0.854,
+   "low_words": 0.097
+  },
+  {
+   "page": 5,
+   "conf_mean": 0.853,
+   "low_words": 0.107
+  }
+ ]
+}

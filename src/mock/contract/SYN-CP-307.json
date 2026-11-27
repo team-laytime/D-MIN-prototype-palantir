@@ -1,0 +1,616 @@
+{
+ "doc_id": "SYN-CP-307",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.0836,
+      0.2912,
+      0.0977
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "vessel_name": {
+   "value": "SYN ARCTURUS",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Valletta Chemical Shipping Ltd. (Registered Owner), as owner of the MT SYN ARCTURUS, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5529,
+      0.1244,
+      0.8692,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9004,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "imo": {
+   "value": "1007055",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO no.: 1007055",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.163,
+      0.2577,
+      0.2269,
+      0.2718
+     ],
+     [
+      0.4583,
+      0.2577,
+      0.5141,
+      0.2718
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "dwt": {
+   "value": 17900.0,
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "Summer deadweight: 17,900 metric tons",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.171,
+      0.3616,
+      0.3168,
+      0.3757
+     ],
+     [
+      0.4583,
+      0.3616,
+      0.5775,
+      0.3757
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "owner": {
+   "value": "SYN Valletta Chemical Shipping Ltd.",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Valletta Chemical Shipping Ltd. (Registered Owner), as owner of the MT SYN ARCTURUS, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5529,
+      0.1244,
+      0.8692,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9004,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Valletta Chemical Shipping Ltd. (Registered Owner), as owner of the MT SYN ARCTURUS, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5529,
+      0.1244,
+      0.8692,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9004,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_laydays_from": {
+   "value": "2025-11-15T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 15 November 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.163,
+      0.6538,
+      0.2588,
+      0.6679
+     ],
+     [
+      0.4583,
+      0.6538,
+      0.5407,
+      0.6679
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_laydays_to": {
+   "value": "2025-11-17T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "Cancelling: 17 November 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1675,
+      0.6746,
+      0.2455,
+      0.6887
+     ],
+     [
+      0.4583,
+      0.6746,
+      0.5407,
+      0.6887
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_ports": {
+   "value": "IDTBN",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "Load port(s), in Charterer's option: 1 SB Tuban (TPPI jetty), East Java, Indonesia",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.7578,
+      0.3873,
+      0.7719
+     ],
+     [
+      0.4583,
+      0.7578,
+      0.7521,
+      0.7719
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "Discharge port(s), in Charterer's option: 1 SB Ulsan (Onsan), Republic of Korea",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.7993,
+      0.7122,
+      0.8134
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cargo": {
+   "value": "XYL",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "(ii) Description: Mixed Xylenes",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.8617,
+      0.2517,
+      0.8758
+     ],
+     [
+      0.4583,
+      0.8617,
+      0.5562,
+      0.8758
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cp_qty_t": {
+   "value": 12000.0,
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 1,
+    "section": "part1",
+    "quote": "(i) Quantity: 12,000 MT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.8409,
+      0.2295,
+      0.855
+     ],
+     [
+      0.4583,
+      0.8409,
+      0.5301,
+      0.855
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "qty_vs_dwt",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_total_h": {
+   "value": 48.0,
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 2,
+    "section": "part1",
+    "quote": "Total laytime in running hours: 48",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.163,
+      0.1822,
+      0.3785,
+      0.1963
+     ],
+     [
+      0.4583,
+      0.1822,
+      0.4742,
+      0.1963
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "demurrage_rate_per_day": {
+   "value": null,
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 2,
+    "section": "part1",
+    "quote": "Demurrage per day: To be advised",
+    "confidence": 0.5,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.2445,
+      0.2831,
+      0.2586
+     ],
+     [
+      0.4583,
+      0.2445,
+      0.5478,
+      0.2586
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "half_rate_events": {
+   "value": "PORT_CONGESTION",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 3,
+    "section": "rider",
+    "quote": "Should congestion at the terminal oblige the Vessel to queue for a berth at either port, any demurrage accruing over that queueing time shall be cut to 50 per cent of the agreed figure.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.2838,
+      0.3047,
+      0.9137,
+      0.321
+     ],
+     [
+      0.0863,
+      0.3231,
+      0.7934,
+      0.3394
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-307",
+    "page": 2,
+    "section": "part1",
+    "quote": "Currency: USD",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5141,
+      0.0848,
+      0.6138,
+      0.0989
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  }
+ },
+ "review": [
+  {
+   "field": "demurrage_rate_per_day",
+   "reason": "필수 칸 없음"
+  }
+ ],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": "qwen3:8b",
+  "llm_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
+}

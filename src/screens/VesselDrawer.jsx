@@ -67,7 +67,7 @@ export default function VesselDrawer() {
     { k: '정박시간 개시', at: p.ls, f: '이 시각부터 허용 시간을 셉니다. NOR, LayCan, 계약 조건으로 정해집니다.' },
     { k: '접안', at: p.etb, f: `${berth?.name ?? p.bid}에 배를 댑니다. ${p.waitMin > 0 ? `도착 뒤 정박지에서 ${fmtDur(p.waitMin)} 기다릴 예정입니다.` : '도착 뒤 기다리지 않고 바로 댑니다.'}${p.night ? ' 야간 접안입니다.' : ''}${p.fixed ? ' 스케줄러가 고정한 자리입니다.' : ''}` },
     { k: '작업 시작', at: p.ws, f: '접안 뒤 호스를 연결하고 하역을 시작합니다.' },
-    { k: '작업 완료', at: p.wf, f: `${v.product} ${v.ton.toLocaleString()} t ${v.dir} 작업이 끝납니다. 작업 ${fmtDur(p.wf - p.ws)}${rate ? `, 이 부두 하역 속도 ${Math.round(rate).toLocaleString()} t/h` : ''}.` },
+    { k: '작업 완료', at: p.wf, f: `${v.product} ${v.ton.toLocaleString()} t ${v.dir} 작업이 끝납니다.${[p.wf != null && p.ws != null && ` 작업 ${fmtDur(p.wf - p.ws)}`, rate && ` 이 부두 하역 속도 ${Math.round(rate).toLocaleString()} t/h`].filter(Boolean).join(',')}${(p.wf != null && p.ws != null) || rate ? '.' : ''}` },
     { k: '호스 분리', at: p.hose, f: '하역 호스를 뗍니다. 정박시간은 여기서 멈춥니다.' },
     { k: '정박시간 종료', at: p.le, f: `정박시간 개시에서 허용 시간 ${v.contract.laytimeH}시간이 지난 시각입니다. 호스 분리가 이보다 늦으면 그만큼 체선입니다.` },
     { k: '이안', at: p.etu, f: '부두를 떠납니다. 이 뒤로 다음 선박이 이 부두를 쓸 수 있습니다.' },
@@ -116,7 +116,7 @@ export default function VesselDrawer() {
         <header className="vessel-drawer-head">
           <Icon icon="cargo-ship" size={15} className="muted" />
           <div>
-            <h2 id="vessel-drawer-title">{v.name}{view === 'evidence' && <span>계획 일정</span>}</h2>
+            <h2 id="vessel-drawer-title">{v.fullName ?? v.name}{view === 'evidence' && <span>계획 일정</span>}</h2>
             <span className="vessel-drawer-ident">{live && <St tone={PHASE[me.phase].tone}>{PHASE[me.phase].label}</St>}<span className="muted">{v.nameEn ?? v.callSign}</span></span>
           </div>
           <Button icon="cross" variant="minimal" aria-label="닫기" onClick={closeDrawer} />
@@ -162,7 +162,7 @@ export default function VesselDrawer() {
                 <div><dt>영문 선명</dt><dd>{v.nameEn ?? '-'}</dd></div>
                 <div><dt>호출부호, 항차</dt><dd className="mono">{v.callSign}, {Number(v.voyage)}항차</dd></div>
                 <div><dt>선종</dt><dd>{v.cls ?? v.vtype ?? '-'}</dd></div>
-                <div><dt>국적</dt><dd>{v.flag ?? '-'}</dd></div>
+                <div><dt>선적</dt><dd>{v.flag ?? '-'}</dd></div>
                 <div><dt>DWT</dt><dd className="num">{v.dwt?.toLocaleString() ?? '-'} t</dd></div>
                 <div><dt>GT</dt><dd className="num">{v.grt?.toLocaleString() ?? '-'}</dd></div>
                 <div><dt>LOA, 폭</dt><dd className="num">{v.loa ?? '-'} m{v.web?.beam ? `, ${v.web.beam} m` : ''}</dd></div>
@@ -173,7 +173,7 @@ export default function VesselDrawer() {
             </details>
 
             <details className="vc-more">
-              <summary>갈 수 있는 선석 <span className="num">{v.compat.length}</span></summary>
+              <summary>접안 가능한 선석 <span className="num">{v.compat.length}</span></summary>
               <div className="vc-berths">{v.compat.map((id) => (
                 <span key={id} className={`vc-berth ${id === p.bid ? 'on' : ''}`} title={v.rates[id] ? `하역 속도 ${Math.round(v.rates[id]).toLocaleString()} t/h` : ''}>
                   {berthOf(id)?.label ?? id}{id === p.bid && <em>배정</em>}
@@ -193,15 +193,13 @@ export default function VesselDrawer() {
               ]} />
             </Panel>
           </> : view === 'evidence' ? <>
+            {/* 11-26 주변 패널과 같은 모양(각진 테두리 · 왼쪽 색 줄). 체선이 없으면 한 줄만 */}
             <div className={`vd-verdict ${d.cents > 0 ? 'dem' : 'ok'}`}>
-              <span className="vd-verdict-icon"><Icon icon={d.cents > 0 ? 'warning-sign' : 'tick'} size={18} /></span>
-              <div>
-                <span className="vd-verdict-k">{d.cents > 0 ? '예상 체선료' : '예상 체선 없음'}</span>
-                <b className="num">{isScheduler ? money(d.cents) : d.cents > 0 ? fmtDur(d.excessMin) : '0'}</b>
-                <p>{d.excessMin > 0
-                  ? <>호스 분리가 허용 시간 끝보다 <b>{fmtDur(d.excessMin)}</b> 늦을 예정입니다.</>
-                  : '허용 시간 안에 호스를 뗄 예정입니다.'}{d.weatherMin > 0 && ` 기상 ${fmtDur(d.weatherMin)}은 공제됩니다.`}</p>
-              </div>
+              <span className="vd-verdict-k">{d.cents > 0 ? '예상 체선료' : '예상 체선 없음'}</span>
+              {d.cents > 0 && <>
+                <b className="num">{isScheduler ? money(d.cents) : fmtDur(d.excessMin)}</b>
+                <p>호스 분리가 허용 시간 끝보다 <b className="num">{fmtDur(d.excessMin)}</b> 늦을 예정입니다.{d.weatherMin > 0 && ` 기상 ${fmtDur(d.weatherMin)}은 공제됩니다.`}</p>
+              </>}
             </div>
 
             {/* 11-25 구간별 일정: 범례 없이 줄 이름과 칸 안의 글로 읽힌다 */}
@@ -270,7 +268,7 @@ export default function VesselDrawer() {
   )
 }
 
-const PEOPLE = ['스케줄러 A', '이용자 B', '대리점 담당', 'SK 3부두 하역 1팀']
+const PEOPLE = ['스케줄러 A', '이용자 B', '대리점 담당', '3부두 하역 1팀']
 const mentionsOf = (text) => PEOPLE.filter((p) => text.includes(`@${p}`))
 const withMentions = (text) => text.split(new RegExp(`(@(?:${PEOPLE.join('|')}))`)).map((part, i) => (part.startsWith('@') && PEOPLE.includes(part.slice(1)) ? <b key={i} className="vd-mention">{part}</b> : part))
 

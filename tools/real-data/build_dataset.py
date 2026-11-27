@@ -16,7 +16,7 @@
 
 실행 (엔진 저장소의 파이썬 환경, 몇 초):
   ../D-MIN-optimization/.venv/bin/python tools/real-data/build_dataset.py \
-    --engine ../D-MIN-optimization --bundle ../optimizer_data_2025_1126/optimizer_2025-01-01_tank --id real-2025
+    --engine ../D-MIN-optimization --bundle ../optimizer_data_2025/optimizer_2025-01-01_tank --id real-2025
   요청에 넣는 제한 시간 60초, workers 8은 팀 권장값(탱크 반영 계획은 코어가 모자라면 60초 안에 못 찾음).
 
 출력: public/data/<id>.json, public/data/index.json  (비공개 데이터라 저장소에 올리지 않는다 · .gitignore)
@@ -65,6 +65,37 @@ def past_columns(bundle):
     return cols
 
 
+def overlap_windows(bundle):
+    """같은 선석에 두 척이 동시에 있던 구간 (실제 접안 기록 기준). 데이터 팀 선석 합성(slot_basis *_OVERLAP)이나
+    관제 기록 자체(1부두 MBU-11/12 · 6~8부두는 기록이 선석 단위)에서 나온다. 이 구간이 계획 기간에 걸리는 기준 시각은 시연에서 고르지 않는다."""
+    import csv
+    from collections import defaultdict
+    from datetime import datetime
+    f = lambda t: datetime.strptime(t, '%Y-%m-%d %H:%M')
+    by = defaultdict(list)
+    with (bundle / 'dummy' / 'current_shipments.csv').open(encoding='utf-8-sig') as fh:
+        for row in csv.DictReader(fh):
+            if row['berthed'] and row['unberthed']:
+                by[row['vessel_id'].split('#')[0]].append((f(row['berthed']), f(row['unberthed'])))
+    out = []
+    for berth, recs in by.items():
+        recs.sort()
+        for i, (s1, e1) in enumerate(recs):
+            for s2, e2 in recs[i + 1:]:
+                if s2 >= e1:
+                    break
+                out.append({'start': max(s1, s2).strftime('%Y-%m-%d %H:%M'), 'end': min(e1, e2).strftime('%Y-%m-%d %H:%M'), 'berth': berth})
+    return sorted(out, key=lambda x: x['start'])
+
+
+def blocked_by(start, days, windows):
+    """기준 시각 start(KST 'YYYY-MM-DD HH:MM')부터 days일 안에 걸리는 겹침 구간"""
+    from datetime import datetime, timedelta
+    t0 = datetime.strptime(start, '%Y-%m-%d %H:%M')
+    t1 = t0 + timedelta(days=days)
+    return [w for w in windows if datetime.strptime(w['start'], '%Y-%m-%d %H:%M') < t1 and datetime.strptime(w['end'], '%Y-%m-%d %H:%M') > t0]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--engine', required=True)
@@ -74,7 +105,7 @@ def main():
     ap.add_argument('--time-limit', type=int, default=60)
     ap.add_argument('--workers', type=int, default=8)
     ap.add_argument('--default-start', default='2025-11-09 09:00', help='화면이 처음 여는 기준 시각')
-    ap.add_argument('--shortcuts', default='2025-03-01 09:00,2025-03-10 09:00,2025-10-15 09:00,2025-11-09 09:00', help='바로가기 기준 시각 (쉼표)')
+    ap.add_argument('--shortcuts', default='2025-03-03 09:00,2025-10-03 09:00,2025-11-09 09:00', help='바로가기 기준 시각 (쉼표)')
     ap.add_argument('--label')
     a = ap.parse_args()
     engine = Path(a.engine).resolve()
@@ -99,6 +130,14 @@ def main():
 
     add_buffers(req, bundle)
 
+    # 11-26 같은 선석 동시 접안(겹침) 구간: 화면이 이 구간이 계획 기간에 걸리는 기준 시각을 고르지 못하게 한다
+    overlaps = overlap_windows(bundle)
+    shortcuts = [x.strip() for x in a.shortcuts.split(',') if x.strip()]
+    for x in [a.default_start, *shortcuts]:
+        if blocked_by(x, a.days, overlaps):
+            raise SystemExit(f'{x}: 선석 겹침 구간이 계획 기간에 걸립니다 {blocked_by(x, a.days, overlaps)} — 다른 기준 시각을 고르십시오')
+    print(f'선석 겹침 구간 {len(overlaps)}개 (이 구간이 걸리는 기준 시각은 화면에서 고를 수 없음)', file=sys.stderr)
+
     meta = json.loads((bundle / 'dummy' / 'meta.json').read_text())
     year = meta.get('plan_start', '2025')[:4]
     ds = {
@@ -109,8 +148,9 @@ def main():
         'days': a.days,
         'range': {'from': f'{year}-01-01', 'to': f'{year}-12-31'},
         'default_start': a.default_start,
-        'shortcuts': [x.strip() for x in a.shortcuts.split(',') if x.strip()],
-        'source': f'데이터 팀 묶음 {bundle.name} (실제 접안 실적 + 합성 값, 계약은 가상) · 팀 엔진 berth_sim CP-SAT',
+        'shortcuts': shortcuts,
+        'overlaps': overlaps,
+        'source': f'데이터 팀 묶음 {bundle.name} (실제 접안 실적 + 합성 값, 계약은 가상)',
         'meta_bundle': {k: meta.get(k) for k in ('dropped_bunker', 'multi_berth', 'berth_fit')},
         'meta': {k: meta.get(k) for k in ('plan_start', 'plan_days', 'current_shipments', 'past_shipments')},
         'request': req,
@@ -119,7 +159,7 @@ def main():
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f'{a.id}.json').write_text(json.dumps(ds, ensure_ascii=False, separators=(',', ':')))
-    keys = ('id', 'label', 'kind', 'days', 'range', 'default_start', 'shortcuts', 'bundle')
+    keys = ('id', 'label', 'kind', 'days', 'range', 'default_start', 'shortcuts', 'overlaps', 'bundle')
     (OUT / 'index.json').write_text(json.dumps([{k: ds[k] for k in keys}], ensure_ascii=False, indent=1))
     print(f'→ {OUT / (a.id + ".json")} (선박 {len(req["vessels"]):,}척 · 과거 실적 {len(ds["past_shipments"]["qty"]):,}건 · 기상 {len(req["weather"]):,}시간)', file=sys.stderr)
 

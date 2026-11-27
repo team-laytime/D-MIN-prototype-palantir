@@ -10,7 +10,9 @@ export const PASSWORD = '1234'
 export const ADMIN_LOGIN_ID = 'admin'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
-  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: 'SK 3부두 하역 1팀', mail: 'sk3-ops@example.com' },
+  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: '3부두 하역 1팀', mail: 'sk3-ops@example.com' },
+  // 11-26 계약 문서 담당(임시): C/P · recap · 매매 확인서를 넣고 파서 추출값을 검토한다
+  contract: { id: 'contract', name: '계약 담당 C', title: '계약 문서 담당', loginId: 'contract', home: 'docs', desc: '계약 문서 등록, 추출값 검토' },
 }
 
 // 왼쪽 레일 = 묶음. roles에 없는 계정에게는 어디에도 나오지 않는다. icon은 Blueprint 아이콘 이름.
@@ -28,6 +30,10 @@ export const NAV = [
   ] },
   // 11-20 피드백: 계산 검증·활동 기록 화면은 뺀다(C).
   { key: 'SCHEDULE', label: '일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
+  { key: 'CONTRACT', label: '계약 문서 업무', roles: ['contract'], items: [
+    { id: 'docs', label: '문서 등록', icon: 'document', no: 1 },
+    { id: 'terms', label: '추출값 검토', icon: 'search-text', no: 2 },
+  ] },
 ]
 
 export const canUse = (roleId, group) => group.roles.includes(roleId)
@@ -38,7 +44,7 @@ export const nowText = () => new Date(Date.now() + 9 * 3600e3).toISOString().sli
 
 const fresh = () => ({
   roleId: null, // 로그인 전
-  plans: [], // 확정 이력 {no, candId, label, total, reason, uncheckedRisks, at, who, version, placements, cancelled}
+  plans: [], // 확정 이력 {no, candId, label, total, reason, appliedChanges, skippedChanges, checkedRisks, uncheckedRisks, at, who, version, placements, cancelled}
   log: [], // 활동 기록(추가만) {id, ts, at, who, roleTitle, kind, action, target, detail}
   history: {}, // 대상별 변경 이력 `${scenarioId}:${vid|'env'}` → [{id, ts, at, who, field, label, from, to, logId}]
   notes: {}, // 선박 메모 `${scenarioId}:${vid}` → [{id, ts, at, who, text}]
@@ -57,7 +63,8 @@ const subscribe = (l) => { listeners.add(l); return () => listeners.delete(l) }
 /** 구독용 훅. 반환값 rev는 의존성 배열에 넣어 다시 계산할 때 쓴다. */
 export const useWorkspace = () => useSyncExternalStore(subscribe, () => rev)
 
-export function resetWorkspace() { Object.assign(ws, fresh()); emit() }
+// 11-26 시연 초기화는 로그인은 그대로 두고 기록 · 입력만 지운다 (전에는 로그인까지 지워 로그인 화면으로 튕겼다)
+export function resetWorkspace() { Object.assign(ws, { ...fresh(), roleId: ws.roleId }); emit() }
 export function setRole(roleId) {
   if (roleId) {
     ws.roleId = roleId
@@ -161,7 +168,8 @@ export const activePlan = () => {
 
 /** 스케줄러 확정. 이후 입력이 바뀌어도 이용자는 확정 당시 일정을 본다(스냅숏). */
 // 11-24 실데이터: 스냅숏에 선박, 부두, 체선료(센트)까지 복사해 둔다. 확정 뒤 계획 조건을 고쳐도 이 값은 바뀌지 않는다.
-export function fixPlan({ cand, scen, version, reason, uncheckedRisks, requestId, candidates, risks, alternativeSlot, reference, recheck }) {
+export function fixPlan({ cand, scen, version, reason, uncheckedRisks, requestId, candidates, risks, alternativeSlot, reference, recheck,
+  skippedChanges = [], appliedChanges = [], checkedRisks = [] }) {
   if (ws.roleId !== 'scheduler') throw new Error('스케줄러만 확정할 수 있습니다.')
   if (!requestId || !candidates.includes(cand)) throw new Error('확정 후보의 계산 버전을 찾지 못했습니다.')
   const scope = decisionScope(scen, version, cand, candidates)
@@ -171,8 +179,6 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks, requestId
     return repeated
   }
   if (reference && reference.scope !== scope) throw new Error('참고 사례를 현재 후보에서 다시 선택해야 합니다.')
-  const v = Object.fromEntries(scen.vessels.map((x) => [x.id, x]))
-  const b = Object.fromEntries(scen.berths.map((x) => [x.id, x]))
   const at = nowText()
   const who = role().name
   const number = ws.plans.length + 1
@@ -180,17 +186,35 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks, requestId
     id: requestId, scope, planNo: number, scenarioId: scen.id ?? scen.name, asOf: scen.request.start, version,
     at, who, source: 'prototype_scheduler_confirmation', operationalOutcome: null,
     selectedSlot: cand.id, alternativeSlot: alternativeSlot || null, reason, recheck, uncheckedRisks,
+    appliedChanges, skippedChanges, checkedRisks,
     planningDays: scen.request.params?.horizon?.days ?? scen.days ?? null,
     blocks: scen.blocks ?? [], fixes: scen.fixes ?? [],
     candidates: candidates.map((c) => snapshotCandidate(c, risks[c.id])), reference: reference ?? null,
   })
   const plan = {
-    no: number, candId: cand.id, label: cand.label, total: cand.total, reason, uncheckedRisks: [...uncheckedRisks], decision,
+    ...planSnapshot({ cand, scen, version, reason }), no: number, at, who, decision,
+    appliedChanges: [...appliedChanges], skippedChanges: [...skippedChanges],
+    checkedRisks: [...checkedRisks], uncheckedRisks: [...uncheckedRisks],
+  }
+  if (!saveDecision(globalThis.localStorage, decision)) return null
+  ws.plans.push(plan)
+  addLog('확정', '계획 확정', `접안 계획 v${plan.no} · ${cand.label}`, reason)
+  emit()
+  return plan
+}
+
+/** 확정 기록 한 건의 모양(저장하지 않음). 11-26 확정 전 통보 메일 예시 미리보기도 이것으로 만든다 */
+export function planSnapshot({ cand, scen, version, reason }) {
+  const v = Object.fromEntries(scen.vessels.map((x) => [x.id, x]))
+  const b = Object.fromEntries(scen.berths.map((x) => [x.id, x]))
+  return {
+    no: 0, candId: cand.id, label: cand.label, total: cand.total, reason, // 11-26 판단 근거 = 작업자 판단 근거 · 조건(반영 / 반영 안 함) · 리스크(확인 / 확인 안 함)
+    appliedChanges: [], skippedChanges: [], checkedRisks: [], uncheckedRisks: [],
     preset: cand.preset ? { id: cand.preset.id, label: cand.preset.label, desc: cand.preset.desc } : null,
     baselineTotal: null, moves: cand.moves ?? null,
     status: cand.status, proven: Boolean(cand.proven), solveSec: cand.solveSec ?? null,
     scenName: scen.name, bundle: scen.bundle ?? null,
-    at, who, version, cancelled: false,
+    at: nowText(), who: role()?.name ?? '-', version, cancelled: false,
     tanks: structuredClone(cand.tanks ?? []),
     // 11-25 메일 템플릿용: 생산계획(탱크 묶음별 주별 t/h), 부두 사용 불가 구간, 야간 도선 규칙
     production: (scen.tanks ?? []).map((t) => ({ name: t.name, weeks: t.weeks })),
@@ -210,11 +234,6 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks, requestId
       }
     }),
   }
-  if (!saveDecision(globalThis.localStorage, decision)) return null
-  ws.plans.push(plan)
-  addLog('확정', '계획 확정', `접안 계획 v${plan.no} · ${cand.label}`, reason)
-  emit()
-  return plan
 }
 export function cancelPlan(reason) {
   if (ws.roleId !== 'scheduler') return

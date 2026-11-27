@@ -6,6 +6,7 @@ import { solverDiagnosticContext } from './precedentComparison.js'
 
 const scen = {
   request: { start: '2025-12-07T00:00:00Z', vessels: [], params: { solver: { time_limit_s: 15 } } },
+  window: { start: 0, end: 4320 },
   vessels: [], blocks: [], fixes: [], params: {},
 }
 const noPlan = { status: 'NO_PLAN', plan: null }
@@ -28,12 +29,18 @@ test('a missing A skips B, preserves C status, and exposes a diagnostic search w
   let aAvailable = false
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     if (url === '/engine/health') return Response.json({})
-    assert.equal(url, '/engine/plans')
+    assert.equal(url, '/engine/plan-jobs')
+    assert.equal(options.method, 'POST')
+    assert.ok(options.headers['Idempotency-Key'])
     const request = JSON.parse(options.body)
     attempts.push([request.request_id, request.params.solver.time_limit_s])
-    return Response.json(request.request_id === 'base' && !aAvailable ? noPlan : planned)
+    const result = request.request_id === 'base' && !aAvailable ? noPlan : planned
+    return Response.json({ job_id: 'test-job', status: 'SUCCEEDED', result })
   })
-  const incomplete = await initialResults(scen, (step) => stages.push(step))
+  const shown = []
+  const showA = (a) => shown.push(a)
+  const incomplete = await initialResults(scen, (step) => stages.push(step), undefined, showA)
+  assert.deepEqual(shown, [])
   assert.deepEqual(stages, ['A', 'C'])
   assert.deepEqual(attempts, [['base', 15], ['base', 20], ['vessel_buffer', 15]])
   const availability = candidateAvailability(incomplete)
@@ -58,7 +65,8 @@ test('a missing A skips B, preserves C status, and exposes a diagnostic search w
 
   aAvailable = true
   stages.length = 0
-  const retried = await initialResults(scen, (step) => stages.push(step))
+  const retried = await initialResults(scen, (step) => stages.push(step), undefined, showA)
+  assert.deepEqual(shown, [retried[0]])
   assert.deepEqual(stages, ['A', 'BC'])
   assert.deepEqual(rankSims(retried).map((candidate) => candidate.id), ['A', 'B', 'C'])
 })

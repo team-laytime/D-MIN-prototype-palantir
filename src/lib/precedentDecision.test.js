@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { comparisonContext } from './precedentComparison.js'
 import { candidateIdentity, decisionScope, decisionsFor } from './precedentDecision.js'
-import { cancelPlan, fixPlan, resetWorkspace, setRole, ws } from './workspace.js'
+import { cancelPlan, fixPlan, planSnapshot, resetWorkspace, setRole, ws } from './workspace.js'
 
 const data = new Map()
 const storage = {
@@ -27,8 +27,17 @@ test('confirmation saves the version, all candidates and risk evidence once, eve
   const evidence = { id: 'WORK_GAP-1', evidence: { ships: 4 } }
   const reference = { scope: decisionScope(scen, 1, a, candidates), caseId: '2025-05-23-ulsan-72h', sourceEvidence: { riskId: 'WORK_GAP-2' } }
   const request = { requestId: 'request-1', cand: a, candidates, scen, version: 1, reference, reason: '교대 간격을 비교',
-    uncheckedRisks: [], risks: { A: { state: 'done', data: { risks: [evidence] } }, B: { state: 'error' } }, alternativeSlot: 'C', recheck: '출하 마감이 확정될 때' }
+    appliedChanges: ['추가 선석 지정'], skippedChanges: ['우선 접안 요청'],
+    checkedRisks: ['교대 간격'], uncheckedRisks: ['탱크 재고'], risks: { A: { state: 'done', data: { risks: [evidence] } }, B: { state: 'error' } }, alternativeSlot: 'C', recheck: '출하 마감이 확정될 때' }
+  const preview = planSnapshot(request)
+  assert.equal(preview.no, 0)
+  assert.equal(ws.plans.length, 0)
+  assert.equal(decisionsFor(storage, scen.id).length, 0)
   const saved = fixPlan(request)
+  for (const key of ['appliedChanges', 'skippedChanges', 'checkedRisks', 'uncheckedRisks']) {
+    assert.deepEqual(saved[key], request[key])
+    assert.deepEqual(saved.decision[key], request[key])
+  }
   assert.equal(fixPlan(request), saved)
   assert.equal(ws.plans.length, 1)
   assert.equal(ws.log.filter((item) => item.action === '계획 확정').length, 1)

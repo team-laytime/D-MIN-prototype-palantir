@@ -2,15 +2,15 @@
 //  - 고칠 수 있는 값: 선박 ETA, 부두 사용 불가 구간(blocks), 엔진 조절값(params)
 //  - 계약 값(허용 시간, 일 체선료)은 잠금. 체선료는 화면에서 계산하지 않고 「다시 계산」으로 팀 엔진에 보낸다.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Callout, Icon, InputGroup, NonIdealState, Spinner } from '@blueprintjs/core'
-import { BLOCK_KINDS, PARAM_FIELDS, TANK_RULE, WIND_GROUPS, getIn } from '../lib/scenDiff.js'
+import { Alert, Button, Callout, Checkbox, Dialog, DialogBody, Icon, InputGroup, NonIdealState, Spinner } from '@blueprintjs/core'
+import { BLOCK_KINDS, PARAM_FIELDS, SHIFT_DEFAULT, SHIFT_LABEL, SHIFT_MAX_H, TANK_RULE, WIND_GROUPS, getIn, shiftGroup } from '../lib/scenDiff.js'
 import { fmt, fmtFull, fromInput, toInput, toMin } from '../lib/time.js'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { changeText } from '../lib/incidents.js'
-import { setAlertStatus } from '../lib/workspace.js'
 import { St } from '../ui/kit.jsx'
-import { vesselIdOf } from '../lib/dataset.js'
+import { tankFlows, vesselIdOf } from '../lib/dataset.js'
+import { activePlan } from '../lib/workspace.js'
 import { Screen } from '../ui/kit.jsx'
 import './plan.css'
 
@@ -18,11 +18,22 @@ const WIND_LIMIT = 14 // m/s, 3~8부두와 부이의 하역 중단 기준(팀 �
 const berthsText = (b, byId) => (b.berths ? b.berths.map((id) => byId[id]?.code ?? id).join(', ') : '전 부두')
 
 export default function ScenarioInput() {
-  const { scenInput: scen, editScen, version, result, recalc, go } = useApp()
+  const { scenInput: scen, editScen, version, result, recalc, go, pendingIncs, decideMails, current } = useApp()
+  // 11-26 받은 메일 조건 변경 체크(반영할 것). 상단 「후보 비교」를 누를 때 한꺼번에 결정한다
+  const [mailPick, setMailPick] = useState({})
   const [query, setQuery] = useState('')
   const [etaDesc, setEtaDesc] = useState(false)
   const [piTab, setPiTab] = useState('vessel')
 
+  // 11-26 탱크 재고 흐름: 확정 전에는 실제 기록(= 이전 확정 계획), 이 기준 시각에서 확정한 뒤에는 확정 계획의 작업 시각대로
+  const confirmed = current ? activePlan() : null
+  const mine = confirmed && scen && confirmed.scenName === scen.name ? confirmed : null
+  const tanks = useMemo(() => {
+    if (!scen) return []
+    if (!mine) return scen.tanks ?? []
+    const work = Object.fromEntries(mine.placements.filter((p) => p.ws != null && p.wf != null).map((p) => [p.vid, { ws: p.ws, wf: p.wf }]))
+    return tankFlows(scen.request, scen.window.start, scen.window.end, work)
+  }, [scen, mine])
   const berthById = useMemo(() => Object.fromEntries((scen?.berths ?? []).map((b) => [b.id, b])), [scen?.berths])
   const vessels = useMemo(() => {
     if (!scen) return []
@@ -83,6 +94,25 @@ export default function ScenarioInput() {
     if (!Number.isFinite(value) || value < f.min || value > f.max || value === getIn(scen.params, f.path)) return
     editScen((d) => { const [g, k] = f.path; (d.params[g] ??= {})[k] = value })
   }
+  // 11-26 부두 그룹별 Switching · Direction (idx 0 · 1). 기본값과 같아지면 계획 조건에서 뺀다
+  const shiftDef = { ...SHIFT_DEFAULT, ...(scen.shiftDefault ?? {}) }
+  const shiftOf = (g) => scen.params.shifting?.hours?.[g] ?? shiftDef[g] ?? [0, 0]
+  const setShift = (g, idx, v) => {
+    const def = shiftDef[g] ?? [0, 0]
+    if (v < def[idx]) return `기본값 ${def[idx]}h 미만으로는 설정할 수 없습니다.`
+    if (v > SHIFT_MAX_H) return `${SHIFT_MAX_H}h 이하로 입력해 주세요.`
+    // 엔진은 shifting.hours를 통째로 바꾼다(그룹 하나만 보내면 나머지 그룹이 없어 계산이 실패) → 항상 표 전체를 보낸다
+    editScen((d) => {
+      const hrs = { ...structuredClone(shiftDef), ...structuredClone(d.params.shifting?.hours ?? {}) }
+      hrs[g] = [...hrs[g]]
+      hrs[g][idx] = v
+      const same = Object.keys(shiftDef).every((k) => hrs[k][0] === shiftDef[k][0] && hrs[k][1] === shiftDef[k][1])
+      if (same) {
+        if (d.params.shifting) { delete d.params.shifting.hours; if (!Object.keys(d.params.shifting).length) delete d.params.shifting }
+      } else (d.params.shifting ??= {}).hours = hrs
+    })
+    return null
+  }
   const resetParam = (f) => editScen((d) => {
     const [g, k] = f.path
     if (!d.params[g]) return
@@ -119,7 +149,9 @@ export default function ScenarioInput() {
   // 계약 칸 중 데이터에 비어 있으면 화면 모델이 기본값으로 채우는 것(NOR 뒤 개시, 기상 공제)은 원본 요청에서 본다
   const rawById = Object.fromEntries((scen.request?.vessels ?? []).map((x) => [vesselIdOf(x), x]))
   const rawOf = (v) => rawById[v.id]
-  const calcState = result.running ? 'run' : result.calcError ? 'bad' : result.stale ? 'warn' : 'ok'
+  // 11-26 기준 시각을 새로 열 때의 첫 후보 계산(result.boot)은 뒤에서 도는 것이라 여기서는 계산 중이라고 알리지 않는다
+  const running = result.running && !result.boot
+  const calcState = running ? 'run' : result.calcError ? 'bad' : result.stale ? 'warn' : 'ok'
 
   return (
     <Screen
@@ -128,24 +160,26 @@ export default function ScenarioInput() {
       step={1}
       bodyClass="plan-input plan-stack"
       actions={<>
-        <Button intent={result.stale ? 'warning' : 'none'} icon={result.running ? <Spinner size={14} /> : 'refresh'} disabled={!canRecalc} onClick={() => recalc()}>
-          {result.running ? '계산 중, 약 1분' : '다시 계산'}
+        <Button intent={result.stale ? 'warning' : 'none'} icon={running ? <Spinner size={14} /> : 'refresh'} disabled={!canRecalc} onClick={() => recalc()}>
+          {running ? '계산 중, 약 1분' : '다시 계산'}
         </Button>
-        <Button intent="primary" endIcon="arrow-right" disabled={!result.candidates.length} onClick={() => go('compare')}>후보 비교</Button>
+        <Button intent="primary" endIcon="arrow-right" disabled={!result.candidates.length && !pendingIncs.length}
+          title={pendingIncs.length ? '체크한 메일은 반영, 나머지는 반영 안 함으로 정하고 후보 비교로 갑니다' : undefined}
+          onClick={() => { if (pendingIncs.length) { decideMails(pendingIncs.filter((i) => mailPick[i.id]).map((i) => i.id)); setMailPick({}) } go('compare') }}>후보 비교</Button>
       </>}
     >
 
       {calcState !== 'ok' && <div className={`pi-calc ${calcState}`} data-tour="recalc">
         {calcState === 'run' ? <><Spinner size={14} /><b>계산 중, 약 1분</b><span className="muted">후보 {scen.presets.length}개를 동시에 계산합니다.</span></>
           : calcState === 'bad' ? <><Icon icon="error" size={14} /><b>다시 계산하지 못했습니다</b><span>{result.calcError}</span></>
-            : calcState === 'warn' ? <><Icon icon="warning-sign" size={14} /><b>계획 조건이 바뀌었습니다</b><span>지금 후보는 바뀌기 전 조건으로 계산한 것입니다. 「다시 계산」을 눌러야 반영됩니다.</span></>
+            : calcState === 'warn' ? <><Icon icon="warning-sign" size={14} /><b>계획 조건이 바뀌었습니다</b><span>현재 후보는 바뀌기 전 조건으로 계산한 것입니다. 「다시 계산」을 눌러야 반영됩니다.</span></>
               : null}
         {(calcState === 'warn' || calcState === 'bad') && (
           <Button size="small" intent="warning" icon="refresh" disabled={!canRecalc} onClick={() => recalc()}>다시 계산</Button>
         )}
       </div>}
 
-      <MailChanges scen={scen} />
+      <MailChanges scen={scen} pick={mailPick} setPick={setMailPick} />
 
       {errors.length > 0 && (
         <Callout intent="danger" icon="error" title={`입력 오류 ${errors.length}건, 고쳐야 다시 계산할 수 있습니다`} className="plan-errors">
@@ -176,13 +210,13 @@ export default function ScenarioInput() {
       {/* 11-25 부두 탭: 목록(선석, 사용 불가) + 오른쪽 상세(제원, 취급 제품, 사용 불가 구간 편집) */}
       {piTab === 'berth' && (
         <BerthTab scen={scen} piers={piers} blocksOf={blocksOf} addBlock={addBlock} editBlock={editBlock} removeBlock={removeBlock} setBlockTime={setBlockTime}
-          paramInput={(path) => <ParamInput f={fieldOf(path)} scen={scen} setParam={setParam} resetParam={resetParam} />} />
+          shift={{ of: shiftOf, def: shiftDef, set: setShift }} />
       )}
 
       {/* 11-25 운영 여건: 생산계획과 탱크 재고(최적화 팀 후보정 값), 관측 풍속. 모두 계획 입력이라 고치지 않는다 */}
       {piTab === 'weather' && (
         <div className="env" data-tour="env">
-          <TankPlan tanks={scen.tanks ?? []} win={scen.window} safe={[pv(fieldOf('tank.safe_min_pct')), pv(fieldOf('tank.safe_max_pct'))]}
+          <TankPlan tanks={tanks} basis={mine ? `확정 계획 v${mine.no}대로` : '기존 계획대로'} win={scen.window} safe={[pv(fieldOf('tank.safe_min_pct')), pv(fieldOf('tank.safe_max_pct'))]}
             inputs={<><ParamInput f={fieldOf('tank.safe_min_pct')} scen={scen} setParam={setParam} resetParam={resetParam} /><ParamInput f={fieldOf('tank.safe_max_pct')} scen={scen} setParam={setParam} resetParam={resetParam} /></>} />
           <div className="env-2">
             <Occupied list={scen.occupied ?? []} berthById={berthById} />
@@ -191,8 +225,7 @@ export default function ScenarioInput() {
           <section className="wx">
             <header className="wx-head">
               <h3>풍속</h3>
-              <div><span>최대</span><b className={maxWind && maxWind.ms >= planWind ? 'c-red' : ''}>{maxWind ? `${maxWind.ms} m/s` : '-'}</b></div>
-              <div><span>그 시각</span><b>{maxWind ? fmt(maxWind.t) : '-'}</b></div>
+              <div><span>최대 풍속</span><b className={maxWind && maxWind.ms >= planWind ? 'c-red' : ''}>{maxWind ? <>{maxWind.ms.toFixed(1)} m/s <small className="wx-at">{fmt(maxWind.t)}</small></> : '-'}</b></div>
               <div className="wx-plan">
                 <span>계획용 하역 중단 풍속</span>
                 <div className="wx-inputs">
@@ -214,11 +247,28 @@ export default function ScenarioInput() {
                 </div>
               </div>
             </header>
-            <div className="wx-chart"><WindChart wind={wind} win={scen.window} plan={planWind} stop={windDef['#3~7'][0]} /></div>
+            <div className="wx-chart"><WindChart wind={wind} win={scen.window} plan={planWind} stop={windDef['#3~7'][0]} groups={WIND_GROUPS.map((g) => ({ ...g, stop: windDef[g.key][0], leave: windDef[g.key][1] }))} /></div>
           </section>
         </div>
       )}
     </Screen>
+  )
+}
+
+/**
+ * 11-26 날짜 · 시각 칸: 고르는 창(브라우저 달력)은 연도까지 고른다. 칸에는 「2025/11/03 15:47」, 화면이 좁으면 연도를 빼고
+ * 「11/03 15:47」만 보인다(시각이 잘리지 않게). 칸을 누르면 달력이 열린다. onChange는 datetime-local 값('YYYY-MM-DDTHH:mm')
+ */
+function DateTimeField({ value, label, onChange, bad = false }) {
+  const ref = useRef(null)
+  const open = () => { const el = ref.current; if (!el) return; try { el.showPicker() } catch { el.focus() } }
+  return (
+    <span className={`dtf ${bad ? 'bad' : ''}`}>
+      <button type="button" className="dtf-text num" onClick={open} aria-label={`${label}: ${value == null ? '없음' : fmt(value)} (바꾸기)`}>
+        {value == null ? '—' : <span><span className="dtf-y">{fmtFull(value).slice(0, 5).replace('-', '/')}</span>{fmt(value)}</span>}<Icon icon="calendar" size={12} />
+      </button>
+      <input ref={ref} type="datetime-local" className="dtf-input" tabIndex={-1} aria-hidden="true" value={value == null ? '' : toInput(value)} onChange={(e) => onChange(e.target.value)} />
+    </span>
   )
 }
 
@@ -277,7 +327,7 @@ function ParamInput({ f, scen, setParam, resetParam }) {
 }
 
 /** 생산계획과 탱크 재고: 탱크 묶음마다 시간별 재고 흐름(기존 계획대로, 최적화 전), 안전 범위 띠, 주별 생산, 공정 투입 */
-function TankPlan({ tanks, win, safe, inputs }) {
+function TankPlan({ tanks, basis = '기존 계획대로', win, safe, inputs }) {
   if (!tanks.length) return null
   const weeks = tanks[0].weeks
   const W = 600, H = 56
@@ -302,7 +352,7 @@ function TankPlan({ tanks, win, safe, inputs }) {
             <th>탱크 묶음</th>
             <th className="r">현재</th>
             <th className="tp-axis-h">
-              <span className="tp-axis-t">재고 흐름 <small>기존 계획대로</small></span>
+              <span className="tp-axis-t">재고 흐름 <small>{basis}</small></span>
               <svg className="tp-axis" viewBox={`0 0 ${W} 14`} preserveAspectRatio="none" aria-hidden="true">
                 {days.map((t) => <line key={t} x1={x(t)} x2={x(t)} y1={8} y2={14} />)}
               </svg>
@@ -321,12 +371,14 @@ function TankPlan({ tanks, win, safe, inputs }) {
             const minP = pts.length ? Math.min(...pts.map((p) => p[2])) : null
             const maxP = pts.length ? Math.max(...pts.map((p) => p[2])) : null
             const out = pts.some((p) => p[2] < lo || p[2] >= hi)
-            const now = (t.start / t.cap) * 100
+            const known = t.cap != null && t.start != null // 용량 · 기준 시각 재고는 후보 A를 계산하면 채워진다
+            const now = known ? (t.start / t.cap) * 100 : null
             return (
               <tr key={t.name}>
-                <th>{t.name}<small>{t.count}개</small></th>
-                <td className="r tp-now"><b>{now.toFixed(0)}%</b></td>
+                <th>{t.name}{t.count != null && <small>{t.count}개</small>}</th>
+                <td className="r tp-now"><b>{now != null ? `${now.toFixed(0)}%` : '—'}</b></td>
                 <td className="tp-spark">
+                  {!known ? <span className="tp-wait">재고 흐름은 후보 계산 뒤에 표시</span> : <>
                   <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`${t.name} 재고 ${minP?.toFixed(0)}~${maxP?.toFixed(0)}%`}>
                     <rect x={0} y={y(hi)} width={W} height={y(lo) - y(hi)} className="tp-band" />
                     {days.map((d) => <line key={d} x1={x(d)} x2={x(d)} y1={0} y2={H} className="tp-grid" />)}
@@ -334,6 +386,7 @@ function TankPlan({ tanks, win, safe, inputs }) {
                     <path d={line} className={`tp-line ${out ? 'out' : ''}`} vectorEffect="non-scaling-stroke" />
                   </svg>
                   <span className="tp-range">{minP != null ? `${minP.toFixed(0)}~${maxP.toFixed(0)}%` : '-'}</span>
+                  </>}
                 </td>
                 {weeks.map((w, i) => {
                   const r = t.weeks[i]?.rate
@@ -348,14 +401,14 @@ function TankPlan({ tanks, win, safe, inputs }) {
   )
 }
 
-/** 기준 시각에 이미 접안해 작업 중인 배: 그 선석이 비는 시각부터 계획 대상 배가 들어갈 수 있다 */
+/** 기준 시각에 이미 접안해 작업 중인 배: 예상 이안 시각부터 그 선석에 계획 대상 배가 들어갈 수 있다 */
 function Occupied({ list, berthById }) {
   return (
     <section className="tp env-box">
       <header className="tp-head"><h3>현재 접안 중인 배</h3><span className="env-count">{list.length}척</span></header>
       {list.length === 0 ? <div className="bt-none">없음</div> : (
         <table className="env-table">
-          <thead><tr><th>선석</th><th>선박</th><th>화물</th><th className="r">비는 시각</th></tr></thead>
+          <thead><tr><th>선석</th><th>선박</th><th>화물</th><th className="r">예상 이안 시각</th></tr></thead>
           <tbody>
             {list.map((o) => (
               <tr key={`${o.bid}-${o.etb}`}>
@@ -413,7 +466,7 @@ function TabIcon({ kind }) {
 }
 
 /** 부두 탭: 왼쪽 선석 목록, 오른쪽 그 선석의 제원과 사용 불가 구간(고칠 수 있음) */
-function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, setBlockTime, paramInput }) {
+function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, setBlockTime, shift }) {
   const [openId, setOpenId] = useState(scen.berths[0]?.id ?? null)
   const b = scen.berths.find((x) => x.id === openId) ?? scen.berths[0]
   const mine = scen.blocks.map((x, i) => ({ x, i })).filter(({ x }) => !x.berths || x.berths.includes(b.id))
@@ -421,21 +474,30 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
   return (
     <div className="vt bt">
       <section className="vt-list">
-        <div className="vt-bar bt-bar">{paramInput('shifting.buffer_switch_h')}</div>
         <div className="vt-scroll">
           <table className="vt-table bt-table">
             <caption className="plan-sr-only">선석과 사용 불가 구간</caption>
-            <colgroup><col /><col className="bt-c-st" /></colgroup>
-            <thead><tr><th>선석</th><th>사용 불가</th></tr></thead>
+            <colgroup><col /><col className="bt-c-st" /><col className="bt-c-sh" /><col className="bt-c-sh" /></colgroup>
+            <thead><tr><th>선석</th><th>사용 불가</th><th className="r" title="앞 선박 이안 뒤 다음 접안까지">Switching</th><th className="r" title="ETA 뒤 접안까지">Direction</th></tr></thead>
             {piers.map((g) => (
               <tbody key={g.pier}>
-                <tr className="bt-pier"><th colSpan={2}>{g.name}</th></tr>
+                <tr className="bt-pier"><th colSpan={4}>{g.name}</th></tr>
                 {g.list.map((x) => {
                   const bl = blocksOf(x.id)
                   return (
                     <tr key={x.id} className={x.id === b.id ? 'open' : ''} onClick={() => setOpenId(x.id)}>
                       <td className="vt-name">{label(x)}</td>
                       <td className={`bt-st ${bl.length ? 'on' : ''}`}>{bl.length ? `${bl.length}건` : '없음'}</td>
+                      {[0, 1].map((k) => {
+                        const gp = shiftGroup(x.id), v = shift.of(gp)[k]
+                        return (
+                          <td key={k} className={`r bt-sh ${v !== shift.def[gp]?.[k] ? 'changed' : ''}`} onClick={(e) => e.stopPropagation()}
+                            title={`${SHIFT_LABEL[gp] ?? gp} 공통 · 기본값 ${shift.def[gp]?.[k]}h 미만 불가`}>
+                            <NumField value={v} label={`${label(x)} ${k ? 'Direction' : 'Switching'} (${SHIFT_LABEL[gp] ?? gp} 공통)`} onCommit={(nv) => shift.set(gp, k, nv)} />
+                            <span className="pin-u">h</span>
+                          </td>
+                        )
+                      })}
                     </tr>
                   )
                 })}
@@ -476,8 +538,8 @@ function BerthTab({ scen, piers, blocksOf, addBlock, editBlock, removeBlock, set
                     <tbody>
                       {mine.map(({ x, i }) => (
                         <tr key={x.id ?? x.incId ?? i} className={x.incId ? 'inc' : ''}>
-                          <td><input type="datetime-local" className="vt-eta-input" aria-label={`사용 불가 ${i + 1}번 시작`} value={toInput(x.start)} onChange={(e) => setBlockTime(i, 'start', e.target.value)} /></td>
-                          <td><input type="datetime-local" className={`vt-eta-input ${x.end > x.start ? '' : 'bad'}`} aria-label={`사용 불가 ${i + 1}번 종료`} value={toInput(x.end)} onChange={(e) => setBlockTime(i, 'end', e.target.value)} /></td>
+                          <td><DateTimeField value={x.start} label={`사용 불가 ${i + 1}번 시작`} onChange={(t) => setBlockTime(i, 'start', t)} /></td>
+                          <td><DateTimeField value={x.end} bad={!(x.end > x.start)} label={`사용 불가 ${i + 1}번 종료`} onChange={(t) => setBlockTime(i, 'end', t)} /></td>
                           <td>
                             <select className="bt-select" value={x.kind} aria-label={`사용 불가 ${i + 1}번 종류`} onChange={(e) => editBlock(i, (y) => { y.kind = e.target.value })}>
                               {Object.entries(BLOCK_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
@@ -551,8 +613,7 @@ function VesselTab({ scen, vessels, query, setQuery, etaDesc, setEtaDesc, setEta
                       {fixed && <em className="vt-tag" title={`${berthById[fixed.bid]?.label ?? fixed.bid} ${fmt(fixed.etb)} 고정`}>고정</em>}
                     </td>
                     <td className={`vt-eta ${changed ? 'changed' : ''}`} onClick={(e) => e.stopPropagation()}>
-                      <input type="datetime-local" className={`vt-eta-input ${v.eta == null ? 'bad' : ''}`} aria-label={`${v.name} ETA`}
-                        value={v.eta == null ? '' : toInput(v.eta)} onChange={(e) => setEta(v.id, e.target.value)} />
+                      <DateTimeField value={v.eta} bad={v.eta == null} label={`${v.name} ETA`} onChange={(t) => setEta(v.id, t)} />
                       {changed && <button type="button" className="vt-undo" title={`원래 ETA ${fmt(etaOf(v))}로`} aria-label="원래 ETA로" onClick={() => setEta(v.id, toInput(etaOf(v)))}><Icon icon="undo" size={13} /></button>}
                     </td>
                   </tr>
@@ -659,11 +720,18 @@ function VesselCompare({ pair, rawOf, etaOf, onClose, onClear }) {
   )
 }
 
-/** 계획 기간 풍속 선 그래프. 14 m/s 점선이 멈춤 기준이다. */
-function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
+/**
+ * 계획 기간 풍속 선 그래프. 11-26 부두 묶음별 하역 중단 풍속(주황 점선)과 이안 기준 풍속(빨강 점선, 엔진 접안 불가 기준)을 함께 그린다.
+ * 계획용으로 낮춘 기준(plan)이 있으면 그 띠도.
+ */
+function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT, groups = [] }) {
   if (!wind.length) return <p className="small muted">관측값 없음</p>
-  const W = 900, H = 200, L = 30, R = 8, T = 12, B = 24
-  const top = Math.max(stop + 2, ...wind.map((w) => w.ms))
+  const W = 900, H = 220, L = 30, R = 8, T = 14, B = 24
+  const lines = groups.flatMap((g, gi) => [
+    { v: g.stop, cls: 'stop', text: `${g.label} 하역 중단 ${g.stop}`, side: gi },
+    { v: g.leave, cls: 'leave', text: `${g.label} 이안 ${g.leave}`, side: gi },
+  ])
+  const top = Math.max(stop + 2, ...lines.map((l) => l.v + 2), ...wind.map((w) => w.ms))
   const x = (t) => L + ((t - win.start) / Math.max(1, win.end - win.start)) * (W - L - R)
   const y = (ms) => T + (1 - ms / top) * (H - T - B)
   const path = wind.map((w, i) => `${i ? 'L' : 'M'}${x(w.t).toFixed(1)},${y(w.ms).toFixed(1)}`).join(' ')
@@ -671,11 +739,22 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
   const days = []
   for (let t = win.start + (((15 * 60 - win.start) % 1440) + 1440) % 1440; t <= win.end; t += 1440) days.push(t)
   return (
-    <svg className="pi-wind" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`풍속 그래프, 최대 ${Math.max(...wind.map((w) => w.ms))} m/s`}>
-      {[0, 5, 10].map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="pi-wind-grid" /><text x={L - 4} y={y(v) + 3} className="pi-wind-tick" textAnchor="end">{v}</text></g>)}
+    <svg className="pi-wind" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`풍속 그래프, 최대 ${Math.max(...wind.map((w) => w.ms)).toFixed(1)} m/s`}>
+      {[0, 5, 10, 15, 20].filter((v) => v < top).map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="pi-wind-grid" /><text x={L - 4} y={y(v) + 3} className="pi-wind-tick" textAnchor="end">{v}</text></g>)}
       {days.map((t) => <g key={t}><line x1={x(t)} x2={x(t)} y1={T} y2={H - B} className="pi-wind-grid" /><text x={x(t) + 3} y={H - 5} className="pi-wind-tick">{fmt(t).slice(0, 5)}</text></g>)}
-      <line x1={L} x2={W - R} y1={y(stop)} y2={y(stop)} className="pi-wind-limit" />
-      <text x={W - R} y={y(stop) - 3} className="pi-wind-tick limit" textAnchor="end">하역 중단 {stop} m/s</text>
+      {lines.map((l) => <line key={l.text} x1={L} x2={W - R} y1={y(l.v)} y2={y(l.v)} className={`pi-wind-th ${l.cls}`} />)}
+      {/* 이름은 선을 다 그린 뒤 위에(바탕색 테두리로 선을 가림). 겹치지 않게 첫 묶음은 오른쪽, 둘째 묶음은 왼쪽에 */}
+      {lines.map((l) => {
+        const label = `${l.text} m/s`
+        const w = [...label].reduce((n, ch) => n + (ch.charCodeAt(0) > 0x2000 ? 11 : 6.2), 0) + 6 // 글자 폭 어림 (11px 글꼴)
+        const x0 = l.side ? L + 2 : W - R - w
+        return (
+          <g key={l.text}>
+            <rect x={x0} y={y(l.v) - 15} width={w} height={14} className="pi-wind-label-bg" />
+            <text x={l.side ? L + 5 : W - R - 3} y={y(l.v) - 4} className={`pi-wind-tick th ${l.cls}`} textAnchor={l.side ? 'start' : 'end'}>{label}</text>
+          </g>
+        )
+      })}
       {plan < stop && <>
         <rect x={L} y={y(stop)} width={W - R - L} height={y(plan) - y(stop)} className="pi-wind-margin" />
         <line x1={L} x2={W - R} y1={y(plan)} y2={y(plan)} className="pi-wind-plan" />
@@ -688,50 +767,62 @@ function WindChart({ wind, win, plan = WIND_LIMIT, stop = WIND_LIMIT }) {
 }
 
 /** 11-25 받은 메일의 조건 변경 요청: 여기서 바로 반영하거나 반영하지 않기로 정한다. 반영하면 계획 조건에 들어가고, 후보는 「다시 계산」해야 바뀐다 */
-function MailChanges({ scen }) {
-  const { applyIncident, isScheduler, go, setMailFilter } = useApp()
+/**
+ * 11-26 받은 메일의 조건 변경: 체크리스트로 반영할 메일을 고르고, 화면 위 「후보 비교」를 누르면 한꺼번에 결정한다
+ *   (체크한 것 반영 · 나머지 반영 안 함 → 바뀐 조건으로 후보를 다시 계산하고 후보 비교로). 결정 뒤에는 「결정 되돌리기」.
+ *   메일을 누르면 원본이 팝업으로 뜬다.
+ */
+function MailChanges({ scen, pick, setPick }) {
+  const { isScheduler, pendingIncs, mailDecision, undoMailDecision } = useApp()
   const { alerts } = useInbox()
   const rows = alerts.filter((a) => a.channel === 'incident' && a.incId)
+  const [reading, setReading] = useState(null)
   if (!rows.length) return null
-  const pending = rows.filter((a) => a.status === 'new' || a.status === 'read').length
-  const decide = (a, status) => {
-    if (status === 'applied') applyIncident(a.incId, true)
-    if (status === 'read' && a.status === 'applied') applyIncident(a.incId, false)
-    setAlertStatus(a.id, status, a.title)
-  }
+  const pendingIds = new Set(pendingIncs.map((i) => i.id))
   return (
     <section className="pi-mail" data-tour="mail-changes">
       <header className="pi-mail-head">
         <Icon icon="envelope" size={14} />
-        <b>받은 메일의 조건 변경</b>
-        <span className={pending ? 'c-amber' : 'c-green'}>{pending ? `반영 여부를 정하지 않은 메일 ${pending}건` : '모두 정함'}</span>
-        <Button size="small" variant="minimal" icon="inbox" onClick={() => { setMailFilter('incident'); go('inbox') }}>메일함에서 보기</Button>
+        <b>메일로 요청받은 조건 변경</b>
+        <span className="pi-mail-btns">
+          {mailDecision && <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={undoMailDecision}>결정 되돌리기</Button>}
+        </span>
       </header>
       <ul>
         {rows.map((a) => {
           const inc = scen.incidents.find((i) => i.id === a.incId)
-          const done = a.status === 'applied' || a.status === 'dismissed'
+          const open = pendingIds.has(a.incId)
           return (
-            <li key={a.id} className={a.status}>
+            <li key={a.id} className={open ? (pick[a.incId] ? 'picked' : '') : a.status}>
+              <span className="pi-mail-check">
+                {open
+                  ? <Checkbox checked={Boolean(pick[a.incId])} disabled={!isScheduler || !inc?.change} aria-label={`${inc?.kind ?? ''} 반영`}
+                    onChange={(e) => { const on = e.currentTarget.checked; setPick((p) => ({ ...p, [a.incId]: on })) }} />
+                  : a.status === 'applied' ? <St tone="ok">반영함</St> : <St tone="idle">반영 안 함</St>}
+              </span>
               <span className="pi-mail-kind">{inc?.kind ?? '변경'}</span>
-              <span className="pi-mail-body">
+              <button type="button" className="pi-mail-body" onClick={() => setReading(a)} title="메일 원본 보기">
                 <b>{inc ? changeText(scen, inc) : a.title}</b>
-                <small>{a.from} · {a.at} · {a.title.replace(/^\[.+?\]\s*/, '')}</small>
-              </span>
-              <span className="pi-mail-act">
-                {a.status === 'applied' && <St tone="ok">반영함</St>}
-                {a.status === 'dismissed' && <St tone="idle">반영 안 함</St>}
-                {done
-                  ? <Button size="small" variant="minimal" icon="undo" disabled={!isScheduler} onClick={() => decide(a, 'read')}>되돌리기</Button>
-                  : <>
-                    <Button size="small" icon="cross" disabled={!isScheduler} onClick={() => decide(a, 'dismissed')}>반영 안 함</Button>
-                    <Button size="small" intent="primary" icon="tick" disabled={!isScheduler || !inc?.change} onClick={() => decide(a, 'applied')}>반영</Button>
-                  </>}
-              </span>
+                <small>{a.from} · {a.at}</small>
+              </button>
             </li>
           )
         })}
       </ul>
+      <Dialog isOpen={Boolean(reading)} onClose={() => setReading(null)} title={reading?.subject} icon="envelope" className="pi-mail-dialog">
+        {reading && (
+          <DialogBody>
+            <div className="ml-paper">
+              <dl className="ml-head">
+                <dt>보낸 사람</dt><dd>{reading.from} &lt;{reading.fromAddr}&gt;</dd>
+                <dt>받은 시각</dt><dd className="num">{reading.at}</dd>
+                <dt>제목</dt><dd className="strong">{reading.subject}</dd>
+              </dl>
+              <pre className="ml-preview">{reading.body}</pre>
+            </div>
+          </DialogBody>
+        )}
+      </Dialog>
     </section>
   )
 }

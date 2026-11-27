@@ -1,12 +1,12 @@
 // 다크/라이트 테마. html[data-theme]가 토큰을 바꾸고, body의 bp6-dark가 Blueprint 컴포넌트를 바꾼다.
-// 처음 값: 주소의 ?theme= → 지난번 선택(localStorage) → 다크.
+// 처음 값: 주소의 ?theme= → 라이트. (11-26 라이트 모드만 쓴다: 상단 전환 버튼을 빼고 지난번 다크 선택도 쓰지 않는다. 다크 코드는 남겨 둠)
 import { useSyncExternalStore } from 'react'
 
 const KEY = 'dmin-theme'
 const initial = () => {
   const q = new URLSearchParams(location.search).get('theme')
   if (q === 'light' || q === 'dark') return q
-  return localStorage.getItem(KEY) === 'light' ? 'light' : 'dark'
+  return 'light'
 }
 
 let theme = initial()
