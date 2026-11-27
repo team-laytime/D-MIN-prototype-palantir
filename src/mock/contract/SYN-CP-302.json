@@ -1,0 +1,635 @@
+{
+ "doc_id": "SYN-CP-302",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.0836,
+      0.2618,
+      0.0977
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "vessel_name": {
+   "value": "SYN VEGA",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Ionian Crude Carriers S.A. (Registered Owner), as owner of the MT SYN VEGA, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8674,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "imo": {
+   "value": "1007017",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO no.: 1007017",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1759,
+      0.2434,
+      0.2397,
+      0.2575
+     ],
+     [
+      0.4583,
+      0.2434,
+      0.5141,
+      0.2575
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "dwt": {
+   "value": 157900.0,
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "Summer deadweight: 157,900 metric tons",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1839,
+      0.3474,
+      0.3275,
+      0.3615
+     ],
+     [
+      0.4583,
+      0.3474,
+      0.6099,
+      0.3615
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "owner": {
+   "value": "SYN Ionian Crude Carriers S.A.",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Ionian Crude Carriers S.A. (Registered Owner), as owner of the MT SYN VEGA, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8674,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Ionian Crude Carriers S.A. (Registered Owner), as owner of the MT SYN VEGA, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.8674,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_laydays_from": {
+   "value": "2025-11-13T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 2025-11-13",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1759,
+      0.6396,
+      0.2637,
+      0.6537
+     ],
+     [
+      0.4583,
+      0.6396,
+      0.538,
+      0.6537
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_laydays_to": {
+   "value": "2025-11-15T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "Cancelling: 2025-11-15",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1839,
+      0.6604,
+      0.2716,
+      0.6745
+     ],
+     [
+      0.4583,
+      0.6604,
+      0.538,
+      0.6745
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_ports": {
+   "value": "MYLBU",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "Load port(s), in Charterer's option: 1 SB Labuan Crude Oil Terminal, Labuan, Malaysia",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.7435,
+      0.4312,
+      0.7576
+     ],
+     [
+      0.4583,
+      0.7435,
+      0.8413,
+      0.7576
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "Discharge port(s), in Charterer's option: 1 SB Ulsan, Korea",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.7851,
+      0.4711,
+      0.7992
+     ],
+     [
+      0.4583,
+      0.7851,
+      0.5939,
+      0.7992
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cargo": {
+   "value": "CRUDE",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "(ii) Description: Crude Oil",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.8474,
+      0.2796,
+      0.8615
+     ],
+     [
+      0.4583,
+      0.8474,
+      0.5301,
+      0.8615
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cp_qty_t": {
+   "value": 135000.0,
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 1,
+    "section": "part1",
+    "quote": "(i) Quantity: 135,000 MT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.8267,
+      0.2477,
+      0.8408
+     ],
+     [
+      0.4583,
+      0.8267,
+      0.538,
+      0.8408
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "qty_vs_dwt",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_total_h": {
+   "value": 72.0,
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 2,
+    "section": "part1",
+    "quote": "Total laytime in running hours: 72",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1759,
+      0.1614,
+      0.4233,
+      0.1755
+     ],
+     [
+      0.4583,
+      0.1614,
+      0.4742,
+      0.1755
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "demurrage_rate_per_day": {
+   "value": 46300.0,
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 2,
+    "section": "part1",
+    "quote": "Demurrage per day: USD 46,300 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.2237,
+      0.2876,
+      0.2378
+     ],
+     [
+      0.4583,
+      0.2237,
+      0.5779,
+      0.2378
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "nor_notice_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "berth_shift_counts": {
+   "value": false,
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 3,
+    "section": "rider",
+    "quote": "Clause 9 - Inter-Berth Moves: When the Vessel moves between berths, the period from unmooring until she is again securely moored is for Owners' account in time and counts neither towards laytime nor towards demurrage.",
+    "confidence": 0.8,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.6777,
+      1.0,
+      0.694
+     ],
+     [
+      0.0863,
+      0.6961,
+      1.0,
+      0.7124
+     ],
+     [
+      0.0863,
+      0.7145,
+      0.1787,
+      0.7308
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-302",
+    "page": 2,
+    "section": "part1",
+    "quote": "Demurrage per day: USD 46,300 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.144,
+      0.2237,
+      0.2876,
+      0.2378
+     ],
+     [
+      0.4583,
+      0.2237,
+      0.5779,
+      0.2378
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  }
+ },
+ "review": [],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
+}

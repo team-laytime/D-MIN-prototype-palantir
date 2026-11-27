@@ -14,21 +14,21 @@ export const TOUR = [
     body: '정박지 대기, 작업 중, 체선 발생으로 구분합니다. 선박을 누르면 지도가 그 위치로 이동하고, 「근거」는 계산 과정을 엽니다.',
   },
   {
-    section: '공통', tab: 'home', target: '[data-tour="scen"]', title: '데이터셋',
-    body: '데이터 팀 묶음에서 만든 실데이터셋(현재 시각, 계획 기간)을 고릅니다. 바꾸면 그 데이터셋의 엔진 계산 결과로 모든 화면이 바뀝니다.',
+    section: '공통', tab: 'home', target: '[data-tour="scen"]', title: '기준 시각',
+    body: '데이터 팀 1년치 실데이터에서 계획을 세울 기준 시각을 고릅니다(바로가기에 시연 날짜). 그 시각 전 실적으로 하역 속도를 계산하고, 그때 아직 접안하지 않은 배를 72시간 계획합니다. 날짜마다 따로 계산하고 따로 남습니다.',
   },
   {
     section: '시나리오 입력', tab: 'input', target: '[data-tour="inputs"]', title: '선박·계약 조건',
-    body: '도착 예정 시각, 부두 사용 불가 구간과 부두 전환 여유, 안전재고 범위를 고칠 수 있습니다. 계약 값은 잠겨 있습니다. 고친 뒤 「다시 계산」을 누르면 팀 엔진이 후보 3개를 새로 만듭니다(약 1분).',
+    body: '도착 예정 시각, 부두 사용 불가 구간과 부두 전환 여유, 안전재고 범위를 고칠 수 있습니다. 계약 값은 잠겨 있습니다. 고친 뒤 「다시 계산」을 누르면 후보 3개를 새로 계산합니다(약 1분).',
     try: 'GOLDEN STAR 도착 시각을 몇 시간 늦춰 후보 변화 확인',
   },
   {
     section: '시나리오 입력', tab: 'input', target: '[data-tour="env"]', title: '기상',
-    body: '울산 부이 관측 풍속입니다. 엔진은 풍속 기준을 넘는 시간에 하역을 멈추거나 접안을 막고, 일출·일몰로 야간 도선 제한과 정박개시를 계산합니다.',
+    body: '울산 부이 관측 풍속입니다. 풍속 기준을 넘는 시간에는 하역을 멈추거나 접안을 막고, 일출·일몰로 야간 도선 제한과 정박개시를 계산합니다.',
   },
   {
     section: '후보 비교', tab: 'compare', target: '[data-tour="cards"]', title: '후보 3개',
-    body: '같은 시각에서 엔진 파라미터만 바꿔 만든 계획 3개입니다. 체선료가 낮은 순서로 A, B, C이고 A가 기본 선택입니다.',
+    body: '같은 조건에서 대비 방식만 달리 만든 계획 3개입니다. A 기본, B 상황형(탱크 · 풍속 중 리스크가 큰 쪽 대비), C 배별 지연 대비이고 A가 기본 선택입니다.',
     try: '후보를 누르면 아래 표가 그 후보로 바뀝니다.',
   },
   {
@@ -37,7 +37,7 @@ export const TOUR = [
   },
   {
     section: '후보 비교', tab: 'compare', target: '[data-tour="drawer"]', title: '계획 일정',
-    body: '도착, 정박시간 개시, 접안, 작업, 호스 분리, 이안 시각과 체선 시간, 기상 공제, 체선료를 엔진 계산값 그대로 보여 줍니다.',
+    body: '도착, 정박시간 개시, 접안, 작업, 호스 분리, 이안 시각과 체선 시간, 기상 공제, 체선료를 계산값 그대로 보여 줍니다.',
     do: ({ result, openVessel }) => {
       const candidate = result.candidates?.[0]
       const sample = candidate?.placements.find((p) => p.dem.cents > 0) ?? candidate?.placements[0]
@@ -46,7 +46,7 @@ export const TOUR = [
   },
   {
     section: '리스크·선택', tab: 'risk', target: '[data-tour="risks"]', title: '남은 리스크',
-    body: '체선 발생, 야간 접안, 기상 하역 중단, 긴 대기, 탱크 범위 이탈을 엔진 결과에서 읽어 해당 / 해당 없음으로 보여 주고 대응을 붙입니다.',
+    body: '체선 발생, 야간 접안, 기상 하역 중단, 긴 대기, 탱크 범위 이탈을 계산 결과에서 읽어 해당 / 해당 없음으로 보여 주고 대응을 붙입니다.',
     try: '「해당」 항목을 읽고 「확인」 체크',
   },
   {
@@ -59,7 +59,7 @@ export const TOUR = [
   },
   {
     section: '검증', tab: 'verify', target: '[data-tour="answer-set"]', title: '계산 검증',
-    body: '팀 최적화 엔진 계산값과의 일치 건수, 시나리오별 절감액, 제약 위반 수입니다.',
+    body: '최적화 계산값과의 일치 건수, 시나리오별 절감액, 제약 위반 수입니다.',
   },
   {
     section: '메일함', tab: 'inbox', target: '[data-tour="inbox-list"]', title: '메일함',

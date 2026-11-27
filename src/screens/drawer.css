@@ -168,19 +168,14 @@
 .vc-berth.on { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
 .vc-berth em { font-family: var(--sans); font-style: normal; font-size: calc(10px * var(--fs)); }
 .vessel-drawer-ident { display: inline-flex; align-items: center; gap: 8px; }
-.vc-facts b { white-space: normal; word-break: keep-all; line-height: 1.3; }
 
-/* ===== 11-25 산출 근거: 결론 + 시간 흐름 ===== */
-.vd-verdict { display: flex; align-items: flex-start; gap: 12px; margin: 12px 14px 8px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--bg-1); }
-.vd-verdict.ok { border-color: color-mix(in srgb, var(--green) 45%, transparent); background: var(--green-wash); }
-.vd-verdict.dem { border-color: color-mix(in srgb, var(--red) 45%, transparent); background: var(--red-wash); }
-.vd-verdict-icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; }
-.vd-verdict.ok .vd-verdict-icon { background: var(--green); color: #06140d; }
-.vd-verdict.dem .vd-verdict-icon { background: var(--red); color: #fff; }
-.vd-verdict-k { display: block; font-size: calc(11px * var(--fs)); font-weight: 600; color: var(--fg-2); }
-.vd-verdict > div > b { display: block; margin: 1px 0 3px; font-size: calc(22px * var(--fs)); font-weight: 600; line-height: 1.15; }
-.vd-verdict.ok > div > b { color: var(--green); }
-.vd-verdict.dem > div > b { color: var(--red); }
+/* ===== 11-25 계획 일정: 결론 + 구간별 일정 ===== */
+.vd-verdict { margin: 12px 14px 8px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--line-3); background: var(--bg-2); }
+.vd-verdict.ok { border-left-color: var(--green); }
+.vd-verdict.dem { border-left-color: var(--red); }
+.vd-verdict-k { display: block; font-size: calc(12px * var(--fs)); font-weight: 600; color: var(--fg); }
+.vd-verdict.ok .vd-verdict-k { color: var(--green); }
+.vd-verdict > b { display: block; margin: 2px 0; font-size: calc(18px * var(--fs)); font-weight: 600; line-height: 1.2; color: var(--red); }
 .vd-verdict p { margin: 0; font-size: calc(12px * var(--fs)); color: var(--fg); }
 
 .tf { position: relative; display: grid; gap: 8px; padding: 4px 0 2px; }
@@ -202,7 +197,6 @@
 .tf-guides { position: absolute; left: 62px; right: 0; top: 0; bottom: 40px; pointer-events: none; z-index: 1; }
 .tf-guide { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--line-3); }
 .tf-tick { position: absolute; top: 2px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; line-height: 1.2; white-space: nowrap; }
-.tf-tick.low { top: 20px; }
 .tf-tick b { font-size: calc(10.5px * var(--fs)); color: var(--fg); }
 .tf-tick span { font-size: calc(10px * var(--fs)); color: var(--fg-3); }
 .tf-seg.dem { overflow: visible; }
@@ -210,4 +204,4 @@
 .tf-tick.end { transform: translateX(-100%); align-items: flex-end; }
 .tf-axis .tf-track { overflow: visible; }
 .tf-seg em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.tf-axis .tf-track { height: 58px; } .tf-tick.low { top: 30px; } .tf-guides { bottom: 58px; }
+.tf-tick.start { transform: none; align-items: flex-start; }

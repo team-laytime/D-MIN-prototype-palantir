@@ -111,12 +111,12 @@ const vsBaseLine = () => ''
 
 export function candidateReportMarkdown(m) {
   const L = []
-  L.push(`# 울산 SK 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용`, '')
+  L.push(`# 울산 부두 접안 계획 후보안 비교 보고 (${m.period})`, '', `${m.status}, 담당자 검토용`, '')
   L.push('## 1. 결론', `${m.confirmed ? '확정한' : '선택한'} 안은 ${m.sel.label}(${m.sel.preset?.label ?? '-'})입니다. 총 예상 체선료는 ${money(m.sel.total)}이며, ${vsBest(m)} ${vsBaseLine(m)}`, '')
   L.push('### 판단근거', m.judgment || '(아직 작성하지 않음)', '')
-  L.push('## 2. 후보 비교', '| 안 | 무엇을 바꾼 안 | 총 예상 체선료 | 최저안 대비 | 체선 | 야간 접안 | 남은 리스크 | 엔진 |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |')
+  L.push('## 2. 후보 비교', '| 안 | 무엇을 바꾼 안 | 총 예상 체선료 | 최저안 대비 | 체선 | 야간 접안 | 남은 리스크 |', '| --- | --- | ---: | ---: | ---: | ---: | ---: |')
   for (const it of m.items) {
-    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${it.preset?.label ?? '-'} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.dem}척 | ${it.night}척 | ${it.active.length}건 | ${it.engine}, ${it.solveSec ?? '-'}초 |`)
+    L.push(`| ${it.label}${it.id === m.sel.id ? ' (선택)' : ''} | ${it.preset?.label ?? '-'} | ${money(it.total)} | ${it.extra ? `+${money(it.extra)} (+${it.extraPct}%)` : '가장 낮음'} | ${it.dem}척 | ${it.night}척 | ${it.active.length}건 |`)
   }
   L.push('', `## 3. ${m.sel.label} 선박별 체선료 상위`, `체선이 생기는 선박 ${m.demCount}척 중 큰 순서 ${m.top.length}척`, '', '| 선박 | 화물 | 선석 | 접안 | 초과 시간 | 기상 공제 | 체선료 |', '| --- | --- | --- | --- | ---: | ---: | ---: |')
   for (const r of m.top) L.push(`| ${r.name} | ${r.product}, ${r.dir} | ${r.berth} | ${fmt(r.etb)} | ${fmtDur(r.excessMin)} | ${fmtDur(r.weatherMin)} | ${money(r.cents)} |`)
@@ -129,16 +129,16 @@ export function candidateReportMarkdown(m) {
     for (const d of m.differing) L.push(`- ${d.label}: ${d.per.map((p) => `${p.label} ${p.state}`).join(', ')}`)
   }
   L.push('', '## 계산 기준',
-    `- 엔진: 팀 엔진 berth_sim (CP-SAT). 후보마다 파라미터 묶음이 다름: ${m.basis.presets.join(' / ')}`,
+    `- 후보 구성: ${m.basis.presets.join(' / ')}`,
     `- 데이터: ${m.basis.dataset}${m.basis.bundle ? ` (${m.basis.bundle})` : ''}, ${m.basis.vessels}척, 선석 ${m.basis.berths}곳`,
     `- 계획 시각: ${m.basis.start} (계획 구간 끝 ${m.basis.end})`,
-    '- 후보는 체선료가 낮은 순서로 A, B, C이며 A가 기본 선택입니다.')
+    '- 후보는 A 기본 · B 상황형(탱크 · 풍속 중 리스크가 큰 쪽 대비) · C 배별 지연 대비이며 A가 기본 선택입니다.')
   return L.join('\n')
 }
 
 /** 메일 초안(제목, 본문). 보고서와 같은 모델에서 만든다. */
 export function candidateMailDraft(m) {
-  const subject = `[울산 SK 부두] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
+  const subject = `[울산 부두] ${m.period} 접안 계획안 ${m.confirmed ? '확정' : '검토'} 보고 (${m.sel.label}, 예상 체선료 ${money(m.sel.total)})`
   const body = [
     '안녕하세요.',
     `${m.period} 접안 계획으로 ${m.sel.label}(${m.sel.preset?.label ?? '-'})을 ${m.confirmed ? '확정했습니다' : '선택해 검토 중입니다'}.`,

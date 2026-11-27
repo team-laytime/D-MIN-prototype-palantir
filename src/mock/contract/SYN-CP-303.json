@@ -1,0 +1,551 @@
+{
+ "doc_id": "SYN-CP-303",
+ "kind": "cp",
+ "cp": {
+  "cp_form": {
+   "value": "ASBATANKVOY 2025",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Form: ASBATANKVOY 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.0863,
+      0.0836,
+      0.2618,
+      0.0977
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "vessel_name": {
+   "value": "SYN DENEB",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Keppelview Product Tankers Pte. Ltd. (Registered Owner), as owner of the MT SYN DENEB, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9766,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "imo": {
+   "value": "1007029",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "IMO no.: 1007029",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1627,
+      0.2369,
+      0.2971,
+      0.2518
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "dwt": {
+   "value": 50100.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Summer deadweight: 50,100 metric tons",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1711,
+      0.3141,
+      0.4819,
+      0.329
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "owner": {
+   "value": "SYN Keppelview Product Tankers Pte. Ltd.",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Keppelview Product Tankers Pte. Ltd. (Registered Owner), as owner of the MT SYN DENEB, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9766,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "charterer": {
+   "value": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "between SYN Keppelview Product Tankers Pte. Ltd. (Registered Owner), as owner of the MT SYN DENEB, and Hanbit Refining Co., Ltd. (SYNTHETIC), as charterer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.607,
+      0.1244,
+      1.0,
+      0.1392
+     ],
+     [
+      0.0863,
+      0.1398,
+      0.9766,
+      0.1546
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_laydays_from": {
+   "value": "2025-11-12T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Commencing: 12.11.2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1627,
+      0.5065,
+      0.3475,
+      0.5214
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_laydays_to": {
+   "value": "2025-11-14T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Cancelling: 14.11.2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1711,
+      0.522,
+      0.3559,
+      0.5368
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_ports": {
+   "value": "INSIK",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Load port(s), in Charterer's option: 1-2 SB Sikka, Jamnagar, Gujarat, India",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5909,
+      0.7591,
+      0.6057
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "discharge_ports": {
+   "value": "KRUSN",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Discharge port(s), in Charterer's option: 1-2 SB Ulsan (Onsan), Korea",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.6289,
+      0.7087,
+      0.6437
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cargo": {
+   "value": "DSL",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "(ii) Description: Gasoil 10ppm",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.6823,
+      0.3811,
+      0.6972
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "cp_qty_t": {
+   "value": 40000.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "(i) Quantity: 40,000 MT",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.6669,
+      0.3223,
+      0.6817
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "qty_vs_dwt",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_total_h": {
+   "value": 60.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Total laytime in running hours: sixty (60)",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1627,
+      0.8272,
+      0.5155,
+      0.8421
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "words",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "demurrage_rate_per_day": {
+   "value": 24100.0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demurrage per day: US$ 24,100 per day or pro rata",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.8807,
+      0.5407,
+      0.8955
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "laytime_terms": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_load_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_discharge_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_prorate": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "nor_notice_h": {
+   "value": 0,
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 5,
+    "section": "rider",
+    "quote": "Clause 25 - Readiness and Laytime Start: Charterers forgo the six-hour allowance that ordinarily follows NOR; laytime begins to count at the time NOR is tendered, irrespective of the Vessel's berthing position.",
+    "confidence": 0.6,
+    "method": "llm",
+    "ocr": false,
+    "reviewed_by": null
+   }
+  },
+  "laytime_start_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_end_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "anchorage_to_berth_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "berth_shift_counts": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "half_rate_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "no_demurrage_events": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_exclusions": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "bad_weather_half": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "weather_rule": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-CP-303",
+    "page": 1,
+    "section": "part1",
+    "quote": "Demurrage per day: US$ 24,100 per day or pro rata",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.8807,
+      0.5407,
+      0.8955
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  }
+ },
+ "review": [],
+ "layout": {
+  "pages": 5,
+  "sections": {
+   "part1": [
+    1,
+    2
+   ],
+   "box_m": [
+    2,
+    2
+   ],
+   "rider": [
+    3,
+    5
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
+}

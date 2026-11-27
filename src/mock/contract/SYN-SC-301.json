@@ -1,0 +1,433 @@
+{
+ "doc_id": "SYN-SC-301",
+ "kind": "sales",
+ "sales": {
+  "incoterm": {
+   "value": "FOB",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Delivery Terms: FOB Mesaieed, Qatar, one safe berth",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.2762,
+      0.2551,
+      0.2911
+     ],
+     [
+      0.3291,
+      0.2762,
+      0.6231,
+      0.2911
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "sk_role": {
+   "value": "매수인",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Hanbit Refining Co., Ltd. (SYNTHETIC) (the \"Buyer",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.5314,
+      0.1366,
+      0.9598,
+      0.1515
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "rate_basis": {
+   "value": "CP 요율 준용",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Demurrage at loading port: for Seller's account as per Buyer's charter party rate, USD 64,500 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5981,
+      0.2971,
+      0.6129
+     ],
+     [
+      0.3291,
+      0.5981,
+      0.9255,
+      0.6129
+     ],
+     [
+      0.1291,
+      0.6135,
+      0.1711,
+      0.6284
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "laycan_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laycan_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_laydays_from": {
+   "value": "2025-11-11T00:00:00",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Loading Laycan: 11 November 2025 to 13 November 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.3,
+      0.2551,
+      0.3148
+     ],
+     [
+      0.3291,
+      0.3,
+      0.6315,
+      0.3148
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "load_laydays_to": {
+   "value": "2025-11-13T16:00:00",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Loading Laycan: 11 November 2025 to 13 November 2025",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.3,
+      0.2551,
+      0.3148
+     ],
+     [
+      0.3291,
+      0.3,
+      0.6315,
+      0.3148
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "date_order",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "discharge_laydays_from": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "discharge_laydays_to": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "laytime_total_h": {
+   "value": null,
+   "evidence": null,
+   "checks": []
+  },
+  "load_port_laytime_h": {
+   "value": 42.0,
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Laytime at loading port: 42 (forty-two) hours SHINC",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5743,
+      0.3307,
+      0.5892
+     ],
+     [
+      0.3291,
+      0.5743,
+      0.5475,
+      0.5892
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "name": "words",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "demurrage_rate_per_day": {
+   "value": 64500.0,
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Demurrage at loading port: for Seller's account as per Buyer's charter party rate, USD 64,500 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5981,
+      0.2971,
+      0.6129
+     ],
+     [
+      0.3291,
+      0.5981,
+      0.9255,
+      0.6129
+     ],
+     [
+      0.1291,
+      0.6135,
+      0.1711,
+      0.6284
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "currency": {
+   "value": "USD",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Demurrage at loading port: for Seller's account as per Buyer's charter party rate, USD 64,500 PDPR",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.5981,
+      0.2971,
+      0.6129
+     ],
+     [
+      0.3291,
+      0.5981,
+      0.9255,
+      0.6129
+     ],
+     [
+      0.1291,
+      0.6135,
+      0.1711,
+      0.6284
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  }
+ },
+ "review": [],
+ "layout": {
+  "pages": 2
+ },
+ "link": {
+  "imo": "1007005",
+  "vessel_name": "SYN ALTAIR",
+  "cp_qty_t": 265000.0,
+  "seller": "SYN Dukhan Crude Marketing W.L.L.",
+  "buyer": "Hanbit Refining Co., Ltd. (SYNTHETIC)",
+  "delivery_port": "Mesaieed, Qatar, one safe berth",
+  "other_port": "Ulsan, Korea (for information only)",
+  "product": "Crude Oil"
+ },
+ "link_cells": {
+  "vessel_name": {
+   "value": "SYN ALTAIR",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Vessel: MT SYN ALTAIR (IMO 1007005) or substitute acceptable to Seller;",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.3237,
+      0.1879,
+      0.3386
+     ],
+     [
+      0.3291,
+      0.3237,
+      0.8583,
+      0.3386
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": []
+  },
+  "imo": {
+   "value": "1007005",
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "IMO 1007005",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.4467,
+      0.3237,
+      0.5559,
+      0.3386
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "imo_check_digit",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  },
+  "cp_qty_t": {
+   "value": 265000.0,
+   "evidence": {
+    "doc_id": "SYN-SC-301",
+    "page": 1,
+    "section": "sales",
+    "quote": "Quantity: 265,000 MT +/- 5% in Buyer's option",
+    "confidence": 0.9,
+    "method": "rule",
+    "ocr": false,
+    "reviewed_by": null,
+    "boxes": [
+     [
+      0.1291,
+      0.2525,
+      0.2047,
+      0.2673
+     ],
+     [
+      0.3291,
+      0.2525,
+      0.6231,
+      0.2673
+     ]
+    ],
+    "ocr_conf": null,
+    "unread": false
+   },
+   "checks": [
+    {
+     "name": "range",
+     "ok": true,
+     "detail": null
+    }
+   ]
+  }
+ },
+ "run": {
+  "llm": null,
+  "llm_digest": null,
+  "vision": null,
+  "vision_digest": null,
+  "ocr_engine": null,
+  "second_engine": null,
+  "vessels": false
+ }
+}

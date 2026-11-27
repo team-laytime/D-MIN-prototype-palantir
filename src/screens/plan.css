@@ -137,10 +137,7 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .cmp-banner p { margin: 4px 0 0; color: var(--fg-2); font-size: calc(12.5px * var(--fs)); }
 .cmp-banner-total { display: flex; flex-direction: column; align-items: flex-end; }
 .cmp-banner-total b { font-size: calc(22px * var(--fs)); }
-.cmp-fixed-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 10px; align-items: start; }
-.cmp-fixed-grid td { height: 40px; }
-.cmp-notify { margin: 0 0 12px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: calc(12.5px * var(--fs)); }
-.cmp-notify li { display: flex; gap: 10px; align-items: center; }
+.cmp-fixed td { height: 40px; }
 .cmp-monitor td { height: 36px; font-size: calc(12px * var(--fs)); }
 .cmp-monitor tr.warn td { background: var(--amber-wash); }
 
@@ -484,16 +481,69 @@ th.on .plan-radio { border-color: var(--accent); background: radial-gradient(var
 .bp6-alert .bp6-alert-footer .bp6-button { height: 34px; padding: 0 16px; font-size: calc(13px * var(--fs)); font-weight: 600; }
 
 /* 11-25 받은 메일의 조건 변경 요청 (계획 조건 위) */
-.pi-mail { border: 1px solid var(--line-2); border-left: 3px solid var(--amber); background: var(--bg-2); }
-.pi-mail-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: calc(12px * var(--fs)); }
-.pi-mail-head .bp6-button { margin-left: auto; }
-.pi-mail ul { list-style: none; margin: 0; padding: 0; }
-.pi-mail li { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.pi-mail { border: 1px solid var(--line-2); background: var(--bg-2); }
+.pi-mail-head { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-bottom: 1px solid var(--line-2); background: var(--bg-3); font-size: calc(13px * var(--fs)); color: var(--fg); }
+.pi-mail-head .bp6-icon { color: var(--fg-3); }
+.pi-mail-btns { margin-left: auto; display: inline-flex; gap: 6px; }
+.pi-mail ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); }
+.pi-mail li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; column-gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .pi-mail li:last-child { border-bottom: 0; }
 .pi-mail li.applied { background: var(--green-wash); }
 .pi-mail li.dismissed { opacity: .6; }
 .pi-mail-kind { justify-self: start; padding: 1px 7px; border: 1px solid color-mix(in srgb, var(--amber) 50%, transparent); color: var(--amber); font: 600 calc(11px * var(--fs)) var(--sans); white-space: nowrap; }
 .pi-mail li.applied .pi-mail-kind { color: var(--green); border-color: color-mix(in srgb, var(--green) 50%, transparent); }
-.pi-mail-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: calc(12.5px * var(--fs)); }
+.pi-mail-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: calc(12.5px * var(--fs)); padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.pi-mail-body:hover b { text-decoration: underline; }
+.pi-mail-check .bp6-control { margin: 0; }
+.pi-mail li.picked { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.pi-mail-dialog { width: 640px; }
+.pi-mail-dialog .ml-paper { margin: 0; }
 .pi-mail-body small { color: var(--fg-3); font-size: calc(11px * var(--fs)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pi-mail-act { display: inline-flex; align-items: center; gap: 6px; }
+
+/* 11-26 풍속 그래프: 부두 묶음별 하역 중단(주황) · 이안(빨강) 기준 */
+.pi-wind-th { stroke-width: 1; stroke-dasharray: 4 3; }
+.pi-wind-th.stop { stroke: var(--amber); }
+.pi-wind-th.leave { stroke: var(--red); }
+.pi-wind-tick.th.stop { fill: var(--amber); }
+.pi-wind-tick.th.leave { fill: var(--red); }
+
+/* 11-26 날짜 · 시각 칸: 월/일 시:분만 보이고, 누르면 브라우저 달력(연도 포함) */
+.dtf { position: relative; display: inline-flex; }
+.dtf-text { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--input-bg); color: var(--fg); font: calc(13.5px * var(--fs)) var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+.dtf-text:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.dtf-text:hover { border-color: var(--line-3); }
+.dtf-text .bp6-icon { color: var(--fg-3); }
+.dtf.bad .dtf-text { border-color: var(--red); color: var(--red); }
+.dtf-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.pi-wind-label-bg { fill: var(--bg-2); }
+/* 11-26 부두 탭 위: Switching · Direction 여유 두 칸이 좁으면 줄을 바꿔 나란히 */
+.bt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.bt-bar .pin-def { white-space: nowrap; }
+.wx-at { margin-left: 8px; font-size: calc(14px * var(--fs)); font-weight: 600; color: var(--fg-2); }
+/* 11-26 부두 탭: 선석 목록의 Switching · Direction 열, 선택한 선석 그룹의 편집 칸 */
+.bt-c-sh { width: 23%; }
+.bt-table .bt-c-st { width: 22%; }
+.bt-table thead th.r { text-align: right; white-space: nowrap; }
+.bt-sh { color: var(--fg-2); white-space: nowrap; }
+.bt-sh .pin-in { width: 54px; height: 28px; padding: 0 6px; font-size: calc(13px * var(--fs)); }
+.bt-sh .pin-u { margin-left: 3px; color: var(--fg-3); }
+.bt-sh.changed .pin-in { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.bt-shift { margin: 4px 0 14px; }
+.bt-shift h4 { margin: 0 0 8px; font-size: calc(13.5px * var(--fs)); }
+.bt-shift h4 small { margin-left: 8px; font-weight: 400; color: var(--fg-3); font-size: calc(11.5px * var(--fs)); }
+.bt-shift-row { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+/* 날짜 칸: 평소에는 연도까지, 화면이 좁으면 월/일 시:분만 */
+@media (max-width: 1440px) { .dtf-y { display: none; } }
+.tp-wait { display: block; padding: 0 8px; color: var(--fg-3); font-size: calc(12px * var(--fs)); }
+/* 11-26 확정 화면 판단 근거: 입력 줄바꿈 유지, 함께 확정한 항목은 목록 */
+.fix-reason { margin: 0; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.6; font-size: calc(12.5px * var(--fs)); }
+/* 11-26 판단 근거 세 묶음: 작업자 판단 근거 → 조건 변경 요청 → 리스크 */
+.fix-sec + .fix-sec { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-2); }
+.fix-sec h4 { margin: 0 0 6px; font-size: calc(12.5px * var(--fs)); font-weight: 600; color: var(--fg); }
+.fix-list { margin-top: 6px; padding: 6px 10px; border-left: 3px solid var(--line-3); background: var(--bg-3); }
+.fix-list.ok { border-left-color: var(--green); }
+.fix-list.warn { border-left-color: var(--amber); background: var(--amber-wash); }
+.fix-list-h { font-size: calc(12px * var(--fs)); }
+.fix-list ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: calc(12px * var(--fs)); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; color: var(--fg-2); }
+.fix-list p { margin: 2px 0 0; }

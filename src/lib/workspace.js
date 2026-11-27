@@ -9,7 +9,9 @@ export const PASSWORD = '1234'
 export const ADMIN_LOGIN_ID = 'admin'
 export const ROLES = {
   scheduler: { id: 'scheduler', name: '스케줄러 A', title: '선박 스케줄러', loginId: 'scheduler', home: 'home', desc: '접안 계획 작성·비교·확정' },
-  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: 'SK 3부두 하역 1팀', mail: 'sk3-ops@example.com' },
+  user: { id: 'user', name: '이용자 B', title: '일정 이용자', loginId: 'user', home: 'ops', desc: '확정된 접안 일정 조회', myBerth: 'B2', team: '3부두 하역 1팀', mail: 'sk3-ops@example.com' },
+  // 11-26 계약 문서 담당(임시): C/P · recap · 매매 확인서를 넣고 파서 추출값을 검토한다
+  contract: { id: 'contract', name: '계약 담당 C', title: '계약 문서 담당', loginId: 'contract', home: 'docs', desc: '계약 문서 등록, 추출값 검토' },
 }
 
 // 왼쪽 레일 = 묶음. roles에 없는 계정에게는 어디에도 나오지 않는다. icon은 Blueprint 아이콘 이름.
@@ -27,6 +29,10 @@ export const NAV = [
   ] },
   // 11-20 피드백: 계산 검증·활동 기록 화면은 뺀다(C).
   { key: 'SCHEDULE', label: '일정', roles: ['user'], items: [{ id: 'ops', label: '확정 접안 일정', icon: 'timeline-events' }] },
+  { key: 'CONTRACT', label: '계약 문서 업무', roles: ['contract'], items: [
+    { id: 'docs', label: '문서 등록', icon: 'document', no: 1 },
+    { id: 'terms', label: '추출값 검토', icon: 'search-text', no: 2 },
+  ] },
 ]
 
 export const canUse = (roleId, group) => group.roles.includes(roleId)
@@ -37,7 +43,7 @@ export const nowText = () => new Date(Date.now() + 9 * 3600e3).toISOString().sli
 
 const fresh = () => ({
   roleId: null, // 로그인 전
-  plans: [], // 확정 이력 {no, candId, label, total, reason, uncheckedRisks, at, who, version, placements, cancelled}
+  plans: [], // 확정 이력 {no, candId, label, total, reason, appliedChanges, skippedChanges, checkedRisks, uncheckedRisks, at, who, version, placements, cancelled}
   log: [], // 활동 기록(추가만) {id, ts, at, who, roleTitle, kind, action, target, detail}
   history: {}, // 대상별 변경 이력 `${scenarioId}:${vid|'env'}` → [{id, ts, at, who, field, label, from, to, logId}]
   notes: {}, // 선박 메모 `${scenarioId}:${vid}` → [{id, ts, at, who, text}]
@@ -56,7 +62,8 @@ const subscribe = (l) => { listeners.add(l); return () => listeners.delete(l) }
 /** 구독용 훅. 반환값 rev는 의존성 배열에 넣어 다시 계산할 때 쓴다. */
 export const useWorkspace = () => useSyncExternalStore(subscribe, () => rev)
 
-export function resetWorkspace() { Object.assign(ws, fresh()); emit() }
+// 11-26 시연 초기화는 로그인은 그대로 두고 기록 · 입력만 지운다 (전에는 로그인까지 지워 로그인 화면으로 튕겼다)
+export function resetWorkspace() { Object.assign(ws, { ...fresh(), roleId: ws.roleId }); emit() }
 export function setRole(roleId) {
   if (roleId) {
     ws.roleId = roleId
@@ -160,16 +167,26 @@ export const activePlan = () => {
 
 /** 스케줄러 확정. 이후 입력이 바뀌어도 이용자는 확정 당시 일정을 본다(스냅숏). */
 // 11-24 실데이터: 스냅숏에 선박, 부두, 체선료(센트)까지 복사해 둔다. 확정 뒤 계획 조건을 고쳐도 이 값은 바뀌지 않는다.
-export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
+export function fixPlan({ cand, scen, version, reason, uncheckedRisks, skippedChanges = [], appliedChanges = [], checkedRisks = [] }) {
+  const plan = { ...planSnapshot({ cand, scen, version, reason }), no: ws.plans.length + 1, appliedChanges, skippedChanges, checkedRisks, uncheckedRisks }
+  ws.plans.push(plan)
+  addLog('확정', '계획 확정', `접안 계획 v${plan.no} · ${cand.label}`, reason)
+  emit()
+  return plan
+}
+
+/** 확정 기록 한 건의 모양(저장하지 않음). 11-26 확정 전 통보 메일 예시 미리보기도 이것으로 만든다 */
+export function planSnapshot({ cand, scen, version, reason }) {
   const v = Object.fromEntries(scen.vessels.map((x) => [x.id, x]))
   const b = Object.fromEntries(scen.berths.map((x) => [x.id, x]))
-  const plan = {
-    no: ws.plans.length + 1, candId: cand.id, label: cand.label, total: cand.total, reason, uncheckedRisks,
+  return {
+    no: 0, candId: cand.id, label: cand.label, total: cand.total, reason, // 11-26 판단 근거 = 작업자 판단 근거 · 조건(반영 / 반영 안 함) · 리스크(확인 / 확인 안 함)
+    appliedChanges: [], skippedChanges: [], checkedRisks: [], uncheckedRisks: [],
     preset: cand.preset ? { id: cand.preset.id, label: cand.preset.label, desc: cand.preset.desc } : null,
     baselineTotal: null, moves: cand.moves ?? null,
     status: cand.status, proven: Boolean(cand.proven), solveSec: cand.solveSec ?? null,
     scenName: scen.name, bundle: scen.bundle ?? null,
-    at: nowText(), who: role().name, version, cancelled: false,
+    at: nowText(), who: role()?.name ?? '-', version, cancelled: false,
     tanks: structuredClone(cand.tanks ?? []),
     // 11-25 메일 템플릿용: 생산계획(탱크 묶음별 주별 t/h), 부두 사용 불가 구간, 야간 도선 규칙
     production: (scen.tanks ?? []).map((t) => ({ name: t.name, weeks: t.weeks })),
@@ -189,10 +206,6 @@ export function fixPlan({ cand, scen, version, reason, uncheckedRisks }) {
       }
     }),
   }
-  ws.plans.push(plan)
-  addLog('확정', '계획 확정', `접안 계획 v${plan.no} · ${cand.label}`, reason)
-  emit()
-  return plan
 }
 export function cancelPlan(reason) {
   const p = activePlan()

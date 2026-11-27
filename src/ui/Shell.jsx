@@ -1,5 +1,6 @@
 // 콘솔 틀: 상단 명령 바 · 왼쪽 레일 · 작업 영역 · 하단 상태 바. 화면 내용은 children.
 import { Button, HTMLSelect, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../state/app.jsx'
 import { useInbox } from '../state/useInbox.js'
 import { NAV, canUse, groupOf } from '../lib/workspace.js'
@@ -45,7 +46,7 @@ export function Brand({ size = 15 }) {
 function Clock() {
   const { scen } = useApp()
   return (
-    <Tooltip content="현재 시각. 엔진은 이 시각 뒤의 일을 보지 않습니다" placement="bottom">
+    <Tooltip content="현재 시각. 이 시각 뒤의 일은 계획에 쓰지 않습니다" placement="bottom">
       <span className="clock mono">
         <span className="faint">현재</span> <b>{scen ? fmtFull(0) : '-'}</b> <span className="faint">KST</span>
       </span>
@@ -71,14 +72,10 @@ export function Shell({ children }) {
         </button>
         <div className="topbar-right">
           {isScheduler && (
-            <label className="scen-select" id="scen" data-tour="scen">
-              <span className="faint tiny">데이터셋</span>
-              <HTMLSelect minimal value={scenarioId ?? ''} onChange={(e) => setScenarioId(e.target.value)} aria-label="데이터셋"
-                options={datasets.length ? datasets.map((d) => ({ value: d.id, label: d.label })) : [{ value: '', label: '불러오는 중' }]} />
-            </label>
+            <DatasetPicker datasets={datasets} scenarioId={scenarioId} onOpen={setScenarioId} />
           )}
           <Clock />
-          <ThemeToggle />
+          {/* 11-26 라이트 모드만 씀: <ThemeToggle /> (다크 코드는 남김, 주소에 ?theme=dark면 다크) */}
           {isScheduler && (
             <Tooltip content="화면을 하나씩 짚는 안내" placement="bottom">
               <Button className="help-btn" data-tour="help-btn" variant="minimal" size="small" icon="help" text="사용법" onClick={tour.start} />
@@ -125,4 +122,84 @@ export function Shell({ children }) {
       <footer className="statusbar"><span className="statusbar-credit">Made by Minkyu</span></footer>
     </div>
   )
+}
+
+/**
+ * 11-26 데이터셋 고르기: 상단에는 「기준 시각 2025/11/09 09:00」 버튼 하나. 누르면 시연 날짜(바로 열림)와 직접 고르기(날짜 · 정시 + 열기).
+ * 직접 고를 때 「열기」를 눌러야 바뀐다(바꿀 때마다 하역 속도 · 후보 계산이 돌기 때문). 날짜별 파일은 예전처럼 목록.
+ */
+function DatasetPicker({ datasets, scenarioId, onOpen }) {
+  const [file, start] = (scenarioId ?? '').split('@')
+  const d = datasets.find((x) => x.id === file) ?? datasets.at(-1)
+  const [draft, setDraft] = useState(start ?? '')
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
+  useEffect(() => { setDraft(start ?? '') }, [start])
+  // 바깥을 누르거나 Esc면 닫는다
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e) => { if (!wrapRef.current?.contains(e.target)) { setOpen(false); setDraft(start ?? '') } }
+    const onKey = (e) => { if (e.key === 'Escape') { setOpen(false); setDraft(start ?? '') } }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [open, start])
+  if (!d || d.kind !== 'year') {
+    return (
+      <label className="scen-select" id="scen" data-tour="scen">
+        <span className="faint tiny">데이터셋</span>
+        <HTMLSelect minimal value={scenarioId ?? ''} onChange={(e) => onOpen(e.target.value)} aria-label="데이터셋"
+          options={datasets.length ? datasets.map((x) => ({ value: x.id, label: x.label })) : [{ value: '', label: '불러오는 중' }]} />
+      </label>
+    )
+  }
+  const [day, hm] = draft.split(' ')
+  const wellFormed = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(draft) && day >= d.range.from && day <= d.range.to
+  // 11-26 같은 선석에 두 척이 동시에 있던 기록(겹침)이 계획 기간(기준 시각 + days)에 걸리면 시연용으로 고르지 않는다
+  const clash = wellFormed ? clashesOf(draft, d.days, d.overlaps ?? []) : []
+  const valid = wellFormed && !clash.length
+  const close = () => { setOpen(false); setDraft(start ?? '') }
+  const pick = (to) => { setOpen(false); if (to && to !== start) onOpen(`${d.id}@${to}`) }
+  const hours = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
+  return (
+    <div className="scen-wrap" ref={wrapRef}>
+      <button type="button" className="scen-select scen-trigger" id="scen" data-tour="scen" aria-expanded={open} onClick={() => (open ? close() : setOpen(true))} aria-label="기준 시각 고르기">
+        <Icon icon="calendar" size={13} className="faint" />
+        <span className="faint tiny">기준 시각</span>
+        <b className="num">{start ? start.replace(/-/g, '/') : '불러오는 중'}</b>
+        <Icon icon={open ? 'caret-up' : 'caret-down'} size={12} className="faint" />
+      </button>
+      {open && (
+        <div className="scen-pop" role="dialog" aria-label="기준 시각 고르기">
+          <div className="scen-pop-k">시연 날짜</div>
+          <div className="scen-pop-list">
+            {d.shortcuts.map((x) => (
+              <button key={x} type="button" className={`scen-pop-item num ${x === start ? 'on' : ''}`} onClick={() => pick(x)} title={x}>{x.slice(5).replace('-', '/')}</button>
+            ))}
+          </div>
+          <div className="scen-pop-k">직접 고르기 <span className="faint">{d.range.from.slice(0, 4)}년 안</span></div>
+          <div className="scen-pop-pick">
+            <input type="date" className="scen-pop-date num" value={day ?? ''} min={d.range.from} max={d.range.to} aria-label="기준 날짜"
+              onChange={(e) => setDraft(`${e.target.value} ${hm ?? '09:00'}`)} />
+            <HTMLSelect value={hm ?? '09:00'} aria-label="기준 시각" onChange={(e) => setDraft(`${day ?? d.default_start.split(' ')[0]} ${e.target.value}`)}
+              options={hours.includes(hm) || !hm ? hours : [hm, ...hours]} />
+            <Button intent="primary" text="열기" disabled={!valid || draft === start} onClick={() => pick(draft)} />
+          </div>
+          {clash.length > 0 && (
+            <p className="scen-pop-warn">
+              {d.days * 24}시간 안에 같은 선석에 두 척이 동시에 있던 기록이 있어 고를 수 없습니다.
+              <span className="scen-pop-warn-list">{clash.slice(0, 3).map((w) => `${w.berth} ${w.start.slice(5).replace('-', '/')}~${w.end.slice(11)}`).join(', ')}{clash.length > 3 ? ` 외 ${clash.length - 3}건` : ''}</span>
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 기준 시각(KST 'YYYY-MM-DD HH:MM')부터 days일 안에 걸리는 선석 겹침 구간 */
+function clashesOf(start, days, overlaps) {
+  const t = (x) => Date.parse(`${x.replace(' ', 'T')}:00+09:00`)
+  const t0 = t(start), t1 = t0 + days * 864e5
+  return overlaps.filter((w) => t(w.start) < t1 && t(w.end) > t0)
 }

@@ -69,6 +69,8 @@ button.mb-strip { cursor: pointer; }
 .mb-decide .block { display: block; margin-top: 2px; }
 /* 11-25 메일 보기는 확정 통보 메일 미리보기와 같은 메일 종이 */
 .mb-read { padding: 0; }
+/* 11-26 메일 종이 아래 빈 칸이 패널 바탕색으로 보이지 않게, 메일 보기 패널 전체를 종이 둘레와 같은 색으로 */
+.mb-read-body { background: var(--bg-1); }
 .mb-read .ml-paper-wrap { padding: 14px; }
 .mb-read .ml-paper .ml-file.static { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 1px solid var(--p-line2); border-radius: 3px; background: var(--p-head); color: var(--p-fg); font-size: calc(12px * var(--fs)); }
 .mb-read .mb-decide, .mb-read .mb-actions { margin: 0 14px 14px; }

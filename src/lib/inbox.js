@@ -63,7 +63,7 @@ export function deriveAlerts({ ws, roleId, userAddr, scenarioId, scen }) {
   const peak = wind.reduce((m, w) => (w.ms > (m?.ms ?? -1) ? w : m), null)
   if (peak && peak.ms >= WIND_LIMIT) {
     const over = wind.filter((w) => w.ms >= WIND_LIMIT)
-    out.push({ id: `wx:${scenarioId}:${peak.t}`, channel: 'weather', tone: 'warn', title: `강풍 관측, 최대 ${peak.ms} m/s (${fmt(peak.t)})`,
+    out.push({ id: `wx:${scenarioId}:${peak.t}`, channel: 'weather', tone: 'warn', title: `강풍 관측, 최대 ${peak.ms.toFixed(1)} m/s (${fmt(peak.t)})`,
       detail: `풍속 ${WIND_LIMIT} m/s 이상인 시간 ${over.length}개, ${fmt(over[0].t)} ~ ${fmt(over.at(-1).t)}. 3~8부두와 부이는 이 시간 하역이 멈춰 작업 완료가 늦어집니다. 다시 계산해 일정을 확인하십시오.`,
       at: fmt(peak.t), by: '기상 관측(부이)', action: { tab: 'input' } })
   }
@@ -89,7 +89,7 @@ export function deriveAlerts({ ws, roleId, userAddr, scenarioId, scen }) {
   for (const inc of scen.incidents ?? []) {
     const effect = inc.change ? changeText(scen, inc) : inc.effect ?? (inc.block ? `부두 사용 불가 ${blockText(scen, inc.block)}` : '-')
     out.push({ id: `inc:${scenarioId}:${inc.id}`, incId: inc.id, channel: 'incident', tone: 'warn', title: `[${inc.kind}] ${inc.title}`, detail: `영향: ${effect}`,
-      at: typeof inc.at === 'number' ? fmt(inc.at) : inc.at ?? '-', by: inc.from ?? '현장', action: { tab: 'input' },
+      at: typeof inc.at === 'number' ? fmt(inc.at) : inc.at ?? '-', by: inc.from ?? '현장', action: { tab: 'compare' }, // 결정은 후보 비교의 조건 변경 요청 패널에서
       from: inc.from ?? '현장', fromAddr: inc.fromAddr ?? (inc.from === '생산계획팀' ? 'production@example.com' : 'facility@example.com'),
       body: inc.body ?? `스케줄러님,\n\n${inc.title}.\n\n영향: ${effect}\n\n반영 여부를 회신 부탁드립니다.\n${inc.from ?? '현장'} 드림` })
   }

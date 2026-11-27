@@ -204,6 +204,9 @@
 .ml-card .ml-tags button { height: 28px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 14px; background: var(--bg-1); color: var(--fg); font: 500 calc(12.5px * var(--fs)) var(--sans); cursor: pointer; }
 .ml-card .ml-tags button:hover { border-color: var(--accent); color: var(--accent); }
 .ml-card .ml-tags button.used { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+/* 11-26 한 번만 넣는 그림 · 표가 이미 본문에 있을 때: 넣은 표시는 그대로, 누를 수 없음 */
+.ml-card .ml-tags button:disabled { cursor: not-allowed; opacity: 0.55; }
+.ml-card .ml-tags button:disabled:hover { border-color: var(--accent); color: var(--accent); }
 
 /* 태그 칩 편집기 */
 .tge { min-height: 520px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--input-bg); color: var(--fg); font: calc(13.5px * var(--fs))/1.75 var(--sans); white-space: pre-wrap; word-break: keep-all; outline: none; overflow-wrap: anywhere; }
@@ -332,3 +335,16 @@
 .ml-confirm p { margin: 0; word-break: keep-all; font-size: calc(15px * var(--fs)); line-height: 1.6; }
 .ml-confirm-list { margin: 10px 0 0; padding-left: 18px; max-height: 240px; overflow-y: auto; font-size: calc(14px * var(--fs)); line-height: 1.7; }
 .ml-done .bp6-alert-body .bp6-icon { color: var(--green); }
+
+/* 11-26 확정 전 통보 메일: 위 안내 줄 + 미리보기 자리 잠금 (받는 곳 · 템플릿은 그대로 쓸 수 있음) */
+.ml-lockbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 10px 14px; border: 1px solid var(--line-2); border-left: 3px solid var(--accent); background: var(--bg-2); }
+.ml-lockbar > .bp6-icon { color: var(--accent); }
+.ml-lockbar > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: calc(12.5px * var(--fs)); }
+.ml-lockbar > div span { color: var(--fg-2); font-size: calc(12px * var(--fs)); }
+.ml-lockbar > .bp6-button { margin-left: auto; flex: none; }
+.ml-paper-locked { display: flex; flex-direction: column; }
+.ml-locked { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 320px; padding: 24px; text-align: center; color: #5f6b7c; }
+.ml-locked b { color: #1c2127; font-size: calc(14px * var(--fs)); }
+.ml-locked p { margin: 0; max-width: 300px; font-size: calc(12.5px * var(--fs)); line-height: 1.6; word-break: keep-all; }
+/* 11-26 확정 전 예시 미리보기: 맨 위 빨간 안내 */
+.ml-sample-note { margin: 0 0 12px; padding: 6px 10px; border: 1px solid #cd4246; background: #fff5f5; color: #cd4246; font-size: calc(11.5px * var(--fs)); font-weight: 600; }

@@ -4,13 +4,15 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useInbox } from '../state/useInbox.js'
 import { useApp } from '../state/app.jsx'
+import { activePlan } from '../lib/workspace.js'
 import { Panel, St } from '../ui/kit.jsx'
 import { berthStatus as berthStatusOf, isNight as isNightAt, spanOf, stateAt } from '../lib/plan.js'
 import { MAP_CONTEXT, anchorageFor } from '../lib/vesselState.js'
 import { arriveRoute, seaRoute } from '../lib/seaRoutes.js'
 import { STEP_MIN, poseAt } from '../lib/vesselMotion.js'
 import { NOW, dayStart, fmt, fmtDur, fmtFull, money } from '../lib/time.js'
-import Timeline, { demCents } from './Timeline.jsx'
+import { demCents } from './Timeline.jsx'
+import PlanGantt from './PlanGantt.jsx'
 import './home.css'
 
 // 11-24 실데이터: 시간축은 지금(NOW = 데이터셋 기준 시각 T)부터 계획 기간 끝(후보 전체의 마지막 이안)까지.
@@ -52,11 +54,11 @@ function shipIcon({ name, phase, cog, selected, ticking, extra = '', next = 0 })
 
 
 export default function Home() {
-  const { scen, all, result } = useApp()
-  if (!scen || !all.length) {
+  const { scen, result } = useApp()
+  if (!scen) {
     return (
       <div className="home-console">
-        <div className="home-loading small muted">{result.loading ? '데이터셋을 불러오는 중입니다' : result.error ?? '엔진 후보가 아직 없습니다'}</div>
+        <div className="home-loading small muted">{result.loading ? '데이터셋을 불러오는 중입니다' : result.error ?? '후보가 아직 없습니다'}</div>
       </div>
     )
   }
@@ -64,15 +66,21 @@ export default function Home() {
 }
 
 function HomeMap() {
-  const { all: plans, result, scen, current, version, openVessel, go, setMailFilter, isScheduler, drawer } = useApp()
+  const { result, scen, current, openVessel, go, setMailFilter, isScheduler, drawer } = useApp()
   // 11-24 고도화: 반영 여부를 정하지 않은 돌발 상황이 있을 때만 「입항 예정」 아래에 같은 모양의 창을 띄운다.
   const { incidents } = useInbox()
-  // 운영 현황은 운영만 보여 준다: 확정안이 있으면 확정안, 없으면 최저 후보를 '확정 전 예상'으로.
-  const fixed = current && current.version === version
-  const plan = (fixed && plans.find((p) => p.id === current.candId)) || result.candidates[0]
-  const span = useMemo(() => spanOf(fixed ? [plan] : plans), [fixed, plan, plans])
+  // 운영 현황 = 지금 운영 중인 상황 (11-26 사용자 결정). 후보(확정 전 안)는 보이지 않는다.
+  //   확정 전: 이전 계획. 따로 없으므로 데이터에 든 예정 ETA · 접안 · 이안(실제 접안 기록)을 최적화 전 계획으로 본다(scen.existing).
+  //            (엔진 평가 값으로 바꾸지 않는다 — 이안 시각이 실제와 달라져 막대가 겹침)
+  //   확정 뒤: 확정한 계획(확정 스냅숏, 이 데이터셋에서 확정한 것만). 확정 뒤 계획 조건을 고쳐도 그대로다.
+  const confirmed = current ? activePlan() : null
+  const plan = useMemo(() => (confirmed && confirmed.scenName === scen.name
+    ? { id: confirmed.candId, label: `확정 계획 v${confirmed.no}`, placements: confirmed.placements }
+    : scen.existing), [confirmed, scen])
+  const span = useMemo(() => spanOf([plan]), [plan])
   const START = NOW
-  const end = Math.max(START + 24 * 60, span.end)
+  // 11-26 운영 현황은 계속 바뀌므로 지금부터 72시간까지만 본다 (그래프 · 재생 막대)
+  const end = Math.min(START + 72 * 60, Math.max(START + 24 * 60, span.end))
   const [t, setT] = useState(NOW)
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState(null)
@@ -87,15 +95,6 @@ function HomeMap() {
   // 11-25 부두별 접안 일정: 한 번에 부두 하나만(전체 보기 없음). 처음은 첫 부두.
   const [gPier, setGPier] = useState(null)
   const [gTab, setGTab] = useState('all') // 'all' = 부두별 접안 일정(전체 선석), 'pier' = 부두별 작업 현황(부두 하나씩)
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea|select/i.test(e.target.tagName)) return
-      if (e.key === 'g' || e.key === 'G') setGView('graph')
-      if (e.key === 't' || e.key === 'T') setGView('table')
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
   // 11-25 스케줄 현황 패널은 아래 일정(그래프, 표)과 겹쳐 없앴다. 부두를 누르면 그 부두로 확대한다.
   const bById = useMemo(() => Object.fromEntries(scen.berths.map((b) => [b.id, b])), [scen])
   const zoomTo = (pos, z = 15.5) => mapRef.current?.setView(pos, z)
@@ -106,6 +105,7 @@ function HomeMap() {
   useEffect(() => { setT((now) => Math.min(now, end)) }, [end])
   const mapElement = useRef(null)
   const mapRef = useRef(null)
+  const clampRef = useRef(null) // 지도 위 상세(툴팁)를 보이는 영역 안으로 (지도 만들 때 채움)
   const markerLayer = useRef(null)
   const routeLayer = useRef(null)
   const markers = useRef(new Map())
@@ -159,7 +159,7 @@ function HomeMap() {
     }
     // 야간 20시~06시 (plan.js isNight와 같은 기준)
     for (let d = dayStart(START) - 1440; d < end; d += 1440) add(`night-${d}`, 'night', d + 20 * 60, d + 30 * 60)
-    for (const w of scen.wind) if (w.ms >= WIND_ALERT_MS) add(`wind-${w.t}`, 'weather', w.t, w.t + 60)
+    // 11-26 강풍은 재생 막대에 표시하지 않는다(지도 위 「강풍 관측」 표시로 충분 — 사용자 결정)
     scen.blocks.forEach((b, i) => add(`block-${i}`, 'block', b.start, b.end))
     return out
   }, [START, end, scen.wind, scen.blocks])
@@ -192,6 +192,33 @@ function HomeMap() {
     setZoom(map.getZoom())
     map.on('zoomend', () => setZoom(map.getZoom()))
     map.on('moveend', () => setViewTick((x) => x + 1))
+    // 11-26 지도 위 상세(툴팁)가 지도 밖으로 나가 잘리지 않게, 열릴 때 · 지도를 옮길 때 지도 안으로 밀어 넣는다
+    //   기준은 실제로 보이는 영역: 지도 요소와, 넘치는 부분을 가리는 바깥 틀들의 겹치는 부분
+    const visibleRect = () => {
+      let { left, top, right, bottom } = map.getContainer().getBoundingClientRect()
+      for (let p = map.getContainer().parentElement; p && p !== document.body; p = p.parentElement) {
+        const cs = getComputedStyle(p)
+        if (cs.overflow === 'visible' && cs.overflowX === 'visible' && cs.overflowY === 'visible') continue
+        const b = p.getBoundingClientRect()
+        left = Math.max(left, b.left); top = Math.max(top, b.top); right = Math.min(right, b.right); bottom = Math.min(bottom, b.bottom)
+      }
+      return { left, top, right, bottom }
+    }
+    const clampTip = (tip) => {
+      const el = tip?.getElement?.()
+      if (!el) return
+      el.style.marginLeft = ''; el.style.marginTop = ''
+      requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect(), c = visibleRect(), pad = 6
+        const dx = r.right > c.right - pad ? c.right - pad - r.right : r.left < c.left + pad ? c.left + pad - r.left : 0
+        const dy = r.bottom > c.bottom - pad ? c.bottom - pad - r.bottom : r.top < c.top + pad ? c.top + pad - r.top : 0
+        el.style.marginLeft = dx ? `${dx}px` : ''
+        el.style.marginTop = dy ? `${dy}px` : ''
+      })
+    }
+    map.on('tooltipopen', (e) => clampTip(e.tooltip))
+    clampRef.current = clampTip
+    map.on('moveend zoomend', () => map.eachLayer((l) => { const tip = l.getTooltip?.(); if (tip && l.isTooltipOpen?.()) clampTip(tip) }))
     // 11-25 배 움직임 애니메이션: 5분 칸 사이를 CSS 전환으로 채운다. 확대, 축소 중에는 끈다(배가 늦게 따라오는 것 방지).
     const el = mapElement.current
     el.classList.add('anim')
@@ -223,7 +250,8 @@ function HomeMap() {
       wanted.add(key)
       let marker = markers.current.get(key)
       if (!marker) {
-        marker = L.marker(pos, { icon, title, zIndexOffset }).addTo(markerLayer.current)
+        marker = L.marker(pos, { icon, zIndexOffset }).addTo(markerLayer.current) // title을 주면 브라우저 기본 툴팁이 상세 창을 가린다
+        marker.getElement()?.setAttribute('aria-label', title)
         markers.current.set(key, marker)
       } else {
         marker.setLatLng(pos).setZIndexOffset(zIndexOffset)
@@ -241,7 +269,7 @@ function HomeMap() {
         marker.on('mouseout', marker._hov.off)
       }
       if (tooltip) {
-        if (marker.getTooltip()) marker.setTooltipContent(tooltip)
+        if (marker.getTooltip()) { marker.setTooltipContent(tooltip); if (marker.isTooltipOpen()) clampRef.current?.(marker.getTooltip()) } // 내용이 바뀌면 크기도 바뀐다
         else marker.bindTooltip(tooltip, { direction: 'auto', offset: [14, 0], className: 'home-map-tip', opacity: 1 })
       } else if (marker.getTooltip()) marker.unbindTooltip()
     }
@@ -258,7 +286,7 @@ function HomeMap() {
     const fullText = (pr) => {
       const sts = pr.berths.map((b) => berthStatus(b))
       const busy = sts.filter((x) => x.key === 'busy').length
-      const nm = pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `SK${pr.id}부두`
+      const nm = pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `${pr.id}부두`
       return `${nm}  ${sts.some((x) => x.key === 'blocked') ? '사용 불가' : busy ? `${busy}/${pr.berths.length} 작업` : '비어 있음'}`
     }
     const offsetOf = new Map()
@@ -270,12 +298,21 @@ function HomeMap() {
       // 11-25 축소했을 때(확대 13.5 미만): 부두가 몇 px 안에 몰리므로 이름표를 지도 왼쪽 위에 세로 목록으로 모은다.
       //   연결선은 긋지 않는다(사용자 결정). 실제 위치는 부두 점과 마우스오버 강조로 본다.
       const colIds = new Set()
+      // 11-26 지도 왼쪽 위 상황 표시(강풍 관측 · 야간)가 있으면 그 자리를 먼저 비워 두고 부두 이름표는 그 아래 · 옆으로 피한다
+      const ctxBox = (() => {
+        const el = mapElement.current?.parentElement?.querySelector('.home-map-context')
+        if (!el || !el.children.length) return null
+        const c = mapElement.current.getBoundingClientRect(), r = el.getBoundingClientRect()
+        return { x: r.left - c.left - 4, y: r.top - c.top - 4, w: r.width + 8, h: r.height + 8 }
+      })()
+      if (ctxBox) placed.push(ctxBox)
       if (compact) {
         const h = 11 * fs * 1.25 + 10
         const step = h + 4
+        const top0 = ctxBox ? ctxBox.y + ctxBox.h + 4 : 10
         piers.forEach((pr, i) => {
           const pt = mapRef.current.latLngToContainerPoint(pr.berths[0].pos)
-          const x = 10, y = 10 + i * step
+          const x = 10, y = top0 + i * step
           offsetOf.set(pr.id, { x: x - pt.x, y: y - pt.y })
           colIds.add(pr.id)
           ctx.font = `700 ${11 * fs}px "IBM Plex Sans KR", sans-serif`
@@ -333,7 +370,7 @@ function HomeMap() {
       })
       update(`pier-${pier.id}`, at, L.divIcon({
         className: 'home-map-label-wrap',
-        html: `<span class="hud-tag st-${key}" style="${posStyle(pier.id)}"><i></i><b>${escapeHtml(pier.id === 'BUOY' ? '부이' : pier.id === 'GAS' ? '가스부두' : `SK${pier.id}부두`)}</b><em>${blocked ? '사용 불가' : busy ? `${busy}/${pier.berths.length} 작업` : '비어 있음'}</em></span>`,
+        html: `<span class="hud-tag st-${key}" style="${posStyle(pier.id)}"><i></i><b>${escapeHtml(pier.id === 'BUOY' ? '부이' : pier.id === 'GAS' ? '가스부두' : `${pier.id}부두`)}</b><em>${blocked ? '사용 불가' : busy ? `${busy}/${pier.berths.length} 작업` : '비어 있음'}</em></span>`,
         iconSize: [0, 0],
       }), pier.name, tooltip, () => pickPier(pier.id), 500, `pier:${pier.id}`)
     }
@@ -376,7 +413,7 @@ function HomeMap() {
         name: v.name, phase: pose.moving === 'out' ? 'left' : pose.moving ? 'coming' : state.phase, cog: Math.round(pose.cog), selected: isSelected, ticking: false,
         extra: isSelected && state.phase === 'waiting' ? `→ ${bById[state.p.bid]?.label ?? state.p.bid} ${fmt(state.p.etb).split(' ')[1]} 접안` : state.phase === 'berthed' && isSelected ? `작업 중, ${fmt(state.p.etu).split(' ')[1]} 이안` : '',
       }), `${v.name} 선박 카드`, tipHtml({
-        title: v.name, sub: [v.nameEn, v.cls].filter(Boolean).join(', '),
+        title: v.fullName ?? v.name, sub: [v.nameEn, v.cls].filter(Boolean).join(', '),
         chip: state.phase === 'waiting' ? '정박지 대기' : state.phase === 'berthed' ? '작업 중' : '이동 중', tone: state.phase === 'waiting' ? 'warn' : state.phase === 'berthed' ? 'ok' : 'idle',
         big: state.phase === 'berthed' ? { value: fmtDur(Math.max(0, state.p.etu - t)), label: '뒤 이안' } : { value: fmtDur(Math.max(0, state.p.etb - t)), label: `뒤 ${bById[state.p.bid]?.label ?? state.p.bid} 접안` },
         rows: [
@@ -392,7 +429,6 @@ function HomeMap() {
     }
     // 이동 가이드선 (11-24 화면 리뷰 결정): 스케줄된 배 전부가 아니라 「선택한 배」의 예상 이동 경로만 그린다.
     //   배를 누르면 선박 카드(제원 등)는 그대로 열리고, 그 배가 배정된 선석으로 가는 길만 지도에 나타난다.
-    //   확정 전에는 최저 후보 기준 「예상」 경로(옅은 점선), 확정 뒤에는 그 스케줄 경로를 진하게.
     //   색 지도 위에서도 보이게 흰 테두리를 깔고, 구간마다 진행 방향 화살표를 둔다.
     //   이름표는 접안이 빠른 순서로 몇 척만 쌓고 나머지는 「외 N척」으로 줄인다.
     routeLayer.current.clearLayers()
@@ -425,10 +461,10 @@ function HomeMap() {
       const color = sel ? '#ff7043' : '#ffab8f'
       const op = sel ? 0.95 : 0.6
       L.polyline(path, { color: '#ffffff', weight: sel ? 6 : 4, opacity: 0.6, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)
-      L.polyline(path, { color, weight: sel ? 3 : 2, dashArray: fixed ? '8 5' : '4 5', opacity: op, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)
+      L.polyline(path, { color, weight: sel ? 3 : 2, dashArray: '8 5', opacity: op, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer.current)
       for (let i = 0; i < path.length - 1; i++) if (i % 2 === 0) arrow(path[i], path[i + 1], color, op)
     }
-  }, [plan, scen, states, selected, t, openVessel, berthSel, fixed, near, piers, bById, zoom, viewTick, hover, spotOf]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [plan, scen, states, selected, t, openVessel, berthSel, near, piers, bById, zoom, viewTick, hover, spotOf]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 마우스오버 강조는 표식 내용을 바꾸지 않고 클래스만 붙였다 뗀다(요소가 바뀌면 마우스가 벗어나도 툴팁이 안 닫힘)
   useEffect(() => {
@@ -461,7 +497,7 @@ function HomeMap() {
           <div className="home-map-stage">
             <div ref={mapElement} className="home-map" role="region" aria-label="울산항 선박 위치 지도" />
             <div className="home-map-context">
-              {windAhead && <span className={`home-wx-chip ${windAhead.now ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />강풍 {windAhead.now ? '관측' : '예보'}, 최대 <span className="num">{windAhead.ms}m/s</span> (<span className="num">{fmt(windAhead.t)}</span>)</span>}
+              {windAhead && <span className={`home-wx-chip ${windAhead.now ? 'on' : ''}`}><Icon icon="warning-sign" size={12} />강풍 {windAhead.now ? '관측' : '예보'}, 최대 <span className="num">{windAhead.ms.toFixed(1)}m/s</span> (<span className="num">{fmt(windAhead.t)}</span>)</span>}
               {isNight && <span className="home-night"><Icon icon="moon" size={12} />야간 시간대 (20시~06시)</span>}
             </div>
           </div>
@@ -480,7 +516,7 @@ function HomeMap() {
               {coming.length === 0 && <div className="home-arr-empty">이 시각 뒤로 들어올 배가 없습니다</div>}
               {coming.map(({ v, p }) => <button type="button" key={v.id} className={`home-arr ${selected === v.id ? 'on' : ''}`} onClick={() => openCard(v.id)}>
                 <span className="home-arr-time num"><b>{fmt(v.eta).split(' ')[1]}</b> <small>{fmt(v.eta).split(' ')[0]}</small></span>
-                <strong className="home-arr-name" title={v.name}>{v.name}</strong>
+                <strong className="home-arr-name" title={v.fullName ?? v.name}>{v.name}</strong>
                 <span className="home-arr-cargo" title={`${v.product} ${v.dir}${v.ton ? `, ${v.ton.toLocaleString()}t` : ''}`}>{v.product} {v.dir}{v.ton ? <span className="num">, {v.ton.toLocaleString()}t</span> : null}</span>
                 <span className="home-arr-berth">→ {bById[p.bid]?.label ?? p.bid}</span>
                 <span className="home-arr-left num">{fmtDur(v.eta - t)} 후</span>
@@ -492,7 +528,7 @@ function HomeMap() {
             <div className="home-time-controls">
               <Button variant="minimal" size="small" icon="step-backward" aria-label="지금으로" title="지금으로" onClick={() => { setPlaying(false); setT(START) }} />
               <Button variant="minimal" size="small" icon="chevron-left" aria-label="1시간 전" title="1시간 전" disabled={t <= START} onClick={() => step(-60)} />
-              <Button intent="primary" size="small" icon={playing ? 'pause' : 'play'} aria-label={playing ? '멈춤' : '재생'} title={playing ? '멈춤' : '재생'} onClick={() => { if (!playing && t >= end) setT(START); setPlaying(!playing) }} />
+              <Button variant="minimal" size="small" icon={playing ? 'pause' : 'play'} aria-label={playing ? '멈춤' : '재생'} title={playing ? '멈춤' : '재생'} onClick={() => { if (!playing && t >= end) setT(START); setPlaying(!playing) }} />
               <Button variant="minimal" size="small" icon="chevron-right" aria-label="1시간 후" title="1시간 후" disabled={t >= end} onClick={() => step(60)} />
             </div>
             <div className="home-clock"><time className="num">{t === NOW ? '지금' : `+${Math.round((t - NOW) / 60)}h`}</time><span><span className="num">{fmt(t)}</span> ({weekdayOf(t)})</span></div>
@@ -503,18 +539,18 @@ function HomeMap() {
             </div>
           </div>
           {/* 11-25 지도 아래: 부두별 접안 일정. 그래프(G) = 선석마다 누가 언제 붙고 그 전에 얼마나 기다렸는지, 표(T) = 같은 내용을 접안 순으로 */}
-          <section className="home-gantt" aria-label="부두별 접안 일정">
+          <section className="home-gantt" aria-label="접안 일정">
             <header className="home-gantt-head">
               <div className="home-gantt-tabs" role="tablist" aria-label="일정 보기">
-                <button type="button" role="tab" aria-selected={gTab === 'all'} className={gTab === 'all' ? 'on' : ''} onClick={() => setGTab('all')}>부두별 접안 일정</button>
+                <button type="button" role="tab" aria-selected={gTab === 'all'} className={gTab === 'all' ? 'on' : ''} onClick={() => setGTab('all')}>접안 일정</button>
                 <button type="button" role="tab" aria-selected={gTab === 'pier'} className={gTab === 'pier' ? 'on' : ''} onClick={() => setGTab('pier')}>부두별 작업 현황</button>
               </div>
               <span className="home-gantt-stat busy"><b className="num">{busyNow}</b>척 작업 중</span>
               <span className="home-gantt-stat"><b className="num">{waitNow}</b>척 정박지 대기</span>
               {isScheduler && <span className="home-gantt-stat dem"><b className="num">{demCount}</b>척 체선</span>}
               <div className="home-gantt-switch" role="tablist" aria-label="보기">
-                <button type="button" role="tab" aria-selected={gView === 'graph'} className={gView === 'graph' ? 'on' : ''} onClick={() => setGView('graph')} title="그래프 (G)"><Icon icon="timeline-bar-chart" size={13} />그래프 <kbd>G</kbd></button>
-                <button type="button" role="tab" aria-selected={gView === 'table'} className={gView === 'table' ? 'on' : ''} onClick={() => setGView('table')} title="표 (T)"><Icon icon="th" size={13} />표 <kbd>T</kbd></button>
+                <button type="button" role="tab" aria-selected={gView === 'graph'} className={gView === 'graph' ? 'on' : ''} onClick={() => setGView('graph')}><Icon icon="timeline-bar-chart" size={13} />그래프</button>
+                <button type="button" role="tab" aria-selected={gView === 'table'} className={gView === 'table' ? 'on' : ''} onClick={() => setGView('table')}><Icon icon="th" size={13} />표</button>
               </div>
             </header>
             {gTab === 'pier' && <div className="home-gantt-piers" role="tablist" aria-label="부두 고르기">
@@ -524,7 +560,7 @@ function HomeMap() {
                 return (
                   <button key={pr.id} type="button" role="tab" aria-selected={on} className={on ? 'on' : ''} onClick={() => setGPier(pr.id)}
                     onMouseEnter={() => setHover(`pier:${pr.id}`)} onMouseLeave={() => setHover((h) => (h === `pier:${pr.id}` ? null : h))}>
-                    {pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `SK${pr.id}부두`}
+                    {pr.id === 'BUOY' ? '부이' : pr.id === 'GAS' ? '가스부두' : `${pr.id}부두`}
                     <span className={busyN ? 'busy' : ''}>{busyN}/{pr.berths.length}</span>
                   </button>
                 )
@@ -532,7 +568,7 @@ function HomeMap() {
             </div>}
             <div className="home-gantt-body">
               {gView === 'graph'
-                ? <Timeline sim={plan} scen={scen} range={{ start: START, end }} cursor={t} activeVid={selected} onPick={openCard} showWait berthIds={gTab === 'pier' ? gBerths : undefined} hlPier={hover?.startsWith('pier:') ? hover.slice(5) : null} hlBerth={hover?.startsWith('vessel:') ? states.find((st) => st.v.id === hover.slice(7))?.p.bid : null} />
+                ? <PlanGantt sim={plan} scen={scen} range={{ start: START, end }} fit cursor={t} activeVid={selected} onPick={openCard} berthIds={gTab === 'pier' ? gBerths : undefined} hlPier={hover?.startsWith('pier:') ? hover.slice(5) : null} hlBerth={hover?.startsWith('vessel:') ? states.find((st) => st.v.id === hover.slice(7))?.p.bid : null} />
                 : <ScheduleTable plan={plan} scen={scen} t={t} bById={bById} selected={selected} onPick={openCard} showDem={isScheduler} berthIds={gTab === 'pier' ? gBerths : undefined} />}
             </div>
           </section>
