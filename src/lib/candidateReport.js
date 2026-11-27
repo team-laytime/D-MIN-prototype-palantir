@@ -132,7 +132,7 @@ export function candidateReportMarkdown(m) {
     `- 후보 구성: ${m.basis.presets.join(' / ')}`,
     `- 데이터: ${m.basis.dataset}${m.basis.bundle ? ` (${m.basis.bundle})` : ''}, ${m.basis.vessels}척, 선석 ${m.basis.berths}곳`,
     `- 계획 시각: ${m.basis.start} (계획 구간 끝 ${m.basis.end})`,
-    '- 후보는 A 기본 · B 상황형(탱크 · 풍속 중 리스크가 큰 쪽 대비) · C 배별 지연 대비이며 A가 기본 선택입니다.')
+    '- 후보는 A 기본 · B 상황형(탱크 · 풍속 중 리스크가 큰 쪽 대비) · C 도착 · 작업 지연 대비이며 A가 기본 선택입니다.')
   return L.join('\n')
 }
 

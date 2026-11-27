@@ -172,7 +172,7 @@ export default function ScenarioInput() {
       {calcState !== 'ok' && <div className={`pi-calc ${calcState}`} data-tour="recalc">
         {calcState === 'run' ? <><Spinner size={14} /><b>계산 중, 약 1분</b><span className="muted">후보 {scen.presets.length}개를 동시에 계산합니다.</span></>
           : calcState === 'bad' ? <><Icon icon="error" size={14} /><b>다시 계산하지 못했습니다</b><span>{result.calcError}</span></>
-            : calcState === 'warn' ? <><Icon icon="warning-sign" size={14} /><b>계획 조건이 바뀌었습니다</b><span>지금 후보는 바뀌기 전 조건으로 계산한 것입니다. 「다시 계산」을 눌러야 반영됩니다.</span></>
+            : calcState === 'warn' ? <><Icon icon="warning-sign" size={14} /><b>계획 조건이 바뀌었습니다</b><span>현재 후보는 바뀌기 전 조건으로 계산한 것입니다. 「다시 계산」을 눌러야 반영됩니다.</span></>
               : null}
         {(calcState === 'warn' || calcState === 'bad') && (
           <Button size="small" intent="warning" icon="refresh" disabled={!canRecalc} onClick={() => recalc()}>다시 계산</Button>

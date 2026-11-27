@@ -175,7 +175,7 @@ export default function PlanGantt({ sim, sims, scen, range, focus, onFocus, chan
             <div className="pg-label"><span className="faint">KST</span></div>
             <div className="pg-track" style={{ width: W }}>
               {ticks.map((k) => <span key={k.t} className={`pg-tick ${k.day ? 'day' : ''}`} style={{ left: x(k.t) }}>{k.day ? fmt(k.t).slice(0, 5) : String(hourOf(k.t)).padStart(2, '0')}</span>)}
-              {NOW >= range.start && NOW <= range.end && <span className="pg-now-label" style={{ left: x(NOW) }}>지금</span>}
+              {NOW >= range.start && NOW <= range.end && <span className="pg-now-label" style={{ left: x(NOW) }}>현재</span>}
               {showCursor && <span className="pg-cursor-label" style={{ left: x(cursor) }}>{fmt(cursor)}</span>}
             </div>
           </div>
