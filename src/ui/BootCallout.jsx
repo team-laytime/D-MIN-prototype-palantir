@@ -16,7 +16,7 @@ export default function BootCallout({ boot }) {
   }
   return (
     <Callout icon={<Spinner size={16} />} intent="primary" title={boot.step === 'A' ? '후보 A 계산 중 (1/2)' : '후보 B · C 계산 중 (2/2)'}>
-      {boot.step === 'A' ? '기본 계획을 먼저 계산합니다. B는 A 계획의 탱크 재고와 예보 풍속을 보고 고릅니다.' : 'A로 고른 B와 배별 지연 대비 C를 동시에 계산합니다.'}
+      {boot.step === 'A' ? '기본 계획을 먼저 계산합니다. B는 A 계획의 탱크 재고와 예보 풍속을 보고 고릅니다.' : 'A로 고른 B와 도착 · 작업 지연 대비 C를 동시에 계산합니다.'}
       {' '}<span className="num">{sec}</span>초 · 단계마다 최대 1분쯤 걸립니다(다른 계산이 돌고 있으면 더). 계산 결과는 이 브라우저에 저장되어 다음부터는 바로 열립니다.
     </Callout>
   )

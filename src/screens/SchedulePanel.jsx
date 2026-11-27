@@ -9,7 +9,7 @@ import { PIER_TEAMS } from '../lib/teams.js'
 import { NOW, fmt, fmtDur } from '../lib/time.js'
 
 const GROUPS = [
-  { key: 'on', label: '지금 작업 중' },
+  { key: 'on', label: '현재 작업 중' },
   { key: 'next', label: '다음 24시간 접안' },
   { key: 'later', label: '이후' },
   { key: 'done', label: '완료' },

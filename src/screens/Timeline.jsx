@@ -121,8 +121,8 @@ export default function Timeline({ sim, scen, range, groupByPier = true, highlig
         <div className="gt-label"><span className="mono tiny faint">KST</span></div>
         <div className="gt-track">
           {ticks.map((k) => <span key={k.t} className={`gt-tick num ${k.day ? 'day' : ''}`} style={{ left: pos(k.t) }}>{k.day ? fmt(k.t).slice(0, 5) : String(hourOf(k.t)).padStart(2, '0')}</span>)}
-          {nights.map((n) => <span key={`nl-${n.key}`} className="gt-night-label" style={n.style}>밤</span>)}
-          {nowStyle && <span className="gt-now-label tiny" style={nowStyle}>지금</span>}
+          {nights.map((n) => <span key={`nl-${n.key}`} className="gt-night-label" style={n.style}>야간</span>)}
+          {nowStyle && <span className="gt-now-label tiny" style={nowStyle}>현재</span>}
           {cursorStyle && <span className="gt-cursor-label tiny num" style={cursorStyle}>{fmt(cursor)}</span>}
         </div>
       </div>

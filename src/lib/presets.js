@@ -1,6 +1,6 @@
 import { toMin } from './time.js'
-// 11-25 후보 구성: A 기본 · B 상황형 · C 배별 지연 대비. (11-26 데이터셋에 계산 결과를 넣지 않으므로 규칙은 이 파일 한 곳)
-//   B = A 계획의 탱크 등급과 예보 풍속 등급 중 높은 쪽(같으면 탱크). 둘 다 없으면 배별 지연 대비 절반.
+// 11-25 후보 구성: A 기본 · B 상황형 · C 도착 · 작업 지연 대비. (11-26 데이터셋에 계산 결과를 넣지 않으므로 규칙은 이 파일 한 곳)
+//   B = A 계획의 탱크 등급과 예보 풍속 등급 중 높은 쪽(같으면 탱크). 둘 다 없으면 도착 · 작업 지연 대비 절반.
 //   탱크 등급(기준 시각 ~ +72시간): 재고가 마지노선 20/80%까지 2%p 안 높음 · 3.5%p 안 중간 · 5%p 안 낮음 (리스크 모델과 같은 기준)
 //   풍속 등급: 하역 중단 기준까지 여유가 예보 오차 σ의 1배 안 높음 · 2배 안 중간 · 3배 안 낮음
 export const SIGMA_MS = 2 // 예보 풍속 오차 σ (m/s), 사용자 설정(11-25, 1 → 2)
@@ -41,10 +41,10 @@ export function windGrade(scen) {
 }
 
 export const BASE_PRESET = { id: 'base', label: '기본', desc: '기본 기준 그대로', params: {} }
-export const C_PRESET = { id: 'vessel_buffer', label: '배별 지연 대비', desc: '배마다 늦어질 만큼 앞뒤 간격을 비워 둔 계획 (작업 여유 · 도착 여유, 데이터 팀 안 3)',
+export const C_PRESET = { id: 'vessel_buffer', label: '도착 · 작업 지연 대비', desc: '배마다 늦어질 만큼 앞뒤 간격을 비워 둔 계획 (작업 여유 · 도착 여유, 데이터 팀 안 3)',
   params: { shifting: { vessel_buffer: true } } }
 const B_TANK = { id: 'tank', label: '안전재고 강화', desc: '탱크 안전 범위를 20~80%에서 25~75%로 좁힘', params: { tank: { safe_min_pct: 25, safe_max_pct: 75 } } }
-const B_HALF = { id: 'buffer_half', label: '배별 지연 대비 절반', desc: '배별 작업 여유를 절반만 둠 (도착 여유는 그대로)', params: { shifting: { vessel_buffer: true, work_buffer_scale: 0.5 } } }
+const B_HALF = { id: 'buffer_half', label: '도착 · 작업 지연 대비 절반', desc: '배별 작업 여유를 절반만 둠 (도착 여유는 그대로)', params: { shifting: { vessel_buffer: true, work_buffer_scale: 0.5 } } }
 
 /** A 계획(simA)과 지금 계획 조건으로 B를 고른다. why = 고른 이유 한 줄 */
 export function chooseB(scen, simA) {
